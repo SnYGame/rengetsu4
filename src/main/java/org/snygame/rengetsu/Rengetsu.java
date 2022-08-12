@@ -17,7 +17,7 @@ public class Rengetsu {
 
     public static void main(String[] args) {
         //Creates the gateway client and connects to the gateway
-        GatewayDiscordClient client = DiscordClient.create(System.getenv("TOKEN"))
+        GatewayDiscordClient client = DiscordClient.create(args[0])
                 .login().block();
 
         /* Call our code to handle creating/deleting/editing our global slash commands.

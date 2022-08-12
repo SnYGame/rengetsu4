@@ -7,7 +7,7 @@ import org.snygame.rengetsu.dicerolls.Diceroll;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-public class DiceCommand implements SlashCommand{
+public class DiceCommand implements SlashCommand {
     @Override
     public String getName() {
         return "dice";
