@@ -5,12 +5,8 @@ import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snygame.rengetsu.dicerolls.Diceroll;
 import org.snygame.rengetsu.listeners.SlashCommandListener;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
