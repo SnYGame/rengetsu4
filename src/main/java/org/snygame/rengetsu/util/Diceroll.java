@@ -1,7 +1,6 @@
-package org.snygame.rengetsu.dicerolls;
+package org.snygame.rengetsu.util;
 
 import org.snygame.rengetsu.Rengetsu;
-import org.snygame.rengetsu.util.UniqueRandom;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -17,7 +16,7 @@ public class Diceroll {
     private static final int MAX_DICE_UNIQUE = 0x2000000;
     private static final int MAX_DICE_DISPLAY = 0x40;
     private static final int MAX_FACES = 0x8000000;
-    private static final int MAX_REPEAT = 0x40;
+    private static final int MAX_REPEAT = 0x20;
 
     private int diceCount;
     private Faces faces;
@@ -30,6 +29,8 @@ public class Diceroll {
     private boolean sumOnly;
     private boolean noSum;
     private boolean sorted;
+
+    private boolean hideDrop;
 
     private int repeat = 1;
 
@@ -99,6 +100,7 @@ public class Diceroll {
                         case "sorted" -> diceroll.sorted = true;
                         case "nosum" -> diceroll.noSum = true;
                         case "sumonly" -> diceroll.sumOnly = true;
+                        case "hidedrop" -> diceroll.hideDrop = true;
                         case "rep" -> {}
                         default -> {
                             diceroll.error = "Unknown option: %s".formatted(prevOp);
@@ -161,10 +163,10 @@ public class Diceroll {
             error = "Max dice count is %d".formatted(MAX_DICE);
         } else if (diceCount > MAX_DICE_UNIQUE && unique) {
             error = "Cannot use unique for more than %d dice".formatted(MAX_DICE_UNIQUE);
-        } else if (diceCount > MAX_DICE_DISPLAY && noSum) {
-            error = "Cannot use nosum for more than %d dice".formatted(MAX_DICE_DISPLAY);
-        } else if (diceCount > MAX_DICE_DISPLAY && sorted) {
-            error = "Cannot use sorted for more than %d dice".formatted(MAX_DICE_DISPLAY);
+        } else if (diceCount - (hideDrop ? dropLowest + dropHighest : 0) > MAX_DICE_DISPLAY && noSum) {
+            error = "Cannot use nosum for more than %d displayed dice".formatted(MAX_DICE_DISPLAY);
+        } else if (diceCount - (hideDrop ? dropLowest + dropHighest : 0) > MAX_DICE_DISPLAY && sorted) {
+            error = "Cannot use sorted for more than %d displayed dice".formatted(MAX_DICE_DISPLAY);
         } else if (faces.trueSize() > MAX_FACES) {
             error = "Max faces on dice is %d".formatted(MAX_FACES);
         } else if (repeat > MAX_REPEAT) {
@@ -176,15 +178,15 @@ public class Diceroll {
         return error == null ? repeat : 1;
     }
 
-    public String roll() {
+    public Result roll() {
         if (error != null) {
-            return "**[Error]** %s.".formatted(error);
+            return new Result(error);
         }
 
-        boolean sumOnly = this.sumOnly && diceCount != 1 || diceCount > 64;
+        boolean sumOnly = this.sumOnly && diceCount != 1 || diceCount - (hideDrop ? dropLowest + dropHighest : 0) > 64;
         boolean noSum = this.noSum || diceCount == 1;
 
-        List<Integer> rolls = new ArrayList<>(diceCount);
+        int[] rolls = new int[diceCount];
         Random rng = Rengetsu.RNG;
 
         switch (faces) {
@@ -192,11 +194,11 @@ public class Diceroll {
                 if (unique) {
                     UniqueRandom uniqueRand = new UniqueRandom(rng, f.faces());
                     for (int i = 0; i < diceCount; i++) {
-                        rolls.add(uniqueRand.nextInt() + 1);
+                        rolls[i] = uniqueRand.nextInt() + 1;
                     }
                 } else {
                     for (int i = 0; i < diceCount; i++) {
-                        rolls.add(rng.nextInt(f.faces()) + 1);
+                        rolls[i] = rng.nextInt(f.faces()) + 1;
                     }
                 }
             }
@@ -204,63 +206,64 @@ public class Diceroll {
                 if (unique) {
                     UniqueRandom uniqueRand = new UniqueRandom(rng, r.size());
                     for (int i = 0; i < diceCount; i++) {
-                        rolls.add(r.get(uniqueRand.nextInt()));
+                        rolls[i] = r.get(uniqueRand.nextInt());
                     }
                 } else {
                     for (int i = 0; i < diceCount; i++) {
-                        rolls.add(r.get(rng.nextInt(r.size())));
+                        rolls[i] = r.get(rng.nextInt(r.size()));
                     }
                 }
             }
             default -> throw new IllegalStateException("Unexpected value: " + faces);
         }
 
-        boolean drops = dropLowest + dropHighest > 0;
+        int drops = dropLowest + dropHighest;
 
         if (sorted) {
-            Collections.sort(rolls);
+            Arrays.sort(rolls);
 
-            if (drops) {
-                return "`%s` Rolled %s".formatted(shortRepr(),
-                        String.join(", ", IntStream.range(0, diceCount)
-                                .mapToObj(
-                                        i -> (i >= dropLowest && i < diceCount - dropHighest ? "**%d**" : "~~**%d**~~").formatted(rolls.get(i))
-                                )
-                                .toList()))
-                        + (noSum ? "." :
-                        " Total: **%d**.".formatted(IntStream.range(dropLowest, diceCount - dropHighest).mapToLong(rolls::get).sum()));
+            if (drops > 0) {
+                if (hideDrop) {
+                    return new Result(Arrays.stream(rolls, dropLowest, diceCount - dropHighest).toArray(),
+                            noSum ? null : Arrays.stream(rolls, dropLowest, diceCount - dropHighest)
+                                    .mapToLong(i -> i).sum());
+                }
+
+                return new Result(rolls,
+                        IntStream.range(dropLowest, diceCount - dropHighest).mapToLong(i -> 1L << i).sum(),
+                        noSum ? null : Arrays.stream(rolls, dropLowest, diceCount - dropHighest)
+                                .mapToLong(i -> i).sum());
             } else {
-                return "`%s` Rolled %s".formatted(shortRepr(),
-                        String.join(", ", rolls.stream().map("**%d**"::formatted).toList()))
-                        + (noSum ? "." : " Total: **%d**.".formatted(rolls.stream().mapToLong(Integer::longValue).sum()));
+                return new Result(rolls, noSum ? null : IntStream.of(rolls).mapToLong(i -> i).sum());
             }
 
         } else if (sumOnly) {
-            if (drops) {
-                Collections.sort(rolls);
+            if (drops > 0) {
+                Arrays.sort(rolls);
             }
 
-            return "`%s` Total: **%d**.".formatted(shortRepr(),
-                    drops ? IntStream.range(dropLowest, diceCount - dropHighest).mapToLong(rolls::get).sum()
-                    : rolls.stream().mapToLong(Integer::longValue).sum());
+            return new Result(null,
+                    drops > 0 ? Arrays.stream(rolls, dropLowest, diceCount - dropHighest)
+                            .mapToLong(i -> i).sum()
+                            : IntStream.of(rolls).mapToLong(i -> i).sum());
         }
 
-        if (drops) {
-            List<Integer> indices = IntStream.range(0, diceCount).boxed().sorted(Comparator.comparingInt(rolls::get)).collect(Collectors.toList());
-            Set<Integer> valid = new HashSet<>(indices.subList(dropLowest, diceCount - dropHighest));
+        if (drops > 0) {
+            if (hideDrop) {
+                Set<Integer> kept = IntStream.range(0, diceCount).boxed().sorted(Comparator.comparingInt(i -> rolls[i]))
+                        .skip(dropLowest).limit(diceCount - drops).collect(Collectors.toSet());
 
-            return "`%s` Rolled %s".formatted(shortRepr(),
-                    String.join(", ", IntStream.range(0, diceCount)
-                            .mapToObj(
-                                    i -> (valid.contains(i) ? "**%d**" : "~~**%d**~~").formatted(rolls.get(i))
-                            )
-                            .toList()))
-                    + (noSum ? "." :
-                    " Total: **%d**.".formatted(valid.stream().mapToLong(rolls::get).sum()));
+                return new Result(IntStream.range(0, diceCount).filter(kept::contains).map(i -> rolls[i]).toArray(),
+                        noSum ? null : IntStream.range(0, diceCount).filter(kept::contains).mapToLong(i -> rolls[i]).sum());
+            }
+
+            long dropped = IntStream.range(0, diceCount).boxed().sorted(Comparator.comparingInt(i -> rolls[i]))
+                    .skip(dropLowest).limit(diceCount - drops).mapToLong(i -> 1L << i).sum();
+
+            return new Result(rolls, dropped, noSum ? null : IntStream.range(0, diceCount).mapToLong(i -> (dropped >> i & 1) * rolls[i]).sum());
         }
 
-        return "`%s` Rolled %s".formatted(shortRepr(), String.join(", ", rolls.stream().map("**%d**"::formatted).toList()))
-                + (noSum ? "." : " Total: **%d**.".formatted(rolls.stream().mapToLong(Integer::longValue).sum()));
+        return new Result(rolls, noSum ? null : IntStream.of(rolls).mapToLong(i -> i).sum());
     }
 
     @Override
@@ -269,13 +272,14 @@ public class Diceroll {
             return "Dice error: %s".formatted(error);
         }
 
-        return "%dd%s%s%s%s%s%s%s%s".formatted(diceCount, faces,
+        return "%dd%s%s%s%s%s%s%s%s%s".formatted(diceCount, faces,
                 dropLowest == 0 ? "" : "dl%d".formatted(dropLowest),
                 dropHighest == 0 ? "" : "dh%d".formatted(dropHighest),
                 unique ? "u" : "",
                 sumOnly ? " sumonly" : "",
                 noSum ? " nosum" : "",
                 sorted ? " sorted" : "",
+                hideDrop ? " hidedrop" : "",
                 repeat == 1 ? "" : " rep %d".formatted(repeat));
     }
 
@@ -284,8 +288,50 @@ public class Diceroll {
         return repr.length() > 50 ? repr.substring(0, 49) + "\u2026" : repr;
     }
 
+    public static record Result(String error, int[] rolls, long dropped, Long sum) {
+        private Result(String error) {
+            this(error, null, 0, null);
+        }
+
+        private Result(int[] rolls, long dropped, Long sum) {
+            this(null, rolls, dropped, sum);
+        }
+
+        private Result(int[] rolls, Long sum) {
+            this(null, rolls, 0xFFFFFFFFFFFFFFFFL, sum);
+        }
+
+        public int count() {
+            return rolls == null ? 0 : rolls.length;
+        }
+
+        @Override
+        public String toString() {
+            if (error != null) {
+                return error;
+            }
+
+            if (rolls == null) {
+                return "Total: **%d**".formatted(sum);
+            } else {
+                String start;
+                if (dropped == 0xFFFFFFFFFFFFFFFFL) {
+                    start = String.join(", ", IntStream.of(rolls).mapToObj("**%d**"::formatted).toList());
+                } else {
+                    start = String.join(", ", IntStream.range(0, count())
+                            .mapToObj(i -> ((dropped >> i & 1) == 0 ? "~~%d~~" : "**%d**").formatted(rolls[i])).toList());
+                }
+
+                if (sum == null) {
+                    return start;
+                }
+
+                return "%s Total: **%d**".formatted(start, sum);
+            }
+        }
+    }
+
     private interface Faces {
-        int size();
         long trueSize();
     }
 
@@ -293,11 +339,6 @@ public class Diceroll {
         @Override
         public String toString() {
             return String.valueOf(faces);
-        }
-
-        @Override
-        public int size() {
-            return faces;
         }
 
         @Override
@@ -327,7 +368,6 @@ public class Diceroll {
             return "[%s]".formatted(String.join(", ", IntStream.of(scale).boxed().map(ranges::get).map(Object::toString).toList()));
         }
 
-        @Override
         public int size() {
             return (int) size;
         }

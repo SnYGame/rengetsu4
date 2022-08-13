@@ -3,7 +3,7 @@ package org.snygame.rengetsu.commands;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import org.snygame.rengetsu.dicerolls.Diceroll;
+import org.snygame.rengetsu.util.Diceroll;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -29,9 +29,11 @@ public class DiceCommand implements SlashCommand {
                     .map(ApplicationCommandInteractionOptionValue::asString).get().split(";")) {
                 Diceroll diceroll = Diceroll.parse(query.strip());
                 for (int i = 0; i < diceroll.getRepeat(); i++) {
-                    String result = diceroll.roll() + '\n';
+                    String result = "`%s%s` %s\n".formatted(diceroll.shortRepr(),
+                            diceroll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
+                            diceroll.roll());
                     if (response.length() + result.length() > 2000) {
-                        break;
+                        break all;
                     }
 
                     response.append(result);
