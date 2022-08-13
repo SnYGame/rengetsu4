@@ -134,7 +134,7 @@ public class Diceroll {
                 return diceroll;
             }
         } catch (NumberFormatException e) {
-            diceroll.error = "Max integer value is %d".formatted(Integer.MAX_VALUE);
+            diceroll.error = "Values must be between %d and %d".formatted(Integer.MIN_VALUE, Integer.MAX_VALUE);
             return diceroll;
         }
 
@@ -183,8 +183,9 @@ public class Diceroll {
             return new Result(error);
         }
 
-        boolean sumOnly = this.sumOnly && diceCount != 1 || diceCount - (hideDrop ? dropLowest + dropHighest : 0) > 64;
-        boolean noSum = this.noSum || diceCount == 1;
+        int displayedDiceCount = diceCount - (hideDrop ? dropLowest + dropHighest : 0);
+        boolean sumOnly = this.sumOnly && displayedDiceCount != 1 || displayedDiceCount > MAX_DICE_DISPLAY;
+        boolean noSum = this.noSum || displayedDiceCount == 1;
 
         int[] rolls = new int[diceCount];
         Random rng = Rengetsu.RNG;

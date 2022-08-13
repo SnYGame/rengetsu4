@@ -29,7 +29,7 @@ public class DiceCommand implements SlashCommand {
                     .map(ApplicationCommandInteractionOptionValue::asString).get().split(";")) {
                 Diceroll diceroll = Diceroll.parse(query.strip());
                 for (int i = 0; i < diceroll.getRepeat(); i++) {
-                    String result = "`%s%s` %s\n".formatted(diceroll.shortRepr(),
+                    String result = "`%s%s` Rolled %s\n".formatted(diceroll.shortRepr(),
                             diceroll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
                             diceroll.roll());
                     if (response.length() + result.length() > 2000) {
