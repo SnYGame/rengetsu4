@@ -31,7 +31,7 @@ public class DiceCommand implements SlashCommand {
                 for (int i = 0; i < diceroll.getRepeat(); i++) {
                     String result;
                     if (diceroll.getError() != null) {
-                        result = "`%s` **[Error]** %s".formatted(diceroll, diceroll.getError());
+                        result = "`%s` **[Error]** %s".formatted(diceroll.shortRepr(), diceroll.getError());
                     } else {
                         result = "`%s%s` %s\n".formatted(diceroll.shortRepr(),
                                 diceroll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
