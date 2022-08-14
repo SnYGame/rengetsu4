@@ -2,6 +2,7 @@ package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.snygame.rengetsu.commands.DiceCommand;
+import org.snygame.rengetsu.commands.HereCommand;
 import org.snygame.rengetsu.commands.SlashCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -16,6 +17,7 @@ public class SlashCommandListener {
     static {
         //We register our commands here when the class is initialized
         commands.add(new DiceCommand());
+        commands.add(new HereCommand());
     }
 
     public static Mono<Void> handle(ChatInputInteractionEvent event) {
