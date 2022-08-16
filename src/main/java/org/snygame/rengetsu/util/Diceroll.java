@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Diceroll {
-    private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\])(.*)$");
+    private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\]|(%))(.*)$");
     private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+)|([+-])");
 
     private static final int MAX_DICE = 0x8000000;
@@ -52,7 +52,7 @@ public class Diceroll {
 
         try {
             diceroll.diceCount = match.group(1) == null ? 1 : Integer.parseInt(match.group(1));
-            if (match.group(2) == null) {
+            if (match.group(3) != null) {
                 try {
                     List<Range> ranges = new ArrayList<>();
                     for (String range : match.group(3).split(",")) {
@@ -79,11 +79,13 @@ public class Diceroll {
                     diceroll.error = "Invalid die faces";
                     return diceroll;
                 }
-            } else {
+            } else if (match.group(2) != null) {
                 diceroll.faces = new Fixed(Integer.parseInt(match.group(2)));
+            } else {
+                diceroll.faces = new Fixed(100);
             }
 
-            Matcher options = OPTION_RE.matcher(match.group(4));
+            Matcher options = OPTION_RE.matcher(match.group(5));
 
             String prevOp = null;
             while (options.find()) {
