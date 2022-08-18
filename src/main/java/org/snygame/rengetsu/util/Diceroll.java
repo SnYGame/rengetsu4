@@ -12,11 +12,11 @@ public class Diceroll {
     private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\]|(%))(.*)$");
     private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+)|([+-])");
 
-    private static final int MAX_DICE = 0x8000000;
-    private static final int MAX_DICE_UNIQUE = 0x2000000;
-    private static final int MAX_DICE_DISPLAY = 0x40;
-    private static final int MAX_FACES = 0x8000000;
-    private static final int MAX_REPEAT = 0x20;
+    public static final int MAX_DICE = 0x8000000;
+    public static final int MAX_DICE_UNIQUE = 0x2000000;
+    public static final int MAX_DICE_DISPLAY = 0x20;
+    public static final int MAX_FACES = 0x8000000;
+    public static final int MAX_ROLLS = 0x20;
 
     private int diceCount;
     private Faces faces;
@@ -183,8 +183,8 @@ public class Diceroll {
             error = "Cannot use sorted for more than %d displayed dice".formatted(MAX_DICE_DISPLAY);
         } else if (faces.trueSize() > MAX_FACES) {
             error = "Max faces on dice is %d".formatted(MAX_FACES);
-        } else if (repeat > MAX_REPEAT) {
-            error = "Max repeats is %d".formatted(MAX_REPEAT);
+        } else if (repeat > MAX_ROLLS) {
+            error = "Max rolls is %d".formatted(MAX_ROLLS);
         }
     }
 
@@ -303,6 +303,10 @@ public class Diceroll {
     public String shortRepr() {
         String repr = toString();
         return repr.length() > 50 ? repr.substring(0, 49) + "\u2026" : repr;
+    }
+
+    public boolean hasError() {
+        return error != null;
     }
 
     public static record Result(String error, int[] rolls, long dropped, int offset, Long sum) {
