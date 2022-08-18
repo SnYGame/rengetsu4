@@ -31,9 +31,8 @@ public class HereCommand implements SlashCommand {
                         .filterWhen(member -> member.getPresence().map(Presence::getStatus)
                                 .map(status -> status != Status.OFFLINE))
                         .map(Member::getMention).collect(Collectors.joining(" "))
-                        .map(pings -> "Pinging %s\n%s".formatted(role.getName(), pings)) :
-                                Mono.just("%s is not pingable".formatted(role.getName()))
-                        )
-                .flatMap(event::reply);
+                        .flatMap(pings -> event.reply("Pinging %s\n%s".formatted(role.getName(), pings))) :
+                                event.reply("%s is not pingable".formatted(role.getName())).withEphemeral(true)
+                        );
     }
 }
