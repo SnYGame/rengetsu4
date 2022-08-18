@@ -4,6 +4,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import org.snygame.rengetsu.util.Diceroll;
+import org.snygame.rengetsu.util.StringSplitPredicate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -11,7 +12,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DiceCommand implements SlashCommand {
@@ -61,23 +62,13 @@ public class DiceCommand implements SlashCommand {
     }
 
     private Mono<Void> delayedHandle(ChatInputInteractionEvent event, boolean ephemeral, List<Diceroll> dicerolls) {
-        StringBuilder sb = new StringBuilder();
         return Flux.fromStream(dicerolls.stream().flatMap(diceroll -> IntStream.range(0, diceroll.getRepeat()).mapToObj(
-                i -> "`%s%s` %s\n".formatted(diceroll.shortRepr(),
-                        diceroll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
-                        diceroll.roll())
-        ))).map(msg -> {
-            String output = "";
-            if (sb.length() + msg.length() > 2000) {
-                output = sb.toString();
-                sb.setLength(0);
-            }
-            sb.append(msg);
-            return output;
-        }).filter(Predicate.not(String::isEmpty))
-                .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral))
-                .subscribeOn(Schedulers.boundedElastic())
-                .then(Mono.just(sb).map(Object::toString).map(event::createFollowup)
-                        .flatMap(mono -> mono.withEphemeral(ephemeral))).then();
+                        i -> "`%s%s` %s\n".formatted(diceroll.shortRepr(),
+                                diceroll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
+                                diceroll.roll())
+                ))).subscribeOn(Schedulers.boundedElastic())
+                .windowUntil(StringSplitPredicate.get(2000), true)
+                .flatMap(stringFlux -> stringFlux.collect(Collectors.joining()))
+                .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral)).then();
     }
 }
