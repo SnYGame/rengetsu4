@@ -3,13 +3,10 @@ package org.snygame.rengetsu.commands;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.spec.InteractionFollowupCreateMono;
 import org.snygame.rengetsu.util.Diceroll;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,6 +76,7 @@ public class DiceCommand implements SlashCommand {
             return output;
         }).filter(Predicate.not(String::isEmpty))
                 .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral))
+                .subscribeOn(Schedulers.boundedElastic())
                 .then(Mono.just(sb).map(Object::toString).map(event::createFollowup)
                         .flatMap(mono -> mono.withEphemeral(ephemeral))).then();
     }
