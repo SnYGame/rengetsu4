@@ -1,12 +1,12 @@
 grammar RengCalc;
 
-calculations
- : (tenaryExpression ';')* tenaryExpression ';'? EOF
+calculation
+ : ternaryExpression EOF
  ;
 
-tenaryExpression
+ternaryExpression
  : logicOrExpression
- | logicOrExpression '?' tenaryExpression ':' tenaryExpression
+ | logicOrExpression '?' ternaryExpression ':' ternaryExpression
  ;
 
 logicOrExpression
@@ -80,12 +80,12 @@ exponentialExpression
  ;
 
 primaryExpression
- : '(' tenaryExpression ')'
+ : '(' ternaryExpression ')'
  | callExpression
+ | DiceRoll
  | IntegerConstant
  | FloatConstant
  | BoolConstant
- | DiceRoll
  ;
 
 callExpression
@@ -93,7 +93,11 @@ callExpression
  ;
 
 parameterList
- : ((tenaryExpression ',')* tenaryExpression)?
+ : ((ternaryExpression ',')* ternaryExpression)?
+ ;
+
+DiceRoll
+ : Digit+ 'd' Digit+ ('dl' Digit* ('dh' Digit*)? | 'dh' Digit* ('dl' Digit*)?)? 'u'?
  ;
 
 IntegerConstant
@@ -133,6 +137,7 @@ Exponent
  : [eE] [+-] Digit+
  ;
 
+fragment
 Digit
  : [0-9]
  ;
@@ -140,10 +145,6 @@ Digit
 BoolConstant
  : 'true'
  | 'false'
- ;
-
-DiceRoll
- : Digit+ 'd' Digit+ ('dl' Digit* ('dh' Digit*)? | 'dh' Digit* ('dl' Digit*)?) 'u'?
  ;
 
 Function
