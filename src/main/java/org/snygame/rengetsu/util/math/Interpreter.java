@@ -122,12 +122,22 @@ public class Interpreter {
                 case EQ -> {
                     Object rhs = stack.pop();
                     Object lhs = stack.pop();
-                    stack.push(compare(lhs, rhs) == 0);
+
+                    if (lhs instanceof Boolean) {
+                        stack.push(lhs.equals(rhs));
+                    } else {
+                        stack.push(compare(lhs, rhs) == 0);
+                    }
                 }
                 case NE -> {
                     Object rhs = stack.pop();
                     Object lhs = stack.pop();
-                    stack.push(compare(lhs, rhs) != 0);
+
+                    if (lhs instanceof Boolean) {
+                        stack.push(!lhs.equals(rhs));
+                    } else {
+                        stack.push(compare(lhs, rhs) != 0);
+                    }
                 }
                 case LT -> {
                     Object rhs = stack.pop();

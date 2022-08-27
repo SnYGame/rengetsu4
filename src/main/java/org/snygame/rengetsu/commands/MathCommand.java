@@ -86,6 +86,7 @@ public class MathCommand implements SlashCommand {
         return Flux.fromIterable(parseTrees).map(pt -> {
             try {
                 ASTNode ast = pt.accept(astGenerator);
+                ast.getType();
                 BytecodeGenerator generator = new BytecodeGenerator();
                 ast.accept(generator);
                 String result = Interpreter.interpret(generator.getBytecode());

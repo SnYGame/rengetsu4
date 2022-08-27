@@ -101,7 +101,8 @@ DiceRoll
  ;
 
 IntegerConstant
- : [1-9] Digit*
+ : '0'
+ | [1-9] Digit*
  ;
 
 FloatConstant
