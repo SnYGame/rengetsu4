@@ -1,6 +1,5 @@
-package org.snygame.rengetsu.util;
+package org.snygame.rengetsu.util.functions;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 public class StringSplitPredicate implements Predicate<String> {

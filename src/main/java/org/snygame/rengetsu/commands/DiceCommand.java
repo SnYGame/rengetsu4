@@ -4,12 +4,12 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import org.snygame.rengetsu.util.Diceroll;
-import org.snygame.rengetsu.util.StringSplitPredicate;
+import org.snygame.rengetsu.util.functions.MapFirstElse;
+import org.snygame.rengetsu.util.functions.StringSplitPredicate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,31 +33,26 @@ public class DiceCommand implements SlashCommand {
                 .map(String::strip).map(Diceroll::parse)
                 .toList();
 
-        List<String> errors = new ArrayList<>();
-        StringBuilder errorMsg = new StringBuilder();
-
-        dicerolls.stream().filter(Diceroll::hasError)
-                .map(diceroll -> "`%s` **[Error]** %s\n".formatted(diceroll.shortRepr(), diceroll.getError()))
-                .forEach(msg -> {
-                    if (errorMsg.length() + msg.length() > 2000) {
-                        errors.add(errorMsg.toString());
-                        errorMsg.setLength(0);
-                    }
-                    errorMsg.append(msg);
-                });
-
-        if (!errorMsg.isEmpty()) {
-            errors.add(errorMsg.toString());
+        if (dicerolls.isEmpty()) {
+            return event.reply("**[Error]** No queries").withEphemeral(true);
         }
 
-        if (errors.isEmpty() && dicerolls.stream().mapToInt(Diceroll::getRepeat).sum() > Diceroll.MAX_ROLLS) {
+        List<String> errors = dicerolls.stream().filter(Diceroll::hasError)
+                .map(diceroll -> "`%s` **[Error]** %s\n".formatted(diceroll.shortRepr(), diceroll.getError()))
+                .toList();
+
+        if (!errors.isEmpty()) {
+            return Flux.fromIterable(errors).windowUntil(StringSplitPredicate.get(2000), true)
+                    .flatMap(stringFlux -> stringFlux.collect(Collectors.joining())).index()
+                    .flatMap(MapFirstElse.get(msg -> event.reply(msg).withEphemeral(true),
+                            msg -> event.createFollowup(msg).withEphemeral(true))).then();
+        }
+
+        if (dicerolls.stream().mapToInt(Diceroll::getRepeat).sum() > Diceroll.MAX_ROLLS) {
             return event.reply("**[Error]** Max rolls is %d".formatted(Diceroll.MAX_ROLLS)).withEphemeral(true);
-        } else if (errors.isEmpty()) {
+        } else {
             return event.deferReply().withEphemeral(ephemeral)
                     .then(delayedHandle(event, ephemeral, dicerolls));
-        } else {
-            return event.reply(errors.get(0)).withEphemeral(true)
-                    .and(Flux.fromIterable(errors).skip(1).flatMap(msg -> event.createFollowup(msg).withEphemeral(true)));
         }
     }
 
