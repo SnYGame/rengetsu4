@@ -27,7 +27,7 @@ public class Rengetsu {
          is overly complicated for such a simple demo and requires handling for both IDE and .jar packaging.
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
          */
-        List<String> commands = List.of("dice.json", "here.json");
+        List<String> commands = List.of("dice.json", "here.json", "math.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient()).registerCommands(commands);
         } catch (Exception e) {

@@ -11,17 +11,17 @@ ternaryExpression
 
 logicOrExpression
  : logicAndExpression
- | logicAndExpression '||' logicOrExpression
+ | logicOrExpression '||' logicAndExpression
  ;
 
 logicAndExpression
  : equalityExpression
- | equalityExpression '&&' logicAndExpression
+ | logicAndExpression '&&' equalityExpression
  ;
 
 equalityExpression
  : comparisonExpression
- | comparisonExpression equalityOp equalityExpression
+ | equalityExpression equalityOp comparisonExpression
  ;
 
 equalityOp
@@ -31,7 +31,7 @@ equalityOp
 
 comparisonExpression
  : additiveExpression
- | additiveExpression comparisonOp comparisonExpression
+ | comparisonExpression comparisonOp additiveExpression
  ;
 
 comparisonOp
@@ -43,7 +43,7 @@ comparisonOp
 
 additiveExpression
  : multiplicativeExpression
- | multiplicativeExpression additiveOp additiveExpression
+ | additiveExpression additiveOp multiplicativeExpression
  ;
 
 additiveOp
@@ -53,7 +53,7 @@ additiveOp
 
 multiplicativeExpression
  : unaryExpression
- | unaryExpression multiplicativeOp multiplicativeExpression
+ | multiplicativeExpression multiplicativeOp unaryExpression
  ;
 
 multiplicativeOp
@@ -76,7 +76,7 @@ unaryOp
 
 exponentialExpression
  : primaryExpression
- | exponentialExpression '^' primaryExpression
+ | primaryExpression '^' exponentialExpression
  ;
 
 primaryExpression
@@ -97,44 +97,16 @@ parameterList
  ;
 
 DiceRoll
- : Digit+ 'd' Digit+ ('dl' Digit* ('dh' Digit*)? | 'dh' Digit* ('dl' Digit*)?)? 'u'?
+ : Digit+ 'd' Digit+ ('dl' Digit+)? ('dh' Digit*)? 'u'?
  ;
 
 IntegerConstant
- : DecimalConstant
- | OctalConstant
- | HexadecimalConstant
- | BinaryConstant
- ;
-
-DecimalConstant
  : [1-9] Digit*
  ;
 
-OctalConstant
- : '0' [0-7]*
- ;
-
-HexadecimalConstant
- : '0' [xX] [0-9a-fA-F]+
- ;
-
-BinaryConstant
- : '0' [bB] [0-1]+
- ;
-
 FloatConstant
- : FractionalConstant Exponent?
- | Digit+ Exponent
- ;
-
-FractionalConstant
  : Digit* '.' Digit+
  | Digit+ '.'
- ;
-
-Exponent
- : [eE] [+-] Digit+
  ;
 
 fragment
