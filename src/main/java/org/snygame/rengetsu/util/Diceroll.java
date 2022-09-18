@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Diceroll {
+    private static final Pattern RANGE_DICE_RE = Pattern.compile("^(-?\\d+)\\s+(-?\\d+)(.*)$");
     private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\]|(%))(.*)$");
     private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+)|([+-])");
 
@@ -43,50 +44,72 @@ public class Diceroll {
     public static Diceroll parse(String query) {
         Diceroll diceroll = new Diceroll();
         diceroll.input = query;
-        Matcher match = DICE_RE.matcher(query);
 
-        if (!match.matches()) {
-            diceroll.error = "Invalid query: %s".formatted(query);
-            return diceroll;
+        Matcher match = RANGE_DICE_RE.matcher(query);
+
+        Matcher options;
+
+        if (match.matches()) {
+            try {
+                diceroll.faces = new Ranges(List.of(new Range(Integer.parseInt(match.group(1)), Integer.parseInt(match.group(2)))));
+            } catch (NumberFormatException e) {
+                diceroll.error = "Values must be between %d and %d".formatted(Integer.MIN_VALUE, Integer.MAX_VALUE);
+                return diceroll;
+            }
+
+            diceroll.diceCount = 1;
+            options = OPTION_RE.matcher(match.group(3));
+        } else {
+            match = DICE_RE.matcher(query);
+
+            if (!match.matches()) {
+                diceroll.error = "Invalid query: %s".formatted(query);
+                return diceroll;
+            }
+
+            options = OPTION_RE.matcher(match.group(5));
+
+            try {
+                diceroll.diceCount = match.group(1) == null ? 1 : Integer.parseInt(match.group(1));
+                if (match.group(3) != null) {
+                    try {
+                        List<Range> ranges = new ArrayList<>();
+                        for (String range : match.group(3).split(",")) {
+                            if (range.isBlank()) {
+                                continue;
+                            }
+
+                            if (range.contains(":")) {
+                                String[] values = range.split(":");
+
+                                if (values.length != 2) {
+                                    diceroll.error = "Invalid die faces";
+                                    return diceroll;
+                                }
+
+                                ranges.add(new Range(Integer.parseInt(values[0].strip()), Integer.parseInt(values[1].strip())));
+                            } else {
+                                ranges.add(new Range(Integer.parseInt(range.strip())));
+                            }
+                        }
+
+                        diceroll.faces = new Ranges(ranges);
+                    } catch (NumberFormatException e) {
+                        diceroll.error = "Invalid die faces";
+                        return diceroll;
+                    }
+                } else if (match.group(2) != null) {
+                    diceroll.faces = new Fixed(Integer.parseInt(match.group(2)));
+                } else {
+                    diceroll.faces = new Fixed(100);
+                }
+            } catch (NumberFormatException e) {
+                diceroll.error = "Values must be between %d and %d".formatted(Integer.MIN_VALUE, Integer.MAX_VALUE);
+                return diceroll;
+            }
         }
 
         try {
-            diceroll.diceCount = match.group(1) == null ? 1 : Integer.parseInt(match.group(1));
-            if (match.group(3) != null) {
-                try {
-                    List<Range> ranges = new ArrayList<>();
-                    for (String range : match.group(3).split(",")) {
-                        if (range.isBlank()) {
-                            continue;
-                        }
-
-                        if (range.contains(":")) {
-                            String[] values = range.split(":");
-
-                            if (values.length != 2) {
-                                diceroll.error = "Invalid die faces";
-                                return diceroll;
-                            }
-
-                            ranges.add(new Range(Integer.parseInt(values[0].strip()), Integer.parseInt(values[1].strip())));
-                        } else {
-                            ranges.add(new Range(Integer.parseInt(range.strip())));
-                        }
-                    }
-
-                    diceroll.faces = new Ranges(ranges);
-                } catch (NumberFormatException e) {
-                    diceroll.error = "Invalid die faces";
-                    return diceroll;
-                }
-            } else if (match.group(2) != null) {
-                diceroll.faces = new Fixed(Integer.parseInt(match.group(2)));
-            } else {
-                diceroll.faces = new Fixed(100);
-            }
-
-            Matcher options = OPTION_RE.matcher(match.group(5));
-
             String prevOp = null;
             while (options.find()) {
                 if (options.group(2) != null) {
@@ -185,6 +208,18 @@ public class Diceroll {
             error = "Max faces on dice is %d".formatted(MAX_FACES);
         } else if (repeat > MAX_ROLLS) {
             error = "Max rolls is %d".formatted(MAX_ROLLS);
+        }
+
+        if (diceCount == 1) {
+            noSum = sumOnly = unique = sorted = false;
+        }
+
+        if (diceCount > MAX_DICE_DISPLAY) {
+            noSum = sumOnly = hideDrop = sorted = false;
+        }
+
+        if (sumOnly) {
+            hideDrop = false;
         }
     }
 
@@ -339,7 +374,7 @@ public class Diceroll {
                 return error;
             }
 
-            if (rolls == null) {
+            if (count() == 0) {
                 return "Total: **%d**".formatted(sum);
             } else {
                 String start;
