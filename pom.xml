@@ -73,7 +73,7 @@
         <dependency>
             <groupId>com.discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>3.2.2</version>
+            <version>3.2.3</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -84,6 +84,11 @@
             <groupId>org.antlr</groupId>
             <artifactId>antlr4</artifactId>
             <version>4.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.41.0.0</version>
         </dependency>
     </dependencies>
 </project>
