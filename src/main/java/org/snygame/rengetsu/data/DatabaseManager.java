@@ -16,7 +16,6 @@ public class DatabaseManager {
 
     public static void createTables(String path) throws IOException, SQLException {
         String ddl = getResourceFileAsString(path);
-        System.out.println(ddl);
         Statement statement = connection.createStatement();
         statement.executeUpdate(ddl);
     }
