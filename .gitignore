@@ -25,3 +25,6 @@ hs_err_pid*
 # IntelliJ
 /.idea/
 /target/
+
+# Rengetsu generated files
+reng.db

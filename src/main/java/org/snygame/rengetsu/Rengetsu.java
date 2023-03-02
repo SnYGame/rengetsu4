@@ -6,8 +6,11 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.gateway.intent.IntentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.listeners.SlashCommandListener;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
 
@@ -17,6 +20,13 @@ public class Rengetsu {
     public static final Random RNG = new Random();
 
     public static void main(String[] args) {
+        try {
+            DatabaseManager.connectSqlite("reng.db");
+            DatabaseManager.createTables("tables.sql");
+        } catch (Exception e) {
+            LOGGER.error("Error trying to load database file", e);
+        }
+
         //Creates the gateway client and connects to the gateway
         GatewayDiscordClient client = DiscordClient.create(args[0])
                 .gateway().setEnabledIntents(IntentSet.all())
