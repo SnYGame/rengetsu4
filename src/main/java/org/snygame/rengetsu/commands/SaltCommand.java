@@ -31,14 +31,14 @@ public class SaltCommand implements SlashCommand {
                 .map(ApplicationCommandInteractionOptionValue::asUser).map(userMono -> userMono.flatMap(user -> {
                     if (user.isBot()) {
                         return event.reply("**[Error]** Bots cannot have salt").withEphemeral(true);
-                    } else {
-                        BigInteger saltAmount = UserData.getSaltAmount(user.getId().asLong());
-                        if (saltAmount == null) {
-                            return event.reply("**[Error]** Database error").withEphemeral(true);
-                        }
-                        return event.reply("%s has %d salt.".formatted(user.getMention(), saltAmount))
-                                .withEphemeral(true);
                     }
+
+                    BigInteger saltAmount = UserData.getSaltAmount(user.getId().asLong());
+                    if (saltAmount == null) {
+                        return event.reply("**[Error]** Database error").withEphemeral(true);
+                    }
+                    return event.reply("%s has %d salt.".formatted(user.getMention(), saltAmount))
+                            .withEphemeral(true);
         }).then()).orElseGet(() -> Mono.justOrEmpty(event.getInteraction().getMember())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger saltAmount = UserData.getSaltAmount(id);
@@ -84,6 +84,37 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subGive(ChatInputInteractionEvent event) {
-        return event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true);
+        long amount = event.getOptions().get(0).getOption("amount")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asLong).orElse(0L);
+
+        if (amount < 0) {
+            return event.reply("**[Error]** You cannot give negative salt").withEphemeral(true);
+        }
+
+        return event.getOptions().get(0).getOption("recipient")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asUser).map(userMono -> userMono.flatMap(user -> {
+                    if (user.isBot()) {
+                        return event.reply("**[Error]** Bots cannot have salt").withEphemeral(true);
+                    }
+
+                    return Mono.justOrEmpty(event.getInteraction().getMember()).map(User::getId).map(Snowflake::asLong)
+                            .flatMap(id -> {
+
+                                if (user.getId().asLong() == id) {
+                                    return event.reply("**[Error]** You cannot give salt to yourself")
+                                            .withEphemeral(true);
+                                }
+
+                                BigInteger result = UserData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
+                                if (result == null) {
+                                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                                }
+
+                                return event.reply("You gave %d salt to %s. You now have %d salt."
+                                                .formatted(amount, user.getMention(), result));
+                            });
+                })).orElse(Mono.empty());
     }
 }

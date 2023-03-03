@@ -83,4 +83,45 @@ public class UserData {
 
         return null;
     }
+
+    public static BigInteger giveSalt(long idSender, long idRecipient, BigInteger amount) {
+        BigInteger senderSalt = getSaltAmount(idSender);
+        BigInteger recipientSalt = getSaltAmount(idRecipient);
+        if (senderSalt == null || recipientSalt == null) {
+            return null;
+        }
+
+        senderSalt = senderSalt.subtract(amount);
+        recipientSalt = recipientSalt.add(amount);
+        if (senderSalt.signum() == -1) {
+            return senderSalt;
+        }
+
+        try {
+            QueryBuilder qb = new QueryBuilder();
+            qb.update("user");
+            qb.set("salt_amount = ?");
+            qb.where("user_id = ?");
+            qb.addParameter(new BigDecimal(senderSalt), Types.BIGINT);
+            qb.addParameter(idSender, Types.INTEGER);
+            PreparedStatement ps = qb.build(DatabaseManager.connection);
+            if (ps.executeUpdate() > 0) {
+                qb = new QueryBuilder();
+                qb.update("user");
+                qb.set("salt_amount = ?");
+                qb.where("user_id = ?");
+                qb.addParameter(new BigDecimal(recipientSalt), Types.BIGINT);
+                qb.addParameter(idRecipient, Types.INTEGER);
+                ps = qb.build(DatabaseManager.connection);
+
+                if (ps.executeUpdate() > 0) {
+                    return senderSalt;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 }
