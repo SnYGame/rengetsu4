@@ -96,7 +96,7 @@ public class SaltCommand implements SlashCommand {
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asUser).map(userMono -> userMono.flatMap(user -> {
                     if (user.isBot()) {
-                        return event.reply("**[Error]** Bots cannot have salt").withEphemeral(true);
+                        return event.reply("**[Error]** You cannot give salt to a bot").withEphemeral(true);
                     }
 
                     return Mono.justOrEmpty(event.getInteraction().getMember()).map(User::getId).map(Snowflake::asLong)
@@ -110,6 +110,10 @@ public class SaltCommand implements SlashCommand {
                                 BigInteger result = UserData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
                                 if (result == null) {
                                     return event.reply("**[Error]** Database error").withEphemeral(true);
+                                }
+
+                                if (result.signum() == -1) {
+                                    return event.reply("**[Error]** You don't have enough salt").withEphemeral(true);
                                 }
 
                                 return event.reply("You gave %d salt to %s. You now have %d salt."
