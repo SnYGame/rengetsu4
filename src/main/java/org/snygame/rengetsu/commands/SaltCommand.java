@@ -82,7 +82,7 @@ public class SaltCommand implements SlashCommand {
 
                             if (s > 0 || (h == 0 && m == 0))
                                 sb.append(" %d second%s".formatted(s, s != 1 ? "s" : ""));
-                            return event.reply(sb.toString()).withEphemeral(true);
+                            return event.reply(sb.append('.').toString()).withEphemeral(true);
                         }
                         if (UserData.claimSalt(id, newAmt)) {
                             return event.reply("You now have %d salt.".formatted(newAmt)).withEphemeral(true);
