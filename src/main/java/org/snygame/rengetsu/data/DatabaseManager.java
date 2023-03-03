@@ -8,7 +8,7 @@ import java.sql.*;
 import java.util.stream.Collectors;
 
 public class DatabaseManager {
-    private static Connection connection = null;
+    static Connection connection = null;
 
     public static void connectSqlite(String path) throws SQLException {
         connection = DriverManager.getConnection("jdbc:sqlite:" + path);

@@ -1,0 +1,53 @@
+{
+  "name": "salt",
+  "description": "Manages salt",
+  "options": [
+    {
+      "name": "balance",
+      "description": "Shows your salt balance",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "user",
+          "description": "Whose salt balance to show",
+          "type": 6,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "claim",
+      "description": "Claims daily salt",
+      "type": 1,
+      "required": false
+    },
+    {
+      "name": "remind",
+      "description": "Toggles daily salt reminders",
+      "type": 1,
+      "required": false
+    },
+    {
+      "name": "give",
+      "description": "Gives salt to someone else",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "recipient",
+          "description": "Who to give salt to",
+          "type": 6,
+          "required": true
+        },
+        {
+          "name": "amount",
+          "description": "Amount of salt to give",
+          "type": 4,
+          "required": true,
+          "min_value": 1
+        }
+      ]
+    }
+  ]
+}
