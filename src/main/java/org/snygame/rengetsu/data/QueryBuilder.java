@@ -1,5 +1,6 @@
 package org.snygame.rengetsu.data;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -100,6 +101,9 @@ public class QueryBuilder {
             switch (param.type) {
                 case Types.INTEGER:
                     ps.setLong(i + 1, (Long)param.parameter);
+                    break;
+                case Types.BIGINT:
+                    ps.setBigDecimal(i + 1, (BigDecimal)param.parameter);
                     break;
                 case Types.CHAR:
                 case Types.VARCHAR:
