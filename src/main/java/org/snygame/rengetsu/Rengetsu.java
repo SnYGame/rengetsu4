@@ -3,10 +3,12 @@ package org.snygame.rengetsu;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.gateway.intent.IntentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snygame.rengetsu.data.DatabaseManager;
+import org.snygame.rengetsu.listeners.ReadyEventListener;
 import org.snygame.rengetsu.listeners.SlashCommandListener;
 
 import java.util.List;
@@ -42,6 +44,7 @@ public class Rengetsu {
             LOGGER.error("Error trying to register global slash commands", e);
         }
 
+        client.on(ReadyEvent.class, ReadyEventListener::handle).subscribe();
         //Register our slash command listener
         client.on(ChatInputInteractionEvent.class, SlashCommandListener::handle)
                 .then(client.onDisconnect())

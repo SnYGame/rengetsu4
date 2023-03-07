@@ -1,9 +1,13 @@
 package org.snygame.rengetsu.data;
 
+import discord4j.common.util.Snowflake;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserData {
     private static final int DAY_MILLI = 1000 * 60 * 60 * 24;
@@ -119,9 +123,12 @@ public class UserData {
         qb.addParameter(id, Types.INTEGER);
         PreparedStatement ps = qb.build(DatabaseManager.connection);
         ResultSet rs = ps.executeQuery();
-        boolean remind = false;
+        boolean remind;
         if (rs.next()) {
             remind = rs.getBoolean("salt_remind");
+        } else {
+            remind = false;
+            initializeUser(id);
         }
 
         qb = new QueryBuilder();
@@ -136,5 +143,21 @@ public class UserData {
         }
 
         throw new RuntimeException();
+    }
+
+    public static List<Snowflake> getRemindIds() throws SQLException {
+        QueryBuilder qb = new QueryBuilder();
+        qb.select("u.user_id");
+        qb.from("user u");
+        qb.where("u.salt_remind");
+        PreparedStatement ps = qb.build(DatabaseManager.connection);
+        ResultSet rs = ps.executeQuery();
+
+        ArrayList<Snowflake> ids = new ArrayList<>();
+        while (rs.next()) {
+            ids.add(Snowflake.of(rs.getLong("user_id")));
+        }
+
+        return ids;
     }
 }
