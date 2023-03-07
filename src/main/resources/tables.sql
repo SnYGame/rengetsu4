@@ -41,9 +41,8 @@ CREATE TABLE IF NOT EXISTS role_remove_when_this_added (
 CREATE TABLE IF NOT EXISTS user (
     user_id UNSIGNED BIG INT NOT NULL,
     salt_amount UNSIGNED BIG INT DEFAULT 0,
-    salt_last_claim DATETIME DEFAULT 0,
+    salt_last_claim UNSIGNED INT DEFAULT 0,
     salt_remind BOOLEAN DEFAULT FALSE,
-    salt_reminded BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (user_id)
 );
 

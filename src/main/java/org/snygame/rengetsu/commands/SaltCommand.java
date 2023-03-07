@@ -9,6 +9,7 @@ import org.snygame.rengetsu.data.UserData;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
+import java.sql.SQLException;
 
 public class SaltCommand implements SlashCommand {
     @Override
@@ -33,16 +34,23 @@ public class SaltCommand implements SlashCommand {
                         return event.reply("**[Error]** Bots cannot have salt").withEphemeral(true);
                     }
 
-                    BigInteger saltAmount = UserData.getSaltAmount(user.getId().asLong());
-                    if (saltAmount == null) {
+                    BigInteger saltAmount;
+                    try {
+                        saltAmount = UserData.getSaltAmount(user.getId().asLong());
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
+
                     return event.reply("%s has %d salt.".formatted(user.getMention(), saltAmount))
                             .withEphemeral(true);
         }).then()).orElseGet(() -> Mono.justOrEmpty(event.getInteraction().getMember())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
-                    BigInteger saltAmount = UserData.getSaltAmount(id);
-                    if (saltAmount == null) {
+                    BigInteger saltAmount;
+                    try {
+                        saltAmount = UserData.getSaltAmount(id);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
                     return event.reply("You have %d salt.".formatted(saltAmount)).withEphemeral(true);
@@ -52,8 +60,11 @@ public class SaltCommand implements SlashCommand {
     private Mono<Void> subClaim(ChatInputInteractionEvent event) {
         return Mono.justOrEmpty(event.getInteraction().getMember())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
-                    BigInteger result = UserData.claimSalt(id);
-                    if (result == null) {
+                    BigInteger result;
+                    try {
+                        result = UserData.claimSalt(id);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
 
@@ -80,7 +91,17 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subRemind(ChatInputInteractionEvent event) {
-        return event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true);
+        return Mono.justOrEmpty(event.getInteraction().getMember())
+                .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
+                    boolean remind;
+                    try {
+                        remind = UserData.toggleRemind(id);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        return event.reply("**[Error]** Database error").withEphemeral(true);
+                    }
+                    return event.reply("You have turned %s daily salt claim reminders.".formatted(remind ? "on" : "off")).withEphemeral(true);
+                }).then();
     }
 
     private Mono<Void> subGive(ChatInputInteractionEvent event) {
@@ -107,8 +128,11 @@ public class SaltCommand implements SlashCommand {
                                             .withEphemeral(true);
                                 }
 
-                                BigInteger result = UserData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
-                                if (result == null) {
+                                BigInteger result;
+                                try {
+                                    result = UserData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
+                                } catch (SQLException e) {
+                                    e.printStackTrace();
                                     return event.reply("**[Error]** Database error").withEphemeral(true);
                                 }
 
