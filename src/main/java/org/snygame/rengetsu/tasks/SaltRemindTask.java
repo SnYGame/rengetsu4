@@ -2,7 +2,10 @@ package org.snygame.rengetsu.tasks;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
+import discord4j.core.spec.MessageCreateSpec;
 import org.snygame.rengetsu.data.UserData;
 import reactor.core.publisher.Flux;
 
@@ -13,19 +16,24 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class SaltRemindTask {
-    private static final int DAY_MILLI = 1000 * 60 * 60 * 24;
-
     public static void startTask(GatewayDiscordClient client) {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
             try {
                 List<Snowflake> ids = UserData.getRemindIds();
                 Flux.fromIterable(ids).flatMap(client::getUserById).flatMap(User::getPrivateChannel)
-                        .flatMap(channel -> channel.createMessage("**[PLACEHOLDER]** Your daily salt is available to be claimed."))
+                        .flatMap(channel -> channel.createMessage(MessageCreateSpec.builder().content("Your daily salt is available to be claimed.").addComponent(
+                                ActionRow.of(
+                                        Button.primary("salt_claim:%d"
+                                                        .formatted(System.currentTimeMillis() / UserData.DAY_MILLI),
+                                                "Claim")
+                                )
+                        ).build()))
                         .subscribe();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-        }, DAY_MILLI - System.currentTimeMillis() % DAY_MILLI, DAY_MILLI, TimeUnit.MILLISECONDS);
+        }, UserData.DAY_MILLI - System.currentTimeMillis() % UserData.DAY_MILLI, UserData.DAY_MILLI,
+                TimeUnit.MILLISECONDS);
     }
 }

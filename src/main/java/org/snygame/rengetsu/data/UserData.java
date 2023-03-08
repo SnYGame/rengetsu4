@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserData {
-    private static final int DAY_MILLI = 1000 * 60 * 60 * 24;
+    public static final int DAY_MILLI = 1000 * 60 * 60 * 24;
 
     private static int initializeUser(long id) throws SQLException {
         QueryBuilder qb = new QueryBuilder();
