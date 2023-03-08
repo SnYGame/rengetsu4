@@ -44,7 +44,7 @@ public class SaltCommand implements SlashCommand {
 
                     return event.reply("%s has %d salt.".formatted(user.getMention(), saltAmount))
                             .withEphemeral(true);
-        }).then()).orElseGet(() -> Mono.justOrEmpty(event.getInteraction().getMember())
+        }).then()).orElseGet(() -> Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger saltAmount;
                     try {
@@ -58,7 +58,7 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subClaim(ChatInputInteractionEvent event) {
-        return Mono.justOrEmpty(event.getInteraction().getMember())
+        return Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger result;
                     try {
@@ -91,7 +91,7 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subRemind(ChatInputInteractionEvent event) {
-        return Mono.justOrEmpty(event.getInteraction().getMember())
+        return Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     boolean remind;
                     try {
@@ -120,7 +120,7 @@ public class SaltCommand implements SlashCommand {
                         return event.reply("**[Error]** You cannot give salt to a bot").withEphemeral(true);
                     }
 
-                    return Mono.justOrEmpty(event.getInteraction().getMember()).map(User::getId).map(Snowflake::asLong)
+                    return Mono.justOrEmpty(event.getInteraction().getUser()).map(User::getId).map(Snowflake::asLong)
                             .flatMap(id -> {
 
                                 if (user.getId().asLong() == id) {
