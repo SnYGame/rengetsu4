@@ -4,8 +4,10 @@ import discord4j.common.util.Snowflake;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.*;
-import java.time.Instant;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
