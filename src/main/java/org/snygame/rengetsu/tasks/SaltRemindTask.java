@@ -17,8 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SaltRemindTask {
     public static void startTask(GatewayDiscordClient client) {
-        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
-        service.scheduleAtFixedRate(() -> {
+        TaskManager.service.scheduleAtFixedRate(() -> {
             try {
                 List<Snowflake> ids = UserData.getRemindIds();
                 Flux.fromIterable(ids).flatMap(client::getUserById).flatMap(User::getPrivateChannel)

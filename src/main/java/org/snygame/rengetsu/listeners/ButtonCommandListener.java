@@ -2,6 +2,7 @@ package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import org.snygame.rengetsu.buttons.ButtonCommand;
+import org.snygame.rengetsu.buttons.CancelTimerCommand;
 import org.snygame.rengetsu.buttons.SaltClaimCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,6 +16,7 @@ public class ButtonCommandListener {
     static {
         //We register our commands here when the class is initialized
         commands.add(new SaltClaimCommand());
+        commands.add(new CancelTimerCommand());
     }
 
     public static Mono<Void> handle(ButtonInteractionEvent event) {

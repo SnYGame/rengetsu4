@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.User;
 import org.snygame.rengetsu.data.UserData;
+import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
@@ -70,20 +71,8 @@ public class SaltCommand implements SlashCommand {
 
                     if (result.signum() == -1) {
                         int remain = result.negate().intValue();
-                        int remainSeconds = remain / 1000;
-                        int h = remainSeconds / 3600;
-                        int m = (remainSeconds % 3600) / 60;
-                        int s = remainSeconds % 60;
-                        StringBuilder sb = new StringBuilder("Your next available claim is in");
-
-                        if (h > 0)
-                            sb.append(" %d hour%s".formatted(h, h != 1 ? "s" : ""));
-
-                        if (m > 0)
-                            sb.append(" %d minute%s".formatted(m, m != 1 ? "s" : ""));
-
-                        if (s > 0 || (h == 0 && m == 0))
-                            sb.append(" %d second%s".formatted(s, s != 1 ? "s" : ""));
+                        StringBuilder sb = new StringBuilder("Your next available claim is in ");
+                        sb.append(TimeStrings.secondsToEnglish(remain / 1000));
                         return event.reply(sb.append('.').toString()).withEphemeral(true);
                     }
                     return event.reply("You now have %d salt.".formatted(result)).withEphemeral(true);

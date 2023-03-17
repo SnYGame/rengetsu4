@@ -39,11 +39,10 @@ CREATE TABLE IF NOT EXISTS role_remove_when_this_added (
 );
 
 CREATE TABLE IF NOT EXISTS user (
-    user_id UNSIGNED BIG INT NOT NULL,
-    salt_amount UNSIGNED BIG INT DEFAULT 0,
-    salt_last_claim UNSIGNED INT DEFAULT 0,
-    salt_remind BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (user_id)
+    user_id INT PRIMARY KEY,
+    salt_amount INT DEFAULT 0,
+    salt_last_claim INT DEFAULT 0,
+    salt_remind INT DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS member (
@@ -63,13 +62,12 @@ CREATE TABLE IF NOT EXISTS channel (
 );
 
 CREATE TABLE IF NOT EXISTS timer (
-    message_id UNSIGNED BIG INT NOT NULL,
-    channel_id UNSIGNED BIG INT NOT NULL,
-    user_id UNSIGNED BIG INT NOT NULL,
-    text TEXT NOT NULL,
-    set_on REAL NOT NULL,
-    end_on REAL NOT NULL,
-    PRIMARY KEY (message_id)
+    timer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel_id INT NOT NULL,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    set_on TIME NOT NULL,
+    end_on TIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS role_timer (

@@ -1,0 +1,47 @@
+{
+  "name": "timer",
+  "description": "Manages timers",
+  "options": [
+    {
+      "name": "set",
+      "description": "Sets a timer",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "duration",
+          "description": "Amount of time to set the timer for",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "message",
+          "description": "The timer message",
+          "type": 3,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "Lists your active timers",
+      "type": 1,
+      "required": false
+    },
+    {
+      "name": "cancel",
+      "description": "Cancels a timer",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "id",
+          "description": "Id of the timer to cancel",
+          "type": 4,
+          "required": true,
+          "min_value": 0
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,7 @@ public class QueryBuilder {
     private String insert;
     private boolean ignore;
     private ArrayList<String> values;
+    private String returning;
 
     private String delete;
 
@@ -72,6 +73,10 @@ public class QueryBuilder {
 
     public void values(String... values) {
         Collections.addAll(this.values, values);
+    }
+
+    public void returning(String columns) {
+        returning = columns;
     }
 
     public void deleteFrom(String table) {
@@ -171,10 +176,15 @@ public class QueryBuilder {
 
         if (select != null) {
             sb.append("\n");
-            return sb.toString() + selectString();
+            return sb + selectString();
         }
 
         appendList(sb, values, " VALUES ", ",\n");
+
+        if (returning != null) {
+            sb.append("\nRETURNING ");
+            sb.append(returning);
+        }
         return sb.toString();
     }
 
