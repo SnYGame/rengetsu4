@@ -8,12 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snygame.rengetsu.util.Resources;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class GlobalCommandRegistrar {
     private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());

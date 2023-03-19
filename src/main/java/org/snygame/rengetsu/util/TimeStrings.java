@@ -1,6 +1,11 @@
 package org.snygame.rengetsu.util;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class TimeStrings {
+    private static final Pattern ALNUM_RE = Pattern.compile("\\d+(\\.\\d*)?|[a-zA-Z]+");
+
     public static String secondsToEnglish(int seconds) {
         int w = seconds / (60 * 60 * 24 * 7);
         seconds %= (60 * 60 * 24 * 7);
@@ -49,7 +54,35 @@ public class TimeStrings {
         try {
             return Integer.parseInt(duration);
         } catch (NumberFormatException e) {
-            return 0;
+            Matcher matcher = ALNUM_RE.matcher(duration);
+
+            float seconds = 0;
+
+            while (matcher.find()) {
+                String match = matcher.group();
+                try {
+                    float value = Float.parseFloat(match);
+
+                    if (matcher.find()) {
+                        switch (matcher.group()) {
+                            case "s", "sec", "secs", "second", "seconds" -> seconds += value;
+                            case "m", "min", "mins", "minute", "minutes" -> seconds += value * 60;
+                            case "h", "hour", "hours" -> seconds += value * 60 * 60;
+                            case "d", "day", "days" -> seconds += value * 60 * 60 * 24;
+                            case "w", "week", "weeks" -> seconds += value * 60 * 60 * 24 * 7;
+                            default -> {
+                                return -1;
+                            }
+                        }
+
+                        continue;
+                    }
+                } catch (NumberFormatException ignored) {}
+
+                return -1;
+            }
+
+            return Math.round(seconds);
         }
     }
 }

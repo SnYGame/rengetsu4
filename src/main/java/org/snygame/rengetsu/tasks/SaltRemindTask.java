@@ -11,8 +11,6 @@ import reactor.core.publisher.Flux;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class SaltRemindTask {
