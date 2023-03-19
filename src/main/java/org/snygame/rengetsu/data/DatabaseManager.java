@@ -1,5 +1,7 @@
 package org.snygame.rengetsu.data;
 
+import org.snygame.rengetsu.util.Resources;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,26 +10,16 @@ import java.sql.*;
 import java.util.stream.Collectors;
 
 public class DatabaseManager {
-    static Connection connection = null;
-
-    public static void connectSqlite(String path) throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+    public static void connectSqlite(String dbPath, String tablePath) throws SQLException, IOException {
+        Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+        createTables(connection, tablePath);
+        UserData.initializeStatements(connection);
+        TimerData.initializeStatements(connection);
     }
 
-    public static void createTables(String path) throws IOException, SQLException {
-        String ddl = getResourceFileAsString(path);
+    private static void createTables(Connection connection, String path) throws IOException, SQLException {
+        String ddl = Resources.getResourceFileAsString(path);
         Statement statement = connection.createStatement();
         statement.executeUpdate(ddl);
-    }
-
-    private static String getResourceFileAsString(String fileName) throws IOException {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream resourceAsStream = classLoader.getResourceAsStream(fileName)) {
-            if (resourceAsStream == null) return null;
-            try (InputStreamReader inputStreamReader = new InputStreamReader(resourceAsStream);
-                BufferedReader reader = new BufferedReader(inputStreamReader)) {
-                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
-            }
-        }
     }
 }

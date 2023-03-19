@@ -23,8 +23,7 @@ public class Rengetsu {
 
     public static void main(String[] args) {
         try {
-            DatabaseManager.connectSqlite("reng.db");
-            DatabaseManager.createTables("tables.sql");
+            DatabaseManager.connectSqlite("reng.db", "tables.sql");
         } catch (Exception e) {
             LOGGER.error("Error trying to load database file", e);
         }

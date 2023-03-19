@@ -6,6 +6,7 @@ import discord4j.rest.RestClient;
 import discord4j.rest.service.ApplicationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snygame.rengetsu.util.Resources;
 
 import java.io.*;
 import java.net.URL;
@@ -63,26 +64,9 @@ public class GlobalCommandRegistrar {
         //Get all the files inside this folder and return the contents of the files as a list of strings
         List<String> list = new ArrayList<>();
         for (String file : fileNames) {
-            String resourceFileAsString = getResourceFileAsString(commandsFolderName + file);
+            String resourceFileAsString = Resources.getResourceFileAsString(commandsFolderName + file);
             list.add(Objects.requireNonNull(resourceFileAsString, "Command file not found: " + file));
         }
         return list;
-    }
-
-    /**
-     * Gets a specific resource file as String
-     *
-     * @param fileName The file path omitting "resources/"
-     * @return The contents of the file as a String, otherwise throws an exception
-     */
-    private static String getResourceFileAsString(String fileName) throws IOException {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream resourceAsStream = classLoader.getResourceAsStream(fileName)) {
-            if (resourceAsStream == null) return null;
-            try (InputStreamReader inputStreamReader = new InputStreamReader(resourceAsStream);
-                 BufferedReader reader = new BufferedReader(inputStreamReader)) {
-                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
-            }
-        }
     }
 }
