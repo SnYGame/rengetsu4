@@ -19,7 +19,7 @@
           "description": "The timer message",
           "type": 3,
           "required": false,
-          "max_length": 300
+          "max_length": 1000
         }
       ]
     },
