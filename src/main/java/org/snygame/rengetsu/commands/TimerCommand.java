@@ -5,6 +5,8 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.spec.EmbedCreateFields;
+import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.data.TimerData;
 import org.snygame.rengetsu.tasks.TimerTask;
@@ -47,10 +49,9 @@ public class TimerCommand implements SlashCommand {
                 if (timerId == -1) {
                     return event.reply("**[Error]** You cannot set more than 5 timers").withEphemeral(true);
                 }
-                StringBuilder sb = new StringBuilder("Your timer has been set for ");
-                sb.append(TimeStrings.secondsToEnglish(duration));
+                String response = "Your timer (ID: %d) has been set for %s.".formatted(timerId, TimeStrings.secondsToEnglish(duration));
                 TimerTask.startTask(event.getClient(), timerId, duration * 1000L);
-                return event.reply(InteractionApplicationCommandCallbackSpec.builder().content(sb.append(".").toString())
+                return event.reply(InteractionApplicationCommandCallbackSpec.builder().content(response)
                         .addComponent(
                                 ActionRow.of(
                                         Button.danger("cancel_timer:%d:%d"
@@ -73,10 +74,13 @@ public class TimerCommand implements SlashCommand {
                 return event.reply("You have no active timers.");
             }
 
-            return event.reply(String.join("\n", timers.stream().map(data ->
-                    "`ID: %d` %s remaining\n```%s```".formatted(data.timerId(),
-                            TimeStrings.secondsToEnglish((int) ((data.endOn().toEpochMilli() - System.currentTimeMillis()) / 1000)),
-                            data.message())).toList()));
+            return event.reply(InteractionApplicationCommandCallbackSpec.builder().addEmbed(
+                    EmbedCreateSpec.builder()
+                            .addAllFields(timers.stream().map(data -> EmbedCreateFields.Field.of("Timer #%d (%s remaining)".formatted(
+                                    data.timerId(), TimeStrings.secondsToEnglish((int) ((data.endOn().toEpochMilli() - System.currentTimeMillis()) / 1000))),
+                                    "%s".formatted(data.message()), false)).toList())
+                            .build()
+            ).build());
         } catch (SQLException e) {
             e.printStackTrace();
             return event.reply("**[Error]** Database error").withEphemeral(true);

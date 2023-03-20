@@ -16,7 +16,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class TimerTask {
-    private static Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
+    private static final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
 
     public static void startup(GatewayDiscordClient client) {
         try {
@@ -41,7 +41,7 @@ public class TimerTask {
                             .map(channel -> (MessageChannel) channel).flatMap(channel ->
                                     channel.createMessage(MessageCreateSpec.builder().content("<@%d>".formatted(data.userId()))
                                             .addEmbed(EmbedCreateSpec.builder()
-                                                    .title("Timer")
+                                                    .title("Timer #%d".formatted(timerId))
                                                     .description(data.message())
                                                     .footer(EmbedCreateFields.Footer.of("Set on", null))
                                                     .timestamp(data.setOn())
