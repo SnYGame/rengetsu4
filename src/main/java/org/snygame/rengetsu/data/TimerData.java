@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TimerData {
+    private static PreparedStatement countTimerStmt;
     private static PreparedStatement addTimerStmt;
     private static PreparedStatement getDataStmt;
     private static PreparedStatement removeDataStmt;
@@ -15,6 +16,12 @@ public class TimerData {
 
     static void initializeStatements(Connection connection) throws SQLException {
         QueryBuilder qb;
+
+        qb = new QueryBuilder();
+        qb.select("COUNT(*) as cnt");
+        qb.from("timer");
+        qb.where("timer.user_id = ?");
+        countTimerStmt = qb.build(connection);
 
         qb = new QueryBuilder();
         qb.insertIgnoreInto("timer(channel_id, user_id, message, set_on, end_on)");
@@ -50,6 +57,13 @@ public class TimerData {
     }
 
     public static long addTimer(long channelId, long userId, String message, Instant setOn, Instant endOn) throws SQLException {
+        countTimerStmt.setLong(1, userId);
+        ResultSet rs = countTimerStmt.executeQuery();
+
+        if (rs.next() && rs.getInt("cnt") >= 5) {
+            return -1;
+        }
+
         addTimerStmt.setLong(1, channelId);
         addTimerStmt.setLong(2, userId);
         addTimerStmt.setString(3, message);
@@ -57,7 +71,7 @@ public class TimerData {
         addTimerStmt.setTimestamp(5, Timestamp.from(endOn));
         addTimerStmt.execute();
 
-        ResultSet rs = addTimerStmt.getGeneratedKeys();
+        rs = addTimerStmt.getGeneratedKeys();
 
         if (rs.next()) {
             return rs.getLong(1);

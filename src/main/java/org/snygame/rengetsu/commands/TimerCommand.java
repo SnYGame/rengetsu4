@@ -43,6 +43,10 @@ public class TimerCommand implements SlashCommand {
             try {
                 long timerId = TimerData.addTimer(event.getInteraction().getChannelId().asLong(), event.getInteraction().getUser().getId().asLong(),
                         message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000L));
+
+                if (timerId == -1) {
+                    return event.reply("**[Error]** You cannot set more than 5 timers").withEphemeral(true);
+                }
                 StringBuilder sb = new StringBuilder("Your timer has been set for ");
                 sb.append(TimeStrings.secondsToEnglish(duration));
                 TimerTask.startTask(event.getClient(), timerId, duration * 1000L);
