@@ -84,6 +84,25 @@ public class TimerCommand implements SlashCommand {
     }
 
     private Mono<Void> subCancel(ChatInputInteractionEvent event) {
-        return event.reply("**[Error]** Unimplemented subcommand");
+        long timerId = event.getOptions().get(0).getOption("id").flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asLong).orElse(-1L);
+
+        try {
+            TimerData.Data timer = TimerData.getData(timerId);
+            if (timer != null) {
+                if (event.getInteraction().getUser().getId().asLong() != timer.userId()) {
+                    return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
+                }
+
+                if (TimerTask.cancelTimer(timerId)) {
+                    return event.reply("Timer %d has been canceled.".formatted(timerId));
+                }
+            }
+
+            return event.reply("**[Error]** Timer has already completed or canceled, or does not exist").withEphemeral(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
     }
 }

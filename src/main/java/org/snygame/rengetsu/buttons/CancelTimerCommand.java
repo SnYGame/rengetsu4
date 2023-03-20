@@ -25,7 +25,7 @@ public class CancelTimerCommand implements ButtonCommand {
     public Mono<Void> handle(ButtonInteractionEvent event) {
         long timerId = Long.parseLong(event.getCustomId().split(":")[1]);
         if (event.getInteraction().getUser().getId().asLong() != Long.parseLong(event.getCustomId().split(":")[2])) {
-            event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
+            return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
         }
 
         if (TimerTask.cancelTimer(timerId)) {
@@ -38,6 +38,6 @@ public class CancelTimerCommand implements ButtonCommand {
                     ).build()).then();
         }
 
-        return event.reply("**[Error]** Timer has already completed").withEphemeral(true);
+        return event.reply("**[Error]** Timer has already completed or canceled").withEphemeral(true);
     }
 }
