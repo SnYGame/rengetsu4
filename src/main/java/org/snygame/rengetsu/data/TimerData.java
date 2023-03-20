@@ -11,6 +11,7 @@ public class TimerData {
     private static PreparedStatement removeDataStmt;
     private static PreparedStatement getAddTimersStmt;
     private static PreparedStatement cleanupTableStmt;
+    private static PreparedStatement listTimersStmt;
 
     static void initializeStatements(Connection connection) throws SQLException {
         QueryBuilder qb;
@@ -21,7 +22,7 @@ public class TimerData {
         addTimerStmt = qb.build(connection, 1);
 
         qb = new QueryBuilder();
-        qb.select("timer.channel_id, timer.user_id, timer.message, timer.set_on");
+        qb.select("*");
         qb.from("timer");
         qb.where("timer.timer_id = ?");
         getDataStmt = qb.build(connection);
@@ -32,7 +33,7 @@ public class TimerData {
         removeDataStmt = qb.build(connection);
 
         qb = new QueryBuilder();
-        qb.select("timer.timer_id, timer.end_on");
+        qb.select("*");
         qb.from("timer");
         getAddTimersStmt = qb.build(connection);
 
@@ -40,6 +41,12 @@ public class TimerData {
         qb.deleteFrom("timer");
         qb.where("timer.end_on < ?");
         cleanupTableStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("*");
+        qb.from("timer");
+        qb.where("timer.user_id = ?");
+        listTimersStmt = qb.build(connection);
     }
 
     public static long addTimer(long channelId, long userId, String message, Instant setOn, Instant endOn) throws SQLException {
@@ -63,8 +70,9 @@ public class TimerData {
         getDataStmt.setLong(1, timerId);
         ResultSet rs = getDataStmt.executeQuery();
         if (rs.next()) {
-            return new Data(rs.getLong("channel_id"), rs.getLong("user_id"),
-                    rs.getString("message"), rs.getTimestamp("set_on").toInstant());
+            return new Data(rs.getLong("timer_id"), rs.getLong("channel_id"), rs.getLong("user_id"),
+                    rs.getString("message"), rs.getTimestamp("set_on").toInstant(),
+                    rs.getTimestamp("end_on").toInstant());
         }
         return null;
     }
@@ -74,11 +82,13 @@ public class TimerData {
         return removeDataStmt.executeUpdate();
     }
 
-    public static List<Timer> getAllTimers() throws SQLException {
+    public static List<Data> getAllTimers() throws SQLException {
         ResultSet rs = getAddTimersStmt.executeQuery();
-        ArrayList<Timer> timers = new ArrayList<>();
+        ArrayList<Data> timers = new ArrayList<>();
         while (rs.next()) {
-            timers.add(new Timer(rs.getLong("timer_id"), rs.getTimestamp("end_on").toInstant()));
+            timers.add(new Data(rs.getLong("timer_id"), rs.getLong("channel_id"), rs.getLong("user_id"),
+                    rs.getString("message"), rs.getTimestamp("set_on").toInstant(),
+                    rs.getTimestamp("end_on").toInstant()));
         }
         return timers;
     }
@@ -88,6 +98,17 @@ public class TimerData {
         return cleanupTableStmt.executeUpdate();
     }
 
-    public record Data(long channelId, long userId, String message, Instant setOn) {}
-    public record Timer(long timerId, Instant endOn) {}
+    public static List<Data> listTimers(long user_id) throws SQLException {
+        listTimersStmt.setLong(1, user_id);
+        ResultSet rs = listTimersStmt.executeQuery();
+        ArrayList<Data> timers = new ArrayList<>();
+        while (rs.next()) {
+            timers.add(new Data(rs.getLong("timer_id"), rs.getLong("channel_id"), rs.getLong("user_id"),
+                    rs.getString("message"), rs.getTimestamp("set_on").toInstant(),
+                    rs.getTimestamp("end_on").toInstant()));
+        }
+        return timers;
+    }
+
+    public record Data(long timerId, long channelId, long userId, String message, Instant setOn, Instant endOn) {}
 }

@@ -24,8 +24,8 @@ public class TimerTask {
             if (cleared > 0) {
                 Rengetsu.getLOGGER().info("Cleared %d expired timers".formatted(cleared));
             }
-            for (TimerData.Timer timer: TimerData.getAllTimers()) {
-                startTask(client, timer.timerId(), timer.endOn().toEpochMilli() - System.currentTimeMillis());
+            for (TimerData.Data data: TimerData.getAllTimers()) {
+                startTask(client, data.timerId(), data.endOn().toEpochMilli() - System.currentTimeMillis());
             }
         } catch (SQLException e) {
             Rengetsu.getLOGGER().error("Error trying to load timers", e);

@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 
 public class TimerCommand implements SlashCommand {
     private static final int MAX_DURATION = 60 * 60 * 24 * 30;
@@ -37,14 +38,14 @@ public class TimerCommand implements SlashCommand {
                 return event.reply("**[Error]** Duration must represent time between 1 second and 30 days").withEphemeral(true);
             }
             String message = event.getOptions().get(0).getOption("message").flatMap(ApplicationCommandInteractionOption::getValue)
-                    .map(ApplicationCommandInteractionOptionValue::asString).orElse("Timer has completed.");
+                    .map(ApplicationCommandInteractionOptionValue::asString).orElse("Timer has completed");
             long time = System.currentTimeMillis();
             try {
                 long timerId = TimerData.addTimer(event.getInteraction().getChannelId().asLong(), event.getInteraction().getUser().getId().asLong(),
-                        message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000));
+                        message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000L));
                 StringBuilder sb = new StringBuilder("Your timer has been set for ");
                 sb.append(TimeStrings.secondsToEnglish(duration));
-                TimerTask.startTask(event.getClient(), timerId, duration * 1000);
+                TimerTask.startTask(event.getClient(), timerId, duration * 1000L);
                 return event.reply(InteractionApplicationCommandCallbackSpec.builder().content(sb.append(".").toString())
                         .addComponent(
                                 ActionRow.of(
@@ -61,7 +62,21 @@ public class TimerCommand implements SlashCommand {
     }
 
     private Mono<Void> subList(ChatInputInteractionEvent event) {
-        return event.reply("**[Error]** Unimplemented subcommand");
+        try {
+            List<TimerData.Data> timers = TimerData.listTimers(event.getInteraction().getUser().getId().asLong());
+
+            if (timers.isEmpty()) {
+                return event.reply("You have no active timers.");
+            }
+
+            return event.reply(String.join("\n", timers.stream().map(data ->
+                    "`ID: %d` %s remaining\n```%s```".formatted(data.timerId(),
+                            TimeStrings.secondsToEnglish((int) ((data.endOn().toEpochMilli() - System.currentTimeMillis()) / 1000)),
+                            data.message())).toList()));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
     }
 
     private Mono<Void> subCancel(ChatInputInteractionEvent event) {
