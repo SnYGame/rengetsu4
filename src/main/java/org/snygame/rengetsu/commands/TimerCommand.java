@@ -19,6 +19,7 @@ import java.util.List;
 
 public class TimerCommand implements SlashCommand {
     private static final int MAX_DURATION = 60 * 60 * 24 * 30;
+
     @Override
     public String getName() {
         return "timer";

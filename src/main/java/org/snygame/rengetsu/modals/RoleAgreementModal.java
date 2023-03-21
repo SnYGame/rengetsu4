@@ -1,7 +1,6 @@
 package org.snygame.rengetsu.modals;
 
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.object.component.ActionRow;
 import discord4j.discordjson.possible.Possible;
 import org.snygame.rengetsu.data.RoleData;
 import reactor.core.publisher.Mono;
@@ -22,8 +21,8 @@ public class RoleAgreementModal implements ModalInteraction {
         }
 
         Possible<String> option = event.getComponents().get(0).getData().components().get().get(0).value();
-        if (!option.isAbsent() && !option.get().isBlank() && roleData.requestable != null) {
-            roleData.requestable.agreement = option.get();
+        if (roleData.requestable != null) {
+            roleData.requestable.agreement = option.isAbsent() || option.get().isBlank() ? null : option.get();
         }
 
         return event.edit(RoleData.buildMenu(roleData));

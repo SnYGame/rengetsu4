@@ -1,10 +1,7 @@
 package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import org.snygame.rengetsu.buttons.ButtonInteraction;
-import org.snygame.rengetsu.buttons.CancelTimerButton;
-import org.snygame.rengetsu.buttons.RoleSetButton;
-import org.snygame.rengetsu.buttons.SaltClaimButton;
+import org.snygame.rengetsu.buttons.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,6 +16,7 @@ public class ButtonListener {
         commands.add(new SaltClaimButton());
         commands.add(new CancelTimerButton());
         commands.add(new RoleSetButton());
+        commands.add(new RequestRoleAgreementButton());
     }
 
     public static Mono<Void> handle(ButtonInteractionEvent event) {

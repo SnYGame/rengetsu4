@@ -20,6 +20,7 @@ public class SlashCommandListener {
         commands.add(new SaltCommand());
         commands.add(new TimerCommand());
         commands.add(new RoleCommand());
+        commands.add(new RequestRoleCommand());
     }
 
     public static Mono<Void> handle(ChatInputInteractionEvent event) {

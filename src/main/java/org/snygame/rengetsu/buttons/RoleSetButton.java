@@ -51,7 +51,7 @@ public class RoleSetButton implements ButtonInteraction {
                         case "agreement" -> {
                             return event.presentModal().withCustomId("role:%d:%d:agreement".formatted(roleData.roleId, roleData.serverId))
                                     .withTitle("Request agreement").withComponents(
-                                            ActionRow.of(TextInput.paragraph("agreement", "Agreement (leave blank to remove)", 0, 2000)
+                                            ActionRow.of(TextInput.paragraph("agreement", "Agreement (leave blank to remove)", 0, 1500)
                                                     .prefilled(roleData.requestable != null && roleData.requestable.agreement != null ?
                                                             roleData.requestable.agreement : "").required(false))
                                     );
