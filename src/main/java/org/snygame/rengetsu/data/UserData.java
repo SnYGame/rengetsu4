@@ -146,8 +146,8 @@ public class UserData {
     }
 
     public static boolean toggleRemind(long id) throws SQLException {
-        setRemindStmt.setLong(1, id);
-        ResultSet rs = setRemindStmt.executeQuery();
+        getRemindStmt.setLong(1, id);
+        ResultSet rs = getRemindStmt.executeQuery();
         boolean remind;
         if (rs.next()) {
             remind = rs.getBoolean("salt_remind");
