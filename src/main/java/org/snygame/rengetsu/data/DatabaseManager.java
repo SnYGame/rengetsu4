@@ -19,6 +19,7 @@ public class DatabaseManager {
         TimerData.initializeStatements(connection);
         RoleData.initializeStatements(connection);
         ServerData.initializeStatements(connection);
+        RoleTimerData.initializeStatements(connection);
         connection.commit();
     }
 

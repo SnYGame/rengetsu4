@@ -8,10 +8,13 @@ import discord4j.core.object.component.Button;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
 import org.snygame.rengetsu.data.RoleData;
+import org.snygame.rengetsu.data.RoleTimerData;
+import org.snygame.rengetsu.tasks.RoleTimerTask;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Optional;
 
 public class RequestRoleCommand implements SlashCommand {
@@ -60,9 +63,18 @@ public class RequestRoleCommand implements SlashCommand {
 
                                     if (requestable.agreement == null) {
                                         if (requestable.temp) {
-                                            return member.addRole(role.getId(), "Requested")
-                                                    .then(event.reply("You have been given the %s role for %s.".formatted(role.getName(),
-                                                            TimeStrings.secondsToEnglish(actualDuration))));
+                                            long time = System.currentTimeMillis();
+                                            try {
+                                                long timerId = RoleTimerData.addTimer(roleData.roleId, roleData.serverId, member.getId().asLong(),
+                                                        Instant.ofEpochMilli(time + actualDuration * 1000L));
+                                                RoleTimerTask.startTask(event.getClient(), timerId, actualDuration * 1000L);
+                                                return member.addRole(role.getId(), "Requested")
+                                                        .then(event.reply("You have been given the %s role for %s.".formatted(role.getName(),
+                                                                TimeStrings.secondsToEnglish(actualDuration))));
+                                            } catch (SQLException e) {
+                                                e.printStackTrace();
+                                                return event.reply("**[Error]** Database error").withEphemeral(true);
+                                            }
                                         } else {
                                             return member.addRole(role.getId(), "Requested")
                                                     .then(event.reply("You have been given the %s role.".formatted(role.getName())));

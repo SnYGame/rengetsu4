@@ -2,6 +2,7 @@ package org.snygame.rengetsu;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.guild.MemberUpdateEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
@@ -50,6 +51,7 @@ public class Rengetsu {
         client.on(ButtonInteractionEvent.class, ButtonListener::handle).subscribe();
         client.on(ModalSubmitInteractionEvent.class, ModalListener::handle).subscribe();
         client.on(SelectMenuInteractionEvent.class, SelectMenuListener::handle).subscribe();
+        client.on(MemberUpdateEvent.class, MemberUpdateListener::handle).subscribe();
         //Register our slash command listener
         client.on(ChatInputInteractionEvent.class, SlashCommandListener::handle)
                 .then(client.onDisconnect())

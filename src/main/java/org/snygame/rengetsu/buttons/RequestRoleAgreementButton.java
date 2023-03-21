@@ -6,8 +6,13 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Role;
 import discord4j.core.spec.MessageEditSpec;
+import org.snygame.rengetsu.data.RoleTimerData;
+import org.snygame.rengetsu.tasks.RoleTimerTask;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
+
+import java.sql.SQLException;
+import java.time.Instant;
 
 public class RequestRoleAgreementButton implements ButtonInteraction {
     @Override
@@ -35,9 +40,23 @@ public class RequestRoleAgreementButton implements ButtonInteraction {
                         Button.danger("disabled2", "Decline").disabled()
                 )).build())).then(event.getInteraction().getUser().asMember(Snowflake.of(args[2])).flatMap(member ->
                 member.addRole(Snowflake.of(args[1])).then(
-                        event.getClient().getRoleById(Snowflake.of(args[2]), Snowflake.of(args[1])).map(Role::getName).flatMap(name ->
-                        event.reply("You have been given the %s role%s.".formatted(
-                                name, duration > 0 ? " for %s".formatted(TimeStrings.secondsToEnglish(duration)) : ""
-                        ))))));
+                        event.getClient().getRoleById(Snowflake.of(args[2]), Snowflake.of(args[1])).map(Role::getName).flatMap(name -> {
+                            if (duration > 0) {
+                                long timerId;
+                                try {
+                                    timerId = RoleTimerData.addTimer(Long.parseLong(args[1]), Long.parseLong(args[2]), member.getId().asLong(),
+                                            Instant.ofEpochMilli(System.currentTimeMillis() + duration * 1000L));
+                                } catch (SQLException e) {
+                                    e.printStackTrace();
+                                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                                }
+                                RoleTimerTask.startTask(event.getClient(), timerId, duration * 1000L);
+                                return event.reply("You have been given the %s role for %s.".formatted(
+                                        name, TimeStrings.secondsToEnglish(duration)
+                                ));
+                            } else {
+                                return event.reply("You have been given the %s role.".formatted(name));
+                            }
+                        }))));
     }
 }

@@ -12,7 +12,7 @@ public class TimerData {
     private static PreparedStatement addTimerStmt;
     private static PreparedStatement getDataStmt;
     private static PreparedStatement removeDataStmt;
-    private static PreparedStatement getAddTimersStmt;
+    private static PreparedStatement getAllTimersStmt;
     private static PreparedStatement cleanupTableStmt;
     private static PreparedStatement listTimersStmt;
 
@@ -46,7 +46,7 @@ public class TimerData {
         qb = new QueryBuilder();
         qb.select("*");
         qb.from("timer");
-        getAddTimersStmt = qb.build(connection);
+        getAllTimersStmt = qb.build(connection);
 
         qb = new QueryBuilder();
         qb.deleteFrom("timer");
@@ -104,7 +104,7 @@ public class TimerData {
     }
 
     public static List<Data> getAllTimers() throws SQLException {
-        ResultSet rs = getAddTimersStmt.executeQuery();
+        ResultSet rs = getAllTimersStmt.executeQuery();
         ArrayList<Data> timers = new ArrayList<>();
         while (rs.next()) {
             timers.add(new Data(rs.getLong("timer_id"), rs.getLong("channel_id"), rs.getLong("user_id"),
