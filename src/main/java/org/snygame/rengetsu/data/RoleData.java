@@ -145,6 +145,8 @@ public class RoleData {
 
     public static void saveRoleData(Data data) throws SQLException {
         try {
+            ServerData.initializeServer(data.serverId);
+
             setRoleDataStmt.setLong(1, data.roleId);
             setRoleDataStmt.setLong(2, data.serverId);
             setRoleDataStmt.setBoolean(3, data.addJoin);

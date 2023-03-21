@@ -12,11 +12,13 @@ public class DatabaseManager {
     public static void connectSqlite(String dbPath, String tablePath) throws SQLException, IOException {
         Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
         connection.setAutoCommit(false);
+        connection.createStatement().execute("PRAGMA foreign_keys = true");
 
         createTables(connection, tablePath);
         UserData.initializeStatements(connection);
         TimerData.initializeStatements(connection);
         RoleData.initializeStatements(connection);
+        ServerData.initializeStatements(connection);
         connection.commit();
     }
 

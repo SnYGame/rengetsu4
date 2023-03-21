@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS server (
-    server_id UNSIGNED BIG INT NOT NULL,
-    inactive_days INT DEFAULT NULL,
-    PRIMARY KEY (server_id)
+    server_id INT PRIMARY KEY,
+    inactive_days INT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS role (
@@ -51,19 +50,26 @@ CREATE TABLE IF NOT EXISTS user (
 );
 
 CREATE TABLE IF NOT EXISTS member (
-    user_id UNSIGNED BIG INT NOT NULL,
-    server_id UNSIGNED BIG INT NOT NULL,
-    last_msg DATETIME DEFAULT 0,
+    user_id INT NOT NULL,
+    server_id INT NOT NULL,
+    last_msg TIME NOT NULL,
     PRIMARY KEY (user_id, server_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS channel (
-    channel_id UNSIGNED BIG INT NOT NULL,
-    server_id UNSIGNED BIG INT NOT NULL,
-    msg_log BOOLEAN DEFAULT FALSE,
-    user_log BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (channel_id)
+CREATE TABLE IF NOT EXISTS server_msg_log (
+    server_id INT NOT NULL,
+    channel_id INT NOT NULL,
+    PRIMARY KEY (channel_id, server_id),
+    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS server_usr_log (
+    server_id INT NOT NULL,
+    channel_id INT NOT NULL,
+    PRIMARY KEY (channel_id, server_id),
+    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS timer (
@@ -76,12 +82,11 @@ CREATE TABLE IF NOT EXISTS timer (
 );
 
 CREATE TABLE IF NOT EXISTS role_timer (
-    message_id UNSIGNED BIG INT NOT NULL,
-    channel_id UNSIGNED BIG INT NOT NULL,
-    server_id UNSIGNED BIG INT NOT NULL,
-    role_id UNSIGNED BIG INT NOT NULL,
-    user_id UNSIGNED BIG INT NOT NULL,
-    end_on REAL NOT NULL,
-    PRIMARY KEY (message_id),
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE
+    timer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role_id INT NOT NULL,
+    server_id INT NOT NULL,
+    user_id INT NOT NULL,
+    end_on TIME NOT NULL,
+    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
+    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
