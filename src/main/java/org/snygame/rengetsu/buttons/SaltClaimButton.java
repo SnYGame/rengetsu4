@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 import java.math.BigInteger;
 import java.sql.SQLException;
 
-public class SaltClaimCommand implements ButtonCommand {
+public class SaltClaimButton implements ButtonInteraction {
 
     @Override
     public String getName() {

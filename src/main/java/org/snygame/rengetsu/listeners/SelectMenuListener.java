@@ -1,27 +1,23 @@
 package org.snygame.rengetsu.listeners;
 
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import org.snygame.rengetsu.buttons.ButtonCommand;
-import org.snygame.rengetsu.buttons.CancelTimerCommand;
-import org.snygame.rengetsu.buttons.RoleSetCommand;
-import org.snygame.rengetsu.buttons.SaltClaimCommand;
+import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import org.snygame.rengetsu.selectmenu.RoleRemovalSelectMenu;
+import org.snygame.rengetsu.selectmenu.SelectMenuInteraction;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ButtonCommandListener {
-    private final static List<ButtonCommand> commands = new ArrayList<>();
+public class SelectMenuListener {
+    private final static List<SelectMenuInteraction> commands = new ArrayList<>();
 
     static {
         //We register our commands here when the class is initialized
-        commands.add(new SaltClaimCommand());
-        commands.add(new CancelTimerCommand());
-        commands.add(new RoleSetCommand());
+        commands.add(new RoleRemovalSelectMenu());
     }
 
-    public static Mono<Void> handle(ButtonInteractionEvent event) {
+    public static Mono<Void> handle(SelectMenuInteractionEvent event) {
         // Convert our array list to a flux that we can iterate through
         return Flux.fromIterable(commands)
                 //Filter out all commands that don't match the name of the command this event is for

@@ -4,12 +4,15 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.tasks.TaskManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class RoleData {
     private static Connection connection;
@@ -249,9 +252,23 @@ public class RoleData {
         return builder.addEmbed(embed.build()).build();
     }
 
-    public static HashMap<Key, Data> tempData = new HashMap<>();
+    private static final HashMap<Key, Data> tempData = new HashMap<>();
 
-    public record Key(long roleId, long serverId) {}
+    public static Data getTempData(long roleId, long serverId) {
+        return tempData.get(new Key(roleId, serverId));
+    }
+
+    public static void removeTempData(Data data) {
+        tempData.remove(new Key(data.roleId, data.serverId));
+        data.removalTask.cancel(false);
+    }
+
+    public static void putTempData(Data data) {
+        data.removalTask = TaskManager.service.schedule(() -> tempData.remove(new Key(data.roleId, data.serverId)), 30, TimeUnit.MINUTES);
+        tempData.put(new Key(data.roleId, data.serverId), data);
+    }
+
+    private record Key(long roleId, long serverId) {}
 
     public static class Data {
         public long roleId;
@@ -261,6 +278,8 @@ public class RoleData {
         public Requestable requestable;
         public final List<Long> addWhenRemoved = new ArrayList<>();
         public final List<Long> removeWhenAdded = new ArrayList<>();
+
+        private ScheduledFuture<?> removalTask;
 
         public Data(long roleId, long serverId) {
             this.roleId = roleId;

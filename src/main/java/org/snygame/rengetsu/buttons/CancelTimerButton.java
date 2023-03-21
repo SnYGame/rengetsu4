@@ -7,7 +7,7 @@ import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.tasks.TimerTask;
 import reactor.core.publisher.Mono;
 
-public class CancelTimerCommand implements ButtonCommand {
+public class CancelTimerButton implements ButtonInteraction {
 
     @Override
     public String getName() {

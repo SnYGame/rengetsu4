@@ -43,8 +43,7 @@ public class RoleCommand implements SlashCommand {
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 
-                        RoleData.tempData.put(new RoleData.Key(roleData.roleId, roleData.serverId), roleData);
-
+                        RoleData.putTempData(roleData);
                         return event.reply(RoleData.buildMenu(roleData));
                     }
                 });

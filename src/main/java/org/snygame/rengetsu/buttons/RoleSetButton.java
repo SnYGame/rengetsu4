@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 import java.sql.SQLException;
 import java.util.Collections;
 
-public class RoleSetCommand implements ButtonCommand {
+public class RoleSetButton implements ButtonInteraction {
 
     @Override
     public String getName() {
@@ -34,8 +34,7 @@ public class RoleSetCommand implements ButtonCommand {
 
                     String[] args = event.getCustomId().split(":");
 
-                    RoleData.Key key = new RoleData.Key(Long.parseLong(args[1]), Long.parseLong(args[2]));
-                    RoleData.Data roleData = RoleData.tempData.get(key);
+                    RoleData.Data roleData = RoleData.getTempData(Long.parseLong(args[1]), Long.parseLong(args[2]));
                     if (roleData == null) {
                         return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
                     }
@@ -44,11 +43,17 @@ public class RoleSetCommand implements ButtonCommand {
                         case "add_join" -> roleData.addJoin = Boolean.parseBoolean(args[4]);
                         case "add_inactive" -> roleData.addInactive = Boolean.parseBoolean(args[4]);
                         case "requestable" -> roleData.requestable = Boolean.parseBoolean(args[4]) ? new RoleData.Data.Requestable(false, null) : null;
-                        case "temp" -> roleData.requestable.temp = Boolean.parseBoolean(args[4]);
+                        case "temp" -> {
+                            if (roleData.requestable != null) {
+                                roleData.requestable.temp = Boolean.parseBoolean(args[4]);
+                            }
+                        }
                         case "agreement" -> {
                             return event.presentModal().withCustomId("role:%d:%d:agreement".formatted(roleData.roleId, roleData.serverId))
                                     .withTitle("Request agreement").withComponents(
-                                            ActionRow.of(TextInput.paragraph("agreement", "Agreement", 1, 2000))
+                                            ActionRow.of(TextInput.paragraph("agreement", "Agreement (leave blank to remove)", 0, 2000)
+                                                    .prefilled(roleData.requestable != null && roleData.requestable.agreement != null ?
+                                                            roleData.requestable.agreement : "").required(false))
                                     );
                         }
                         case "on_remove", "on_add" -> {
@@ -64,22 +69,15 @@ public class RoleSetCommand implements ButtonCommand {
                                                     .embeds(Collections.emptyList())
                                                     .addComponent(ActionRow.of(
                                                             SelectMenu.of("role:%d:%d:%s".formatted(roleData.roleId, roleData.serverId, args[3]), options)
-                                                                    .withMaxValues(options.size())
-                                                    ))
-                                                    .addComponent(ActionRow.of(
-                                                            Button.danger("role:%d:%d:clear_on:%s".formatted(roleData.roleId, roleData.serverId, args[3]), "Clear")
+                                                                    .withMaxValues(options.size()).withMinValues(0)
                                                     ))
                                                     .build())
                                             );
                         }
-                        case "clear_on" -> {
-                            (args[4].equals("on_remove") ? roleData.addWhenRemoved : roleData.removeWhenAdded).clear();
-                            return event.edit(RoleData.buildMenu(roleData));
-                        }
                         case "save" -> {
                             try {
                                 RoleData.saveRoleData(roleData);
-                                RoleData.tempData.remove(key);
+                                RoleData.removeTempData(roleData);
                                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                         .addEmbed(EmbedCreateSpec.builder()
                                                 .title("Data saved for")
@@ -91,7 +89,7 @@ public class RoleSetCommand implements ButtonCommand {
                             }
                         }
                         case "no_save" -> {
-                            RoleData.tempData.remove(key);
+                            RoleData.removeTempData(roleData);
                             return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                     .addEmbed(EmbedCreateSpec.builder()
                                             .title("Canceled changes to")
@@ -101,7 +99,7 @@ public class RoleSetCommand implements ButtonCommand {
                         case "clear" -> {
                             try {
                                 RoleData.deleteRoleData(roleData.roleId, roleData.serverId);
-                                RoleData.tempData.remove(key);
+                                RoleData.removeTempData(roleData);
                                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                         .addEmbed(EmbedCreateSpec.builder()
                                                 .title("Cleared data for")
