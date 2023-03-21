@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TimerData {
+    private static Connection connection;
+
     private static PreparedStatement countTimerStmt;
     private static PreparedStatement addTimerStmt;
     private static PreparedStatement getDataStmt;
@@ -15,6 +17,8 @@ public class TimerData {
     private static PreparedStatement listTimersStmt;
 
     static void initializeStatements(Connection connection) throws SQLException {
+        TimerData.connection = connection;
+
         QueryBuilder qb;
 
         qb = new QueryBuilder();
@@ -74,7 +78,9 @@ public class TimerData {
         rs = addTimerStmt.getGeneratedKeys();
 
         if (rs.next()) {
-            return rs.getLong(1);
+            long timerId = rs.getLong(1);
+            connection.commit();
+            return timerId;
         }
 
         throw new RuntimeException();
@@ -91,9 +97,10 @@ public class TimerData {
         return null;
     }
 
-    public static int removeData(long timerId) throws SQLException {
+    public static void removeData(long timerId) throws SQLException {
         removeDataStmt.setLong(1, timerId);
-        return removeDataStmt.executeUpdate();
+        removeDataStmt.executeUpdate();
+        connection.commit();
     }
 
     public static List<Data> getAllTimers() throws SQLException {
@@ -109,7 +116,9 @@ public class TimerData {
 
     public static int cleanupTable() throws SQLException {
         cleanupTableStmt.setTimestamp(1, Timestamp.from(Instant.now()));
-        return cleanupTableStmt.executeUpdate();
+        int rows = cleanupTableStmt.executeUpdate();
+        connection.commit();
+        return rows;
     }
 
     public static List<Data> listTimers(long user_id) throws SQLException {

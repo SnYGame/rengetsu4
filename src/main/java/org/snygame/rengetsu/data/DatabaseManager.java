@@ -11,9 +11,13 @@ import java.sql.Statement;
 public class DatabaseManager {
     public static void connectSqlite(String dbPath, String tablePath) throws SQLException, IOException {
         Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+        connection.setAutoCommit(false);
+
         createTables(connection, tablePath);
         UserData.initializeStatements(connection);
         TimerData.initializeStatements(connection);
+        RoleData.initializeStatements(connection);
+        connection.commit();
     }
 
     private static void createTables(Connection connection, String path) throws IOException, SQLException {

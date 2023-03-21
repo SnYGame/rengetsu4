@@ -11,6 +11,8 @@ import java.util.List;
 public class UserData {
     public static final int DAY_MILLI = 1000 * 60 * 60 * 24;
 
+    private static Connection connection;
+
     private static PreparedStatement initializeUserStmt;
     private static PreparedStatement getSaltAmountStmt;
     private static PreparedStatement getSaltClaimStmt;
@@ -21,6 +23,8 @@ public class UserData {
     private static PreparedStatement getRemindIdsStmt;
 
     static void initializeStatements(Connection connection) throws SQLException {
+        UserData.connection = connection;
+
         QueryBuilder qb;
 
         qb = new QueryBuilder();
@@ -56,13 +60,13 @@ public class UserData {
         qb.select("u.salt_remind");
         qb.from("user u");
         qb.where("u.user_id = ?");
-        setRemindStmt = qb.build(connection);
+        getRemindStmt = qb.build(connection);
 
         qb = new QueryBuilder();
         qb.update("user");
         qb.set("salt_remind = ?");
         qb.where("user_id = ?");
-        getRemindStmt = qb.build(connection);
+        setRemindStmt = qb.build(connection);
 
         qb = new QueryBuilder();
         qb.select("u.user_id");
@@ -73,7 +77,9 @@ public class UserData {
 
     private static int initializeUser(long id) throws SQLException {
         initializeUserStmt.setLong(1, id);
-        return initializeUserStmt.executeUpdate();
+        int rows = initializeUserStmt.executeUpdate();
+        connection.commit();
+        return rows;
     }
 
     public static BigInteger getSaltAmount(long id) throws SQLException {
@@ -116,6 +122,7 @@ public class UserData {
         setSaltClaimStmt.setLong(2, System.currentTimeMillis() / DAY_MILLI);
         setSaltClaimStmt.setLong(3, id);
         if (setSaltClaimStmt.executeUpdate() > 0) {
+            connection.commit();
             return saltAmount;
         }
 
@@ -138,6 +145,7 @@ public class UserData {
             setSaltStmt.setBigDecimal(1, new BigDecimal(recipientSalt));
             setSaltStmt.setLong(2, idRecipient);
             if (setSaltStmt.executeUpdate() > 0) {
+                connection.commit();
                 return senderSalt;
             }
         }
@@ -159,6 +167,7 @@ public class UserData {
         setRemindStmt.setBoolean(1, !remind);
         setRemindStmt.setLong(2, id);
         if (setRemindStmt.executeUpdate() > 0) {
+            connection.commit();
             return !remind;
         }
 

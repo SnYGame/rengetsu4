@@ -12,10 +12,10 @@ public class QueryBuilder {
     private String from;
     private String where;
 
+    private String replace;
     private String insert;
     private boolean ignore;
     private final List<String> values;
-    private String returning;
 
     private String delete;
 
@@ -38,6 +38,10 @@ public class QueryBuilder {
         where = conditions;
     }
 
+    public void replaceInto(String table) {
+        replace = table;
+    }
+
     public void insertIgnoreInto(String table) {
         insert = table;
         ignore = true;
@@ -45,10 +49,6 @@ public class QueryBuilder {
 
     public void values(String... values) {
         Collections.addAll(this.values, values);
-    }
-
-    public void returning(String columns) {
-        returning = columns;
     }
 
     public void deleteFrom(String table) {
@@ -73,6 +73,10 @@ public class QueryBuilder {
     }
 
     public String asString() {
+        if (replace != null) {
+            return replaceString();
+        }
+
         if (insert != null) {
             return insertString();
         }
@@ -103,6 +107,18 @@ public class QueryBuilder {
         return sb.toString();
     }
 
+    private String replaceString() {
+        StringBuilder sb = new StringBuilder("REPLACE INTO " + replace);
+
+        if (select != null) {
+            sb.append("\n");
+            return sb + selectString();
+        }
+
+        appendList(sb, values, " VALUES ", ",\n");
+        return sb.toString();
+    }
+
     private String insertString() {
         StringBuilder sb = new StringBuilder("INSERT" + (ignore ? " OR IGNORE" : "") + " INTO " + insert);
 
@@ -112,11 +128,6 @@ public class QueryBuilder {
         }
 
         appendList(sb, values, " VALUES ", ",\n");
-
-        if (returning != null) {
-            sb.append("\nRETURNING ");
-            sb.append(returning);
-        }
         return sb.toString();
     }
 

@@ -1,0 +1,14 @@
+{
+  "name": "role",
+  "description": "Manages roles",
+  "options": [
+    {
+      "name": "role",
+      "description": "The role to modify",
+      "type": 8,
+      "required": true
+    }
+  ],
+  "default_member_permissions": 268435456,
+  "dm_permission": false
+}
