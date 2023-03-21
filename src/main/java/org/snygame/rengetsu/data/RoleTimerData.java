@@ -12,7 +12,6 @@ public class RoleTimerData {
     private static PreparedStatement getDataStmt;
     private static PreparedStatement removeDataStmt;
     private static PreparedStatement getAllTimersStmt;
-    private static PreparedStatement cleanupTableStmt;
     private static PreparedStatement getTimerIdStmt;
 
     static void initializeStatements(Connection connection) throws SQLException {
@@ -40,11 +39,6 @@ public class RoleTimerData {
         qb.select("*");
         qb.from("role_timer");
         getAllTimersStmt = qb.build(connection);
-
-        qb = new QueryBuilder();
-        qb.deleteFrom("role_timer");
-        qb.where("role_timer.end_on < ?");
-        cleanupTableStmt = qb.build(connection);
 
         qb = new QueryBuilder();
         qb.select("*");
@@ -95,13 +89,6 @@ public class RoleTimerData {
                     rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant()));
         }
         return timers;
-    }
-
-    public static int cleanupTable() throws SQLException {
-        cleanupTableStmt.setTimestamp(1, Timestamp.from(Instant.now()));
-        int rows = cleanupTableStmt.executeUpdate();
-        connection.commit();
-        return rows;
     }
 
     public static List<Data> getTimerIds(long serverId, long userId) throws SQLException {

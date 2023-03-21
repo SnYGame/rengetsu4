@@ -16,10 +16,6 @@ public class RoleTimerTask {
 
     public static void startup(GatewayDiscordClient client) {
         try {
-            int cleared = RoleTimerData.cleanupTable();
-            if (cleared > 0) {
-                Rengetsu.getLOGGER().info("Cleared %d expired timers".formatted(cleared));
-            }
             for (RoleTimerData.Data data: RoleTimerData.getAllTimers()) {
                 startTask(client, data.timerId(), data.endOn().toEpochMilli() - System.currentTimeMillis());
             }
