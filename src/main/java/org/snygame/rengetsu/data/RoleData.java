@@ -201,6 +201,28 @@ public class RoleData {
         connection.commit();
     }
 
+    public static List<Long> getRolesToAddWhenRemoved(long roleId, long serverId) throws SQLException {
+        getRoleOnRemoveDataStmt.setLong(1, roleId);
+        getRoleOnRemoveDataStmt.setLong(2, serverId);
+        ResultSet rs = getRoleOnRemoveDataStmt.executeQuery();
+        ArrayList<Long> ids = new ArrayList<>();
+        while (rs.next()) {
+            ids.add(rs.getLong("to_add_id"));
+        }
+        return ids;
+    }
+
+    public static List<Long> getRolesToRemoveWhenAdded(long roleId, long serverId) throws SQLException {
+        getRoleOnAddDataStmt.setLong(1, roleId);
+        getRoleOnAddDataStmt.setLong(2, serverId);
+        ResultSet rs = getRoleOnAddDataStmt.executeQuery();
+        ArrayList<Long> ids = new ArrayList<>();
+        while (rs.next()) {
+            ids.add(rs.getLong("to_remove_id"));
+        }
+        return ids;
+    }
+
     public static InteractionApplicationCommandCallbackSpec buildMenu(Data roleData) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();

@@ -1,5 +1,6 @@
 package org.snygame.rengetsu.commands;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -11,6 +12,7 @@ import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
 import org.snygame.rengetsu.tasks.RoleTimerTask;
 import org.snygame.rengetsu.util.TimeStrings;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
@@ -50,7 +52,9 @@ public class RequestRoleCommand implements SlashCommand {
 
                             return Mono.justOrEmpty(event.getInteraction().getMember()).flatMap(member -> {
                                 if (member.getRoleIds().contains(role.getId())) {
-                                    return member.removeRole(role.getId(), "Requested")
+                                    return member.removeRole(role.getId(), "Requested").then(
+                                                    Flux.fromIterable(roleData.addWhenRemoved).map(Snowflake::of).flatMap(id ->
+                                                            member.addRole(id, "Added after removing role")).then())
                                             .then(event.reply("Your %s role has been removed.".formatted(role.getName())));
                                 } else {
                                     if (duration.isEmpty() && requestable.temp) {
@@ -68,7 +72,9 @@ public class RequestRoleCommand implements SlashCommand {
                                                 long timerId = RoleTimerData.addTimer(roleData.roleId, roleData.serverId, member.getId().asLong(),
                                                         Instant.ofEpochMilli(time + actualDuration * 1000L));
                                                 RoleTimerTask.startTask(event.getClient(), timerId, actualDuration * 1000L);
-                                                return member.addRole(role.getId(), "Requested")
+                                                return member.addRole(role.getId(), "Requested").then(
+                                                                Flux.fromIterable(roleData.removeWhenAdded).map(Snowflake::of).flatMap(id ->
+                                                                        member.removeRole(id, "Removed when adding new role")).then())
                                                         .then(event.reply("You have been given the %s role for %s.".formatted(role.getName(),
                                                                 TimeStrings.secondsToEnglish(actualDuration))));
                                             } catch (SQLException e) {
@@ -76,7 +82,9 @@ public class RequestRoleCommand implements SlashCommand {
                                                 return event.reply("**[Error]** Database error").withEphemeral(true);
                                             }
                                         } else {
-                                            return member.addRole(role.getId(), "Requested")
+                                            return member.addRole(role.getId(), "Requested").then(
+                                                    Flux.fromIterable(roleData.removeWhenAdded).map(Snowflake::of).flatMap(id ->
+                                                            member.removeRole(id, "Removed when adding new role")).then())
                                                     .then(event.reply("You have been given the %s role.".formatted(role.getName())));
                                         }
                                     } else {

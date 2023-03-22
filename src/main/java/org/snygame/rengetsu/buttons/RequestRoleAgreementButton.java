@@ -6,13 +6,17 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Role;
 import discord4j.core.spec.MessageEditSpec;
+import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
+import org.snygame.rengetsu.data.TimerData;
 import org.snygame.rengetsu.tasks.RoleTimerTask;
 import org.snygame.rengetsu.util.TimeStrings;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 
 public class RequestRoleAgreementButton implements ButtonInteraction {
     @Override
@@ -32,6 +36,15 @@ public class RequestRoleAgreementButton implements ButtonInteraction {
                     )).build())).then(event.reply("You have declined the agreement."));
         }
 
+        List<Long> toRemoveIds;
+
+        try {
+            toRemoveIds = RoleData.getRolesToRemoveWhenAdded(Long.parseLong(args[1]), Long.parseLong(args[2]));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+
         int duration = Integer.parseInt(args[4]);
 
         return Mono.justOrEmpty(event.getMessage()).flatMap(message -> message.edit(MessageEditSpec.builder()
@@ -39,7 +52,8 @@ public class RequestRoleAgreementButton implements ButtonInteraction {
                         Button.success("disabled","Accepted").disabled(),
                         Button.danger("disabled2", "Decline").disabled()
                 )).build())).then(event.getInteraction().getUser().asMember(Snowflake.of(args[2])).flatMap(member ->
-                member.addRole(Snowflake.of(args[1])).then(
+                member.addRole(Snowflake.of(args[1])).then(Flux.fromIterable(toRemoveIds).map(Snowflake::of).flatMap(id ->
+                        member.removeRole(id, "Removed after adding new role")).then()).then(
                         event.getClient().getRoleById(Snowflake.of(args[2]), Snowflake.of(args[1])).map(Role::getName).flatMap(name -> {
                             if (duration > 0) {
                                 long timerId;
