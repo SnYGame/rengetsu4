@@ -344,7 +344,7 @@ public class Diceroll {
         return error != null;
     }
 
-    public static record Result(String error, int[] rolls, long dropped, int offset, Long sum) {
+    public record Result(String error, int[] rolls, long dropped, int offset, Long sum) {
         private static final long NO_DROP = 0xFFFFFFFFFFFFFFFFL;
 
         private Result(String error) {
@@ -379,10 +379,10 @@ public class Diceroll {
             } else {
                 String start;
                 if (dropped == NO_DROP) {
-                    start = String.join(", ", IntStream.of(rolls).mapToObj("**%d**"::formatted).toList());
+                    start = IntStream.of(rolls).mapToObj("**%d**"::formatted).collect(Collectors.joining(", "));
                 } else {
-                    start = String.join(", ", IntStream.range(0, count())
-                            .mapToObj(i -> ((dropped >> i & 1) == 0 ? "~~%d~~" : "**%d**").formatted(rolls[i])).toList());
+                    start = IntStream.range(0, count()).mapToObj(i -> ((dropped >> i & 1) == 0 ? "~~%d~~" : "**%d**")
+                            .formatted(rolls[i])).collect(Collectors.joining(", "));
                 }
 
                 String offStr = offset > 0 ? ", **(+%d)**".formatted(offset) : offset < 0 ? ", **(-%d)**".formatted(-offset) : "";
@@ -429,7 +429,7 @@ public class Diceroll {
         }
         @Override
         public String toString() {
-            return "[%s]".formatted(String.join(", ", IntStream.of(scale).boxed().map(ranges::get).map(Object::toString).toList()));
+            return "[%s]".formatted(IntStream.of(scale).boxed().map(ranges::get).map(Object::toString).collect(Collectors.joining(", ")));
         }
 
         public int size() {

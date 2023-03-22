@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS server (
     server_id INT PRIMARY KEY,
-    inactive_days INT DEFAULT NULL
+    inactive_days INT DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS role (

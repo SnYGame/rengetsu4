@@ -21,6 +21,7 @@ public class SlashCommandListener {
         commands.add(new TimerCommand());
         commands.add(new RoleCommand());
         commands.add(new RequestRoleCommand());
+        commands.add(new SettingsCommand());
     }
 
     public static Mono<Void> handle(ChatInputInteractionEvent event) {

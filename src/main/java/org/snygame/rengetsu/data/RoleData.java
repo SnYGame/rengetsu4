@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class RoleData {
     private static Connection connection;
@@ -258,9 +259,9 @@ public class RoleData {
         }
 
         embed.addField("Roles to add if removed", roleData.addWhenRemoved.isEmpty() ? "None" :
-                String.join(", ", roleData.addWhenRemoved.stream().map("<@&%d>"::formatted).toList()), false);
+                roleData.addWhenRemoved.stream().map("<@&%d>"::formatted).collect(Collectors.joining(", ")), false);
         embed.addField("Roles to remove if added", roleData.removeWhenAdded.isEmpty() ? "None" :
-                String.join(", ", roleData.removeWhenAdded.stream().map("<@&%d>"::formatted).toList()), false);
+                roleData.removeWhenAdded.stream().map("<@&%d>"::formatted).collect(Collectors.joining(", ")), false);
 
         builder.addComponent(ActionRow.of(
                 Button.primary("role:%s:on_remove".formatted(key), "Set roles to add if removed"),
