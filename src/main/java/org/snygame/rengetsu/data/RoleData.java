@@ -33,6 +33,8 @@ public class RoleData {
 
     private static PreparedStatement clearRoleDataStmt;
 
+    private static PreparedStatement getRolesToAddOnJoinStmt;
+
     static void initializeStatements(Connection connection) throws SQLException {
         RoleData.connection = connection;
 
@@ -101,6 +103,12 @@ public class RoleData {
         qb.deleteFrom("role");
         qb.where("role.role_id = ? AND role.server_id = ?");
         clearRoleDataStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("role.role_id");
+        qb.from("role");
+        qb.where("role.server_id = ? AND role.add_on_join = TRUE");
+        getRolesToAddOnJoinStmt = qb.build(connection);
     }
 
     public static Data getRoleData(long roleId, long serverId) throws SQLException {
@@ -220,6 +228,16 @@ public class RoleData {
         ArrayList<Long> ids = new ArrayList<>();
         while (rs.next()) {
             ids.add(rs.getLong("to_remove_id"));
+        }
+        return ids;
+    }
+
+    public static List<Long> getRolesToAddOnJoin(long serverId) throws SQLException {
+        getRolesToAddOnJoinStmt.setLong(1, serverId);
+        ResultSet rs = getRolesToAddOnJoinStmt.executeQuery();
+        ArrayList<Long> ids = new ArrayList<>();
+        while (rs.next()) {
+            ids.add(rs.getLong("role_id"));
         }
         return ids;
     }

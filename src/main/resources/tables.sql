@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS user (
 CREATE TABLE IF NOT EXISTS member (
     user_id INT NOT NULL,
     server_id INT NOT NULL,
-    last_msg TIME NOT NULL,
+    last_msg INT NOT NULL,
     PRIMARY KEY (user_id, server_id),
     FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
     FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE

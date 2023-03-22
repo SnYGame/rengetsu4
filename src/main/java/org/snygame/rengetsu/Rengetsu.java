@@ -2,12 +2,17 @@ package org.snygame.rengetsu;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.guild.BanEvent;
+import discord4j.core.event.domain.guild.MemberJoinEvent;
+import discord4j.core.event.domain.guild.MemberLeaveEvent;
 import discord4j.core.event.domain.guild.MemberUpdateEvent;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
+import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.event.domain.message.MessageDeleteEvent;
 import discord4j.gateway.intent.IntentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +45,7 @@ public class Rengetsu {
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
          */
         List<String> commands = List.of("dice.json", "here.json", "math.json", "salt.json", "timer.json", "role.json",
-                "requestrole.json");
+                "requestrole.json", "settings.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient()).registerCommands(commands);
         } catch (Exception e) {
@@ -51,7 +56,12 @@ public class Rengetsu {
         client.on(ButtonInteractionEvent.class, ButtonListener::handle).subscribe();
         client.on(ModalSubmitInteractionEvent.class, ModalListener::handle).subscribe();
         client.on(SelectMenuInteractionEvent.class, SelectMenuListener::handle).subscribe();
-        client.on(MemberUpdateEvent.class, MemberUpdateListener::handle).subscribe();
+        client.on(MemberUpdateEvent.class, MemberListener::handleUpdate).subscribe();
+        client.on(MemberJoinEvent.class, MemberListener::handleJoin).subscribe();
+        client.on(MemberLeaveEvent.class, MemberListener::handleLeave).subscribe();
+        client.on(BanEvent.class, MemberListener::handleBan).subscribe();
+        client.on(MessageCreateEvent.class, MessageListener::handleCreate).subscribe();
+        client.on(MessageDeleteEvent.class, MessageListener::handleDelete).subscribe();
         //Register our slash command listener
         client.on(ChatInputInteractionEvent.class, SlashCommandListener::handle)
                 .then(client.onDisconnect())

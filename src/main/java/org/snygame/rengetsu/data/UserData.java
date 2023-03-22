@@ -22,6 +22,8 @@ public class UserData {
     private static PreparedStatement setRemindStmt;
     private static PreparedStatement getRemindIdsStmt;
 
+    private static PreparedStatement setMemberLastMsgStmt;
+
     static void initializeStatements(Connection connection) throws SQLException {
         UserData.connection = connection;
 
@@ -73,6 +75,11 @@ public class UserData {
         qb.from("user u");
         qb.where("u.salt_remind");
         getRemindIdsStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.replaceInto("member(user_id, server_id, last_msg)");
+        qb.values("(?, ?, ?)");
+        setMemberLastMsgStmt = qb.build(connection);
     }
 
     private static int initializeUser(long id) throws SQLException {
@@ -183,5 +190,15 @@ public class UserData {
         }
 
         return ids;
+    }
+
+    public static void setSetMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
+        ServerData.initializeServer(serverId);
+        UserData.initializeUser(userId);
+
+        setMemberLastMsgStmt.setLong(1, userId);
+        setMemberLastMsgStmt.setLong(2, serverId);
+        setMemberLastMsgStmt.setLong(3, lastMsg);
+        setMemberLastMsgStmt.executeUpdate();
     }
 }
