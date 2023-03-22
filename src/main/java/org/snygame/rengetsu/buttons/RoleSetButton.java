@@ -70,10 +70,12 @@ public class RoleSetButton implements ButtonInteraction {
                                                     .addComponent(ActionRow.of(
                                                             SelectMenu.of("role:%d:%d:%s".formatted(roleData.roleId, roleData.serverId, args[3]), options)
                                                                     .withMaxValues(options.size()).withMinValues(0)
-                                                    ))
+                                                    )).addComponent(ActionRow.of(Button.danger("role:%d:%d:cancel_menu"
+                                                                    .formatted(roleData.roleId, roleData.serverId), "Cancel")))
                                                     .build())
                                             );
                         }
+                        case "cancel_menu" -> {}
                         case "save" -> {
                             try {
                                 RoleData.saveRoleData(roleData);
