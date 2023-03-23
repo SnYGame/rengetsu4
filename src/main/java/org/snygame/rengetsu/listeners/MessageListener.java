@@ -19,7 +19,7 @@ import java.util.List;
 
 public class MessageListener {
     public static Mono<Void> handleCreate(MessageCreateEvent event) {
-        return Mono.justOrEmpty(event.getMember()).flatMap(member -> {
+        return Mono.justOrEmpty(event.getMember()).filter(member -> !member.isBot()).flatMap(member -> {
             try {
                 UserData.setSetMemberLastMsg(member.getId().asLong(), member.getGuildId().asLong(),
                         System.currentTimeMillis() / UserData.DAY_MILLI);

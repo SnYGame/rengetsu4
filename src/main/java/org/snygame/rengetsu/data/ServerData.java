@@ -120,26 +120,36 @@ public class ServerData {
     }
 
     public static void setUserLogs(long id, List<Long> channelIds) throws SQLException {
-        clearUserLogsStmt.setLong(1, id);
-        clearUserLogsStmt.executeUpdate();
+        try {
+            clearUserLogsStmt.setLong(1, id);
+            clearUserLogsStmt.executeUpdate();
 
-        addUserLogsStmt.setLong(1, id);
-        for (Long channelId: channelIds) {
-            addUserLogsStmt.setLong(2, channelId);
-            addUserLogsStmt.executeUpdate();
+            addUserLogsStmt.setLong(1, id);
+            for (Long channelId : channelIds) {
+                addUserLogsStmt.setLong(2, channelId);
+                addUserLogsStmt.executeUpdate();
+            }
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         }
-        connection.commit();
     }
 
     public static void setMessageLogs(long id, List<Long> channelIds) throws SQLException {
-        clearMessageLogsStmt.setLong(1, id);
-        clearMessageLogsStmt.executeUpdate();
+        try {
+            clearMessageLogsStmt.setLong(1, id);
+            clearMessageLogsStmt.executeUpdate();
 
-        addMessageLogsStmt.setLong(1, id);
-        for (Long channelId: channelIds) {
-            addMessageLogsStmt.setLong(2, channelId);
-            addMessageLogsStmt.executeUpdate();
+            addMessageLogsStmt.setLong(1, id);
+            for (Long channelId: channelIds) {
+                addMessageLogsStmt.setLong(2, channelId);
+                addMessageLogsStmt.executeUpdate();
+            }
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         }
-        connection.commit();
     }
 }

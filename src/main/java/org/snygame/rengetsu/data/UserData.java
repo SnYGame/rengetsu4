@@ -23,6 +23,7 @@ public class UserData {
     private static PreparedStatement getRemindIdsStmt;
 
     private static PreparedStatement setMemberLastMsgStmt;
+    private static PreparedStatement getMemberLastMsgStmt;
 
     static void initializeStatements(Connection connection) throws SQLException {
         UserData.connection = connection;
@@ -80,6 +81,12 @@ public class UserData {
         qb.replaceInto("member(user_id, server_id, last_msg)");
         qb.values("(?, ?, ?)");
         setMemberLastMsgStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("member.last_msg");
+        qb.from("member");
+        qb.where("member.user_id = ? AND member.server_id = ?");
+        getMemberLastMsgStmt = qb.build(connection);
     }
 
     private static int initializeUser(long id) throws SQLException {
@@ -146,15 +153,20 @@ public class UserData {
             return senderSalt;
         }
 
-        setSaltStmt.setBigDecimal(1, new BigDecimal(senderSalt));
-        setSaltStmt.setLong(2, idSender);
-        if (setSaltStmt.executeUpdate() > 0) {
-            setSaltStmt.setBigDecimal(1, new BigDecimal(recipientSalt));
-            setSaltStmt.setLong(2, idRecipient);
+        try {
+            setSaltStmt.setBigDecimal(1, new BigDecimal(senderSalt));
+            setSaltStmt.setLong(2, idSender);
             if (setSaltStmt.executeUpdate() > 0) {
-                connection.commit();
-                return senderSalt;
+                setSaltStmt.setBigDecimal(1, new BigDecimal(recipientSalt));
+                setSaltStmt.setLong(2, idRecipient);
+                if (setSaltStmt.executeUpdate() > 0) {
+                    connection.commit();
+                    return senderSalt;
+                }
             }
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         }
 
         throw new RuntimeException();
@@ -200,5 +212,19 @@ public class UserData {
         setMemberLastMsgStmt.setLong(2, serverId);
         setMemberLastMsgStmt.setLong(3, lastMsg);
         setMemberLastMsgStmt.executeUpdate();
+        connection.commit();
+    }
+
+    public static long getSetMemberLastMsg(long userId, long serverId) throws SQLException {
+        getMemberLastMsgStmt.setLong(1, userId);
+        getMemberLastMsgStmt.setLong(2, serverId);
+        ResultSet rs = getMemberLastMsgStmt.executeQuery();
+        if (rs.next()) {
+            return rs.getLong("last_msg");
+        }
+
+        long lastMsg = System.currentTimeMillis() / UserData.DAY_MILLI;
+        setSetMemberLastMsg(userId, serverId, lastMsg);
+        return lastMsg;
     }
 }

@@ -34,6 +34,7 @@ public class RoleData {
     private static PreparedStatement clearRoleDataStmt;
 
     private static PreparedStatement getRolesToAddOnJoinStmt;
+    private static PreparedStatement getRolesToAddOnInactiveStmt;
 
     static void initializeStatements(Connection connection) throws SQLException {
         RoleData.connection = connection;
@@ -109,6 +110,12 @@ public class RoleData {
         qb.from("role");
         qb.where("role.server_id = ? AND role.add_on_join = TRUE");
         getRolesToAddOnJoinStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("role.role_id");
+        qb.from("role");
+        qb.where("role.server_id = ? AND role.add_on_inactive = TRUE");
+        getRolesToAddOnInactiveStmt = qb.build(connection);
     }
 
     public static Data getRoleData(long roleId, long serverId) throws SQLException {
@@ -242,8 +249,19 @@ public class RoleData {
         return ids;
     }
 
+    public static List<Long> getRolesToAddOnInactive(long serverId) throws SQLException {
+        getRolesToAddOnInactiveStmt.setLong(1, serverId);
+        ResultSet rs = getRolesToAddOnInactiveStmt.executeQuery();
+        ArrayList<Long> ids = new ArrayList<>();
+        while (rs.next()) {
+            ids.add(rs.getLong("role_id"));
+        }
+        return ids;
+    }
+
     public static InteractionApplicationCommandCallbackSpec buildMenu(Data roleData) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
+        builder.content("");
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
         embed.title("Role settings for");
         embed.description("<@&%d>".formatted(roleData.roleId));
