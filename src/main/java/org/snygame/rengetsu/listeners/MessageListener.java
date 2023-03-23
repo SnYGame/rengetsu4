@@ -34,6 +34,9 @@ public class MessageListener {
         return event.getGuild().flatMap(server -> {
             try {
                 List<Long> channelIds = ServerData.getMessageLogs(server.getId().asLong());
+                if (channelIds.contains(event.getChannelId().asLong())) {
+                    return Mono.empty();
+                }
                 return Flux.fromIterable(channelIds).map(Snowflake::of).flatMap(event.getClient()::getChannelById)
                         .filter(channel -> channel instanceof MessageChannel).map(channel -> (MessageChannel)channel)
                         .flatMap(channel -> event.getMessage().map(Message::getData).map(data -> {
