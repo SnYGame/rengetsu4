@@ -8,6 +8,7 @@ import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.TimerData;
 import org.snygame.rengetsu.tasks.TimerTask;
 import org.snygame.rengetsu.util.TimeStrings;
@@ -34,6 +35,7 @@ public class TimerCommand implements SlashCommand {
     }
 
     private Mono<Void> subSet(ChatInputInteractionEvent event) {
+        TimerData timerData = DatabaseManager.getTimerData();
         return Mono.just(event.getOptions().get(0).getOption("duration").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).map(TimeStrings::readDuration)
                 .orElse(0)).flatMap(duration -> {
@@ -44,7 +46,7 @@ public class TimerCommand implements SlashCommand {
                     .map(ApplicationCommandInteractionOptionValue::asString).orElse("Timer has completed");
             long time = System.currentTimeMillis();
             try {
-                long timerId = TimerData.addTimer(event.getInteraction().getChannelId().asLong(), event.getInteraction().getUser().getId().asLong(),
+                long timerId = timerData.addTimer(event.getInteraction().getChannelId().asLong(), event.getInteraction().getUser().getId().asLong(),
                         message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000L));
 
                 if (timerId == -1) {
@@ -68,8 +70,9 @@ public class TimerCommand implements SlashCommand {
     }
 
     private Mono<Void> subList(ChatInputInteractionEvent event) {
+        TimerData timerData = DatabaseManager.getTimerData();
         try {
-            List<TimerData.Data> timers = TimerData.listTimers(event.getInteraction().getUser().getId().asLong());
+            List<TimerData.Data> timers = timerData.listTimers(event.getInteraction().getUser().getId().asLong());
 
             if (timers.isEmpty()) {
                 return event.reply("You have no active timers.");
@@ -89,11 +92,12 @@ public class TimerCommand implements SlashCommand {
     }
 
     private Mono<Void> subCancel(ChatInputInteractionEvent event) {
+        TimerData timerData = DatabaseManager.getTimerData();
         long timerId = event.getOptions().get(0).getOption("id").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong).orElse(-1L);
 
         try {
-            TimerData.Data timer = TimerData.getData(timerId);
+            TimerData.Data timer = timerData.getData(timerId);
             if (timer != null) {
                 if (event.getInteraction().getUser().getId().asLong() != timer.userId()) {
                     return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);

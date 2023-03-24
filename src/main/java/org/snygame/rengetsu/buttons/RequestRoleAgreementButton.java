@@ -6,6 +6,7 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Role;
 import discord4j.core.spec.MessageEditSpec;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
 import org.snygame.rengetsu.data.TimerData;
@@ -26,6 +27,8 @@ public class RequestRoleAgreementButton implements ButtonInteraction {
 
     @Override
     public Mono<Void> handle(ButtonInteractionEvent event) {
+        RoleData roleData = DatabaseManager.getRoleData();
+        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
         String[] args = event.getCustomId().split(":");
 
         if (args[3].equals("decline")) {
@@ -39,7 +42,7 @@ public class RequestRoleAgreementButton implements ButtonInteraction {
         List<Long> toRemoveIds;
 
         try {
-            toRemoveIds = RoleData.getRolesToRemoveWhenAdded(Long.parseLong(args[1]), Long.parseLong(args[2]));
+            toRemoveIds = roleData.getRolesToRemoveWhenAdded(Long.parseLong(args[1]), Long.parseLong(args[2]));
         } catch (SQLException e) {
             e.printStackTrace();
             return event.reply("**[Error]** Database error").withEphemeral(true);
@@ -58,7 +61,7 @@ public class RequestRoleAgreementButton implements ButtonInteraction {
                             if (duration > 0) {
                                 long timerId;
                                 try {
-                                    timerId = RoleTimerData.addTimer(Long.parseLong(args[1]), Long.parseLong(args[2]), member.getId().asLong(),
+                                    timerId = roleTimerData.addTimer(Long.parseLong(args[1]), Long.parseLong(args[2]), member.getId().asLong(),
                                             Instant.ofEpochMilli(System.currentTimeMillis() + duration * 1000L));
                                 } catch (SQLException e) {
                                     e.printStackTrace();

@@ -6,11 +6,9 @@ import discord4j.core.event.domain.guild.MemberJoinEvent;
 import discord4j.core.event.domain.guild.MemberLeaveEvent;
 import discord4j.core.event.domain.guild.MemberUpdateEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
-import org.snygame.rengetsu.data.RoleData;
-import org.snygame.rengetsu.data.RoleTimerData;
-import org.snygame.rengetsu.data.ServerData;
-import org.snygame.rengetsu.data.UserData;
+import org.snygame.rengetsu.data.*;
 import org.snygame.rengetsu.tasks.RoleTimerTask;
+import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,12 +18,15 @@ import java.util.Set;
 
 public class MemberListener {
     public static Mono<Void> handleJoin(MemberJoinEvent event) {
+        RoleData roleData = DatabaseManager.getRoleData();
+        ServerData serverData = DatabaseManager.getServerData();
+        UserData userData = DatabaseManager.getUserData();
         return Mono.just(event.getMember()).flatMap(member -> {
                     try {
-                        UserData.setSetMemberLastMsg(member.getId().asLong(), event.getGuildId().asLong(),
-                                System.currentTimeMillis() / UserData.DAY_MILLI);
-                        List<Long> roleIds = RoleData.getRolesToAddOnJoin(event.getGuildId().asLong());
-                        List<Long> channelIds = ServerData.getUserLogs(event.getGuildId().asLong());
+                        userData.setSetMemberLastMsg(member.getId().asLong(), event.getGuildId().asLong(),
+                                System.currentTimeMillis() / TimeStrings.DAY_MILLI);
+                        List<Long> roleIds = roleData.getRolesToAddOnJoin(event.getGuildId().asLong());
+                        List<Long> channelIds = serverData.getUserLogs(event.getGuildId().asLong());
                         return Flux.fromIterable(roleIds).map(Snowflake::of).flatMap(id -> event.getMember().addRole(id,
                                 "Added on join")).then(Flux.fromIterable(channelIds).map(Snowflake::of).flatMap(
                                         event.getClient()::getChannelById).filter(channel -> channel instanceof MessageChannel)
@@ -41,9 +42,10 @@ public class MemberListener {
     }
 
     public static Mono<Void> handleLeave(MemberLeaveEvent event) {
+        ServerData serverData = DatabaseManager.getServerData();
         return Mono.just(event.getUser()).flatMap(user -> {
                     try {
-                        List<Long> channelIds = ServerData.getUserLogs(event.getGuildId().asLong());
+                        List<Long> channelIds = serverData.getUserLogs(event.getGuildId().asLong());
                         return Flux.fromIterable(channelIds).map(Snowflake::of).flatMap(
                                         event.getClient()::getChannelById).filter(channel -> channel instanceof MessageChannel)
                                 .map(channel -> (MessageChannel)channel).flatMap(channel ->
@@ -58,9 +60,10 @@ public class MemberListener {
     }
 
     public static Mono<Void> handleUpdate(MemberUpdateEvent event) {
+        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
         return event.getMember().mapNotNull(member -> {
             try {
-                List<RoleTimerData.Data> timerIds = RoleTimerData.getTimerIds(member.getGuildId().asLong(), member.getId().asLong());
+                List<RoleTimerData.Data> timerIds = roleTimerData.getTimerIds(member.getGuildId().asLong(), member.getId().asLong());
                 Set<Snowflake> roles = member.getRoleIds();
                 timerIds.stream().filter(timer -> !roles.contains(Snowflake.of(timer.roleId())))
                         .map(RoleTimerData.Data::timerId).forEach(RoleTimerTask::cancelTimer);
@@ -73,9 +76,10 @@ public class MemberListener {
     }
 
     public static Mono<Void> handleBan(BanEvent event) {
+        ServerData serverData = DatabaseManager.getServerData();
         return Mono.just(event.getUser()).flatMap(user -> {
                     try {
-                        List<Long> channelIds = ServerData.getUserLogs(event.getGuildId().asLong());
+                        List<Long> channelIds = serverData.getUserLogs(event.getGuildId().asLong());
                         return Flux.fromIterable(channelIds).map(Snowflake::of).flatMap(
                                         event.getClient()::getChannelById).filter(channel -> channel instanceof MessageChannel)
                                 .map(channel -> (MessageChannel)channel).flatMap(channel ->

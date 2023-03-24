@@ -6,6 +6,7 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.UserData;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
@@ -22,9 +23,10 @@ public class SaltClaimButton implements ButtonInteraction {
 
     @Override
     public Mono<Void> handle(ButtonInteractionEvent event) {
+        UserData userData = DatabaseManager.getUserData();
         long day = Long.parseLong(event.getCustomId().split(":")[1]);
 
-        if (System.currentTimeMillis() / UserData.DAY_MILLI > day) {
+        if (System.currentTimeMillis() / TimeStrings.DAY_MILLI > day) {
             return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                     .content("This button has expired.")
                     .addComponent(
@@ -38,7 +40,7 @@ public class SaltClaimButton implements ButtonInteraction {
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger result;
                     try {
-                        result = UserData.claimSalt(id);
+                        result = userData.claimSalt(id);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);

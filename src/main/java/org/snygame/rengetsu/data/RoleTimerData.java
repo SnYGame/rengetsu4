@@ -6,16 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RoleTimerData {
-    private static Connection connection;
+    private final Connection connection;
 
-    private static PreparedStatement addTimerStmt;
-    private static PreparedStatement getDataStmt;
-    private static PreparedStatement removeDataStmt;
-    private static PreparedStatement getAllTimersStmt;
-    private static PreparedStatement getTimerIdStmt;
+    private final PreparedStatement addTimerStmt;
+    private final PreparedStatement getDataStmt;
+    private final PreparedStatement removeDataStmt;
+    private final PreparedStatement getAllTimersStmt;
+    private final PreparedStatement getTimerIdStmt;
 
-    static void initializeStatements(Connection connection) throws SQLException {
-        RoleTimerData.connection = connection;
+    RoleTimerData(Connection connection) throws SQLException {
+        this.connection = connection;
 
         QueryBuilder qb;
 
@@ -47,62 +47,72 @@ public class RoleTimerData {
         getTimerIdStmt = qb.build(connection);
     }
 
-    public static long addTimer(long roleId, long serverId, long userId, Instant endOn) throws SQLException {
-        addTimerStmt.setLong(1, roleId);
-        addTimerStmt.setLong(2, serverId);
-        addTimerStmt.setLong(3, userId);
-        addTimerStmt.setTimestamp(4, Timestamp.from(endOn));
-        addTimerStmt.execute();
+    public long addTimer(long roleId, long serverId, long userId, Instant endOn) throws SQLException {
+        synchronized (connection) {
+            addTimerStmt.setLong(1, roleId);
+            addTimerStmt.setLong(2, serverId);
+            addTimerStmt.setLong(3, userId);
+            addTimerStmt.setTimestamp(4, Timestamp.from(endOn));
+            addTimerStmt.execute();
 
-        ResultSet rs = addTimerStmt.getGeneratedKeys();
+            ResultSet rs = addTimerStmt.getGeneratedKeys();
 
-        if (rs.next()) {
-            long timerId = rs.getLong(1);
+            if (rs.next()) {
+                long timerId = rs.getLong(1);
+                connection.commit();
+                return timerId;
+            }
+
+            throw new RuntimeException();
+        }
+    }
+
+    public Data getData(long timerId) throws SQLException {
+        synchronized (connection) {
+            getDataStmt.setLong(1, timerId);
+            ResultSet rs = getDataStmt.executeQuery();
+            if (rs.next()) {
+                return new Data(rs.getLong("timer_id"), rs.getLong("role_id"), rs.getLong("server_id"),
+                        rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant());
+            }
+            return null;
+        }
+    }
+
+    public void removeData(long timerId) throws SQLException {
+        synchronized (connection) {
+            removeDataStmt.setLong(1, timerId);
+            removeDataStmt.executeUpdate();
             connection.commit();
-            return timerId;
         }
-
-        throw new RuntimeException();
     }
 
-    public static Data getData(long timerId) throws SQLException {
-        getDataStmt.setLong(1, timerId);
-        ResultSet rs = getDataStmt.executeQuery();
-        if (rs.next()) {
-            return new Data(rs.getLong("timer_id"), rs.getLong("role_id"), rs.getLong("server_id"),
-                    rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant());
+    public List<Data> getAllTimers() throws SQLException {
+        synchronized (connection) {
+            ResultSet rs = getAllTimersStmt.executeQuery();
+            ArrayList<Data> timers = new ArrayList<>();
+            while (rs.next()) {
+                timers.add(new Data(rs.getLong("timer_id"), rs.getLong("role_id"), rs.getLong("server_id"),
+                        rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant()));
+            }
+            return timers;
         }
-        return null;
     }
 
-    public static void removeData(long timerId) throws SQLException {
-        removeDataStmt.setLong(1, timerId);
-        removeDataStmt.executeUpdate();
-        connection.commit();
-    }
+    public List<Data> getTimerIds(long serverId, long userId) throws SQLException {
+        synchronized (connection) {
+            getTimerIdStmt.setLong(1, serverId);
+            getTimerIdStmt.setLong(2, userId);
 
-    public static List<Data> getAllTimers() throws SQLException {
-        ResultSet rs = getAllTimersStmt.executeQuery();
-        ArrayList<Data> timers = new ArrayList<>();
-        while (rs.next()) {
-            timers.add(new Data(rs.getLong("timer_id"), rs.getLong("role_id"), rs.getLong("server_id"),
-                    rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant()));
+            ResultSet rs = getTimerIdStmt.executeQuery();
+
+            ArrayList<Data> timers = new ArrayList<>();
+            while (rs.next()) {
+                timers.add(new Data(rs.getLong("timer_id"), rs.getLong("role_id"), rs.getLong("server_id"),
+                        rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant()));
+            }
+            return timers;
         }
-        return timers;
-    }
-
-    public static List<Data> getTimerIds(long serverId, long userId) throws SQLException {
-        getTimerIdStmt.setLong(1, serverId);
-        getTimerIdStmt.setLong(2, userId);
-
-        ResultSet rs = getTimerIdStmt.executeQuery();
-
-        ArrayList<Data> timers = new ArrayList<>();
-        while (rs.next()) {
-            timers.add(new Data(rs.getLong("timer_id"), rs.getLong("role_id"), rs.getLong("server_id"),
-                    rs.getLong("user_id"), rs.getTimestamp("end_on").toInstant()));
-        }
-        return timers;
     }
 
     public record Data(long timerId, long roleId, long serverId, long userId, Instant endOn) {}

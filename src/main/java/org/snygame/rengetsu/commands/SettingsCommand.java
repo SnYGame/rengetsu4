@@ -7,6 +7,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
 import org.snygame.rengetsu.data.UserData;
 import org.snygame.rengetsu.util.TimeStrings;
@@ -35,11 +36,12 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subShow(ChatInputInteractionEvent event) {
+        ServerData serverData = DatabaseManager.getServerData();
         return Mono.justOrEmpty(event.getInteraction().getGuildId().map(Snowflake::asLong)).flatMap(serverId -> {
             try {
-                int inactive = ServerData.getInactiveDays(serverId);
-                List<Long> usrLogs = ServerData.getUserLogs(serverId);
-                List<Long> msgLogs = ServerData.getMessageLogs(serverId);
+                int inactive = serverData.getInactiveDays(serverId);
+                List<Long> usrLogs = serverData.getUserLogs(serverId);
+                List<Long> msgLogs = serverData.getMessageLogs(serverId);
                 return event.reply(InteractionApplicationCommandCallbackSpec.builder()
                         .addEmbed(EmbedCreateSpec.builder()
                                 .addField("Inactivity Period", inactive == 0 ? "N/A" : String.valueOf(inactive), false)
@@ -56,12 +58,13 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subInactive(ChatInputInteractionEvent event) {
+        ServerData serverData = DatabaseManager.getServerData();
         return Mono.justOrEmpty(event.getOptions().get(0).getOption("days")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong)).flatMap(days ->
                 Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(id -> {
                     try {
-                        ServerData.setInactiveDays(id, Math.toIntExact(days));
+                        serverData.setInactiveDays(id, Math.toIntExact(days));
                         if (days > 0) {
                             return event.reply("Inactivity time set to %d days.".formatted(days));
                         }
@@ -76,6 +79,7 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subUserlog(ChatInputInteractionEvent event) {
+        ServerData serverData = DatabaseManager.getServerData();
         return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
             List<Long> ids = IntStream.range(1, 4).mapToObj("channel%d"::formatted)
                     .flatMap(name -> event.getOptions().get(0).getOption(name).stream())
@@ -84,7 +88,7 @@ public class SettingsCommand implements SlashCommand {
                     .toList();
 
             try {
-                ServerData.setUserLogs(serverId, ids);
+                serverData.setUserLogs(serverId, ids);
                 if (ids.isEmpty()) {
                     return event.reply("Cleared user logging channels.");
                 }
@@ -99,6 +103,7 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subMsglog(ChatInputInteractionEvent event) {
+        ServerData serverData = DatabaseManager.getServerData();
         return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
             List<Long> ids = IntStream.range(1, 4).mapToObj("channel%d"::formatted)
                     .flatMap(name -> event.getOptions().get(0).getOption(name).stream())
@@ -107,7 +112,7 @@ public class SettingsCommand implements SlashCommand {
                     .toList();
 
             try {
-                ServerData.setMessageLogs(serverId, ids);
+                serverData.setMessageLogs(serverId, ids);
                 if (ids.isEmpty()) {
                     return event.reply("Cleared message logging channels.");
                 }

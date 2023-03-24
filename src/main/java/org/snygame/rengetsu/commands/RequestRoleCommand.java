@@ -8,6 +8,7 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
 import org.snygame.rengetsu.tasks.RoleTimerTask;
@@ -29,22 +30,24 @@ public class RequestRoleCommand implements SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
+        RoleData roleData = DatabaseManager.getRoleData();
+        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
         return Mono.justOrEmpty(event.getOption("role")
                 .flatMap(ApplicationCommandInteractionOption::getValue))
                 .flatMap(ApplicationCommandInteractionOptionValue::asRole)
                 .flatMap(role -> {
                     if (!role.isEveryone()) {
-                        RoleData.Data roleData;
+                        RoleData.Data data;
 
                         try {
-                            roleData = RoleData.getRoleData(role.getId().asLong(), role.getGuildId().asLong());
+                            data = roleData.getRoleData(role.getId().asLong(), role.getGuildId().asLong());
                         } catch (SQLException e) {
                             e.printStackTrace();
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 
                         RoleData.Data.Requestable requestable;
-                        if ((requestable = roleData.requestable) != null) {
+                        if ((requestable = data.requestable) != null) {
                             Optional<Integer> duration = event.getOption("duration").flatMap(ApplicationCommandInteractionOption::getValue)
                                     .map(ApplicationCommandInteractionOptionValue::asString).map(TimeStrings::readDuration);
 
@@ -53,7 +56,7 @@ public class RequestRoleCommand implements SlashCommand {
                             return Mono.justOrEmpty(event.getInteraction().getMember()).flatMap(member -> {
                                 if (member.getRoleIds().contains(role.getId())) {
                                     return member.removeRole(role.getId(), "Requested").then(
-                                                    Flux.fromIterable(roleData.addWhenRemoved).map(Snowflake::of).flatMap(id ->
+                                                    Flux.fromIterable(data.addWhenRemoved).map(Snowflake::of).flatMap(id ->
                                                             member.addRole(id, "Added after removing role")).then())
                                             .then(event.reply("Your %s role has been removed.".formatted(role.getName())));
                                 } else {
@@ -69,11 +72,11 @@ public class RequestRoleCommand implements SlashCommand {
                                         if (requestable.temp) {
                                             long time = System.currentTimeMillis();
                                             try {
-                                                long timerId = RoleTimerData.addTimer(roleData.roleId, roleData.serverId, member.getId().asLong(),
+                                                long timerId = roleTimerData.addTimer(data.roleId, data.serverId, member.getId().asLong(),
                                                         Instant.ofEpochMilli(time + actualDuration * 1000L));
                                                 RoleTimerTask.startTask(event.getClient(), timerId, actualDuration * 1000L);
                                                 return member.addRole(role.getId(), "Requested").then(
-                                                                Flux.fromIterable(roleData.removeWhenAdded).map(Snowflake::of).flatMap(id ->
+                                                                Flux.fromIterable(data.removeWhenAdded).map(Snowflake::of).flatMap(id ->
                                                                         member.removeRole(id, "Removed when adding new role")).then())
                                                         .then(event.reply("You have been given the %s role for %s.".formatted(role.getName(),
                                                                 TimeStrings.secondsToEnglish(actualDuration))));
@@ -83,7 +86,7 @@ public class RequestRoleCommand implements SlashCommand {
                                             }
                                         } else {
                                             return member.addRole(role.getId(), "Requested").then(
-                                                    Flux.fromIterable(roleData.removeWhenAdded).map(Snowflake::of).flatMap(id ->
+                                                    Flux.fromIterable(data.removeWhenAdded).map(Snowflake::of).flatMap(id ->
                                                             member.removeRole(id, "Removed when adding new role")).then())
                                                     .then(event.reply("You have been given the %s role.".formatted(role.getName())));
                                         }
@@ -92,9 +95,9 @@ public class RequestRoleCommand implements SlashCommand {
                                                 .content("Please read the following to receive the %s role:\n\n%s".formatted(role.getName(), requestable.agreement))
                                                 .addComponent(ActionRow.of(
                                                         Button.success("requestrole:%d:%d:accept:%d"
-                                                                .formatted(roleData.roleId, roleData.serverId, actualDuration),"Accept"),
+                                                                .formatted(data.roleId, data.serverId, actualDuration),"Accept"),
                                                         Button.danger("requestrole:%d:%d:decline"
-                                                                .formatted(roleData.roleId, roleData.serverId), "Decline")
+                                                                .formatted(data.roleId, data.serverId), "Decline")
                                                 ))
                                                 .build()))
                                                 .then(event.reply("Please check your DMs to receive the %s role.".formatted(role.getName())))

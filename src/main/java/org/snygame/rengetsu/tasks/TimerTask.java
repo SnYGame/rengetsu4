@@ -7,6 +7,7 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import org.snygame.rengetsu.Rengetsu;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.TimerData;
 
 import java.sql.SQLException;
@@ -19,12 +20,13 @@ public class TimerTask {
     private static final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
 
     public static void startup(GatewayDiscordClient client) {
+        TimerData timerData = DatabaseManager.getTimerData();
         try {
-            int cleared = TimerData.cleanupTable();
+            int cleared = timerData.cleanupTable();
             if (cleared > 0) {
                 Rengetsu.getLOGGER().info("Cleared %d expired timers".formatted(cleared));
             }
-            for (TimerData.Data data: TimerData.getAllTimers()) {
+            for (TimerData.Data data: timerData.getAllTimers()) {
                 startTask(client, data.timerId(), data.endOn().toEpochMilli() - System.currentTimeMillis());
             }
         } catch (SQLException e) {
@@ -33,9 +35,10 @@ public class TimerTask {
     }
 
     public static void startTask(GatewayDiscordClient client, long timerId, long duration) {
+        TimerData timerData = DatabaseManager.getTimerData();
         ScheduledFuture<?> task = TaskManager.service.schedule(() -> {
             try {
-                TimerData.Data data = TimerData.getData(timerId);
+                TimerData.Data data = timerData.getData(timerId);
                 if (data != null) {
                     client.getChannelById(Snowflake.of(data.channelId())).filter(channel -> channel instanceof MessageChannel)
                             .map(channel -> (MessageChannel) channel).flatMap(channel ->
@@ -47,7 +50,7 @@ public class TimerTask {
                                                     .timestamp(data.setOn())
                                                     .build()).build())).subscribe();
                 }
-                TimerData.removeData(timerId);
+                timerData.removeData(timerId);
                 tasks.remove(timerId);
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -57,12 +60,13 @@ public class TimerTask {
     }
 
     public static boolean cancelTimer(long timerId) {
+        TimerData timerData = DatabaseManager.getTimerData();
         ScheduledFuture<?> task;
         if ((task = tasks.remove(timerId)) != null) {
             task.cancel(false);
             if (task.isCancelled()) {
                 try {
-                    TimerData.removeData(timerId);
+                    timerData.removeData(timerId);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }

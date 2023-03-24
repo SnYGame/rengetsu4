@@ -11,6 +11,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import reactor.core.publisher.Mono;
 
@@ -26,6 +27,7 @@ public class RoleSetButton implements ButtonInteraction {
 
     @Override
     public Mono<Void> handle(ButtonInteractionEvent event) {
+        RoleData roleData = DatabaseManager.getRoleData();
         return Mono.justOrEmpty(event.getInteraction().getMember()).flatMap(PartialMember::getBasePermissions)
                 .map(permissions -> permissions.and(PermissionSet.of(Permission.MANAGE_ROLES))).flatMap(permissions -> {
                     if (permissions.isEmpty()) {
@@ -34,56 +36,56 @@ public class RoleSetButton implements ButtonInteraction {
 
                     String[] args = event.getCustomId().split(":");
 
-                    RoleData.Data roleData = RoleData.getTempData(Long.parseLong(args[1]), Long.parseLong(args[2]));
-                    if (roleData == null) {
+                    RoleData.Data data = roleData.getTempData(Long.parseLong(args[1]), Long.parseLong(args[2]));
+                    if (data == null) {
                         return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
                     }
 
                     switch (args[3]) {
-                        case "add_join" -> roleData.addJoin = Boolean.parseBoolean(args[4]);
-                        case "add_inactive" -> roleData.addInactive = Boolean.parseBoolean(args[4]);
-                        case "requestable" -> roleData.requestable = Boolean.parseBoolean(args[4]) ? new RoleData.Data.Requestable(false, null) : null;
+                        case "add_join" -> data.addJoin = Boolean.parseBoolean(args[4]);
+                        case "add_inactive" -> data.addInactive = Boolean.parseBoolean(args[4]);
+                        case "requestable" -> data.requestable = Boolean.parseBoolean(args[4]) ? new RoleData.Data.Requestable(false, null) : null;
                         case "temp" -> {
-                            if (roleData.requestable != null) {
-                                roleData.requestable.temp = Boolean.parseBoolean(args[4]);
+                            if (data.requestable != null) {
+                                data.requestable.temp = Boolean.parseBoolean(args[4]);
                             }
                         }
                         case "agreement" -> {
-                            return event.presentModal().withCustomId("role:%d:%d:agreement".formatted(roleData.roleId, roleData.serverId))
+                            return event.presentModal().withCustomId("role:%d:%d:agreement".formatted(data.roleId, data.serverId))
                                     .withTitle("Request agreement").withComponents(
                                             ActionRow.of(TextInput.paragraph("agreement", "Agreement (leave blank to remove)", 0, 1500)
-                                                    .prefilled(roleData.requestable != null && roleData.requestable.agreement != null ?
-                                                            roleData.requestable.agreement : "").required(false))
+                                                    .prefilled(data.requestable != null && data.requestable.agreement != null ?
+                                                            data.requestable.agreement : "").required(false))
                                     );
                         }
                         case "on_remove", "on_add" -> {
-                            return event.getClient().getGuildRoles(Snowflake.of(roleData.serverId))
-                                    .filter(role -> role.getId().asLong() != roleData.roleId && !role.isEveryone())
+                            return event.getClient().getGuildRoles(Snowflake.of(data.serverId))
+                                    .filter(role -> role.getId().asLong() != data.roleId && !role.isEveryone())
                                     .map(role -> SelectMenu.Option.of("@%s".formatted(role.getName()), role.getId().asString())
-                                            .withDefault((args[3].equals("on_remove") ? roleData.addWhenRemoved : roleData.removeWhenAdded)
+                                            .withDefault((args[3].equals("on_remove") ? data.addWhenRemoved : data.removeWhenAdded)
                                                     .contains(role.getId().asLong())))
                                     .collectList().flatMap(options ->
                                                     event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                                     .content("Select roles to add when <@&%d> is %s."
-                                                            .formatted(roleData.roleId, args[3].equals("on_remove") ? "removed" : "added"))
+                                                            .formatted(data.roleId, args[3].equals("on_remove") ? "removed" : "added"))
                                                     .embeds(Collections.emptyList())
                                                     .addComponent(ActionRow.of(
-                                                            SelectMenu.of("role:%d:%d:%s".formatted(roleData.roleId, roleData.serverId, args[3]), options)
+                                                            SelectMenu.of("role:%d:%d:%s".formatted(data.roleId, data.serverId, args[3]), options)
                                                                     .withMaxValues(options.size()).withMinValues(0)
                                                     )).addComponent(ActionRow.of(Button.danger("role:%d:%d:cancel_menu"
-                                                                    .formatted(roleData.roleId, roleData.serverId), "Cancel")))
+                                                                    .formatted(data.roleId, data.serverId), "Cancel")))
                                                     .build())
                                             );
                         }
                         case "cancel_menu" -> {}
                         case "save" -> {
                             try {
-                                RoleData.saveRoleData(roleData);
-                                RoleData.removeTempData(roleData);
+                                roleData.saveRoleData(data);
+                                roleData.removeTempData(data);
                                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                         .addEmbed(EmbedCreateSpec.builder()
                                                 .title("Data saved for")
-                                                .description("<@&%d>".formatted(roleData.roleId)).build()
+                                                .description("<@&%d>".formatted(data.roleId)).build()
                                         ).components(Collections.emptyList()).build());
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -91,21 +93,21 @@ public class RoleSetButton implements ButtonInteraction {
                             }
                         }
                         case "no_save" -> {
-                            RoleData.removeTempData(roleData);
+                            roleData.removeTempData(data);
                             return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                     .addEmbed(EmbedCreateSpec.builder()
                                             .title("Canceled changes to")
-                                            .description("<@&%d>".formatted(roleData.roleId)).build()
+                                            .description("<@&%d>".formatted(data.roleId)).build()
                                     ).components(Collections.emptyList()).build());
                         }
                         case "clear" -> {
                             try {
-                                RoleData.deleteRoleData(roleData.roleId, roleData.serverId);
-                                RoleData.removeTempData(roleData);
+                                roleData.deleteRoleData(data.roleId, data.serverId);
+                                roleData.removeTempData(data);
                                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                         .addEmbed(EmbedCreateSpec.builder()
                                                 .title("Cleared data for")
-                                                .description("<@&%d>".formatted(roleData.roleId)).build()
+                                                .description("<@&%d>".formatted(data.roleId)).build()
                                         ).components(Collections.emptyList()).build());
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -114,7 +116,7 @@ public class RoleSetButton implements ButtonInteraction {
                         }
                     }
 
-                    return event.edit(RoleData.buildMenu(roleData));
+                    return event.edit(RoleData.buildMenu(data));
                 });
     }
 }

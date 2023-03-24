@@ -12,6 +12,7 @@ import discord4j.core.object.presence.Status;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import reactor.core.publisher.Mono;
 
@@ -27,6 +28,7 @@ public class RoleCommand implements SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
+        RoleData roleData = DatabaseManager.getRoleData();
         return Mono.justOrEmpty(event.getOption("role")
                 .flatMap(ApplicationCommandInteractionOption::getValue))
                 .flatMap(ApplicationCommandInteractionOptionValue::asRole)
@@ -34,17 +36,17 @@ public class RoleCommand implements SlashCommand {
                     if (role.isEveryone()) {
                         return event.reply("**[Error]** Cannot manipulate @everyone role").withEphemeral(true);
                     } else {
-                        RoleData.Data roleData;
+                        RoleData.Data data;
 
                         try {
-                            roleData = RoleData.getRoleData(role.getId().asLong(), role.getGuildId().asLong());
+                            data = roleData.getRoleData(role.getId().asLong(), role.getGuildId().asLong());
                         } catch (SQLException e) {
                             e.printStackTrace();
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 
-                        RoleData.putTempData(roleData);
-                        return event.reply(RoleData.buildMenu(roleData));
+                        roleData.putTempData(data);
+                        return event.reply(RoleData.buildMenu(data));
                     }
                 });
     }

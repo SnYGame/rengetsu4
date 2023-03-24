@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.data;
 
 import discord4j.common.util.Snowflake;
+import org.snygame.rengetsu.util.TimeStrings;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -9,24 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserData {
-    public static final int DAY_MILLI = 1000 * 60 * 60 * 24;
+    private final Connection connection;
 
-    private static Connection connection;
+    private final PreparedStatement initializeUserStmt;
+    private final PreparedStatement getSaltAmountStmt;
+    private final PreparedStatement getSaltClaimStmt;
+    private final PreparedStatement setSaltClaimStmt;
+    private final PreparedStatement setSaltStmt;
+    private final PreparedStatement getRemindStmt;
+    private final PreparedStatement setRemindStmt;
+    private final PreparedStatement getRemindIdsStmt;
 
-    private static PreparedStatement initializeUserStmt;
-    private static PreparedStatement getSaltAmountStmt;
-    private static PreparedStatement getSaltClaimStmt;
-    private static PreparedStatement setSaltClaimStmt;
-    private static PreparedStatement setSaltStmt;
-    private static PreparedStatement getRemindStmt;
-    private static PreparedStatement setRemindStmt;
-    private static PreparedStatement getRemindIdsStmt;
+    private final PreparedStatement setMemberLastMsgStmt;
+    private final PreparedStatement getMemberLastMsgStmt;
 
-    private static PreparedStatement setMemberLastMsgStmt;
-    private static PreparedStatement getMemberLastMsgStmt;
-
-    static void initializeStatements(Connection connection) throws SQLException {
-        UserData.connection = connection;
+    UserData(Connection connection) throws SQLException {
+        this.connection = connection;
 
         QueryBuilder qb;
 
@@ -89,142 +88,156 @@ public class UserData {
         getMemberLastMsgStmt = qb.build(connection);
     }
 
-    private static int initializeUser(long id) throws SQLException {
+    private int initializeUser(long id) throws SQLException {
         initializeUserStmt.setLong(1, id);
         int rows = initializeUserStmt.executeUpdate();
         connection.commit();
         return rows;
     }
 
-    public static BigInteger getSaltAmount(long id) throws SQLException {
-        getSaltAmountStmt.setLong(1, id);
-        ResultSet rs = getSaltAmountStmt.executeQuery();
-        if (rs.next()) {
-            return rs.getBigDecimal("salt_amount").toBigInteger();
-        }
-
-        if (initializeUser(id) > 0) {
-            return BigInteger.ZERO;
-        }
-
-        throw new RuntimeException();
-    }
-
-    public static BigInteger claimSalt(long id) throws SQLException {
-        getSaltClaimStmt.setLong(1, id);
-        ResultSet rs = getSaltClaimStmt.executeQuery();
-
-        BigInteger saltAmount;
-        long lastClaim;
-        if (rs.next()) {
-            saltAmount = rs.getBigDecimal("salt_amount").toBigInteger();
-            lastClaim = rs.getLong("salt_last_claim");
-        } else {
-            saltAmount = BigInteger.ZERO;
-            lastClaim = 0;
-            initializeUser(id);
-        }
-
-        long remain = (lastClaim + 1) * DAY_MILLI - System.currentTimeMillis();
-        if (remain > 0) {
-            return BigInteger.valueOf(-remain);
-        }
-
-        saltAmount = saltAmount.add(BigInteger.valueOf(2000));
-
-        setSaltClaimStmt.setBigDecimal(1, new BigDecimal(saltAmount));
-        setSaltClaimStmt.setLong(2, System.currentTimeMillis() / DAY_MILLI);
-        setSaltClaimStmt.setLong(3, id);
-        if (setSaltClaimStmt.executeUpdate() > 0) {
-            connection.commit();
-            return saltAmount;
-        }
-
-        throw new RuntimeException();
-    }
-
-    public static BigInteger giveSalt(long idSender, long idRecipient, BigInteger amount) throws SQLException {
-        BigInteger senderSalt = getSaltAmount(idSender);
-        BigInteger recipientSalt = getSaltAmount(idRecipient);
-
-        senderSalt = senderSalt.subtract(amount);
-        recipientSalt = recipientSalt.add(amount);
-        if (senderSalt.signum() == -1) {
-            return senderSalt;
-        }
-
-        try {
-            setSaltStmt.setBigDecimal(1, new BigDecimal(senderSalt));
-            setSaltStmt.setLong(2, idSender);
-            if (setSaltStmt.executeUpdate() > 0) {
-                setSaltStmt.setBigDecimal(1, new BigDecimal(recipientSalt));
-                setSaltStmt.setLong(2, idRecipient);
-                if (setSaltStmt.executeUpdate() > 0) {
-                    connection.commit();
-                    return senderSalt;
-                }
+    public BigInteger getSaltAmount(long id) throws SQLException {
+        synchronized (connection) {
+            getSaltAmountStmt.setLong(1, id);
+            ResultSet rs = getSaltAmountStmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal("salt_amount").toBigInteger();
             }
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
-        }
 
-        throw new RuntimeException();
+            if (initializeUser(id) > 0) {
+                return BigInteger.ZERO;
+            }
+
+            throw new RuntimeException();
+        }
     }
 
-    public static boolean toggleRemind(long id) throws SQLException {
-        getRemindStmt.setLong(1, id);
-        ResultSet rs = getRemindStmt.executeQuery();
-        boolean remind;
-        if (rs.next()) {
-            remind = rs.getBoolean("salt_remind");
-        } else {
-            remind = false;
-            initializeUser(id);
-        }
+    public BigInteger claimSalt(long id) throws SQLException {
+        synchronized (connection) {
+            getSaltClaimStmt.setLong(1, id);
+            ResultSet rs = getSaltClaimStmt.executeQuery();
 
-        setRemindStmt.setBoolean(1, !remind);
-        setRemindStmt.setLong(2, id);
-        if (setRemindStmt.executeUpdate() > 0) {
+            BigInteger saltAmount;
+            long lastClaim;
+            if (rs.next()) {
+                saltAmount = rs.getBigDecimal("salt_amount").toBigInteger();
+                lastClaim = rs.getLong("salt_last_claim");
+            } else {
+                saltAmount = BigInteger.ZERO;
+                lastClaim = 0;
+                initializeUser(id);
+            }
+
+            long remain = (lastClaim + 1) * TimeStrings.DAY_MILLI - System.currentTimeMillis();
+            if (remain > 0) {
+                return BigInteger.valueOf(-remain);
+            }
+
+            saltAmount = saltAmount.add(BigInteger.valueOf(2000));
+
+            setSaltClaimStmt.setBigDecimal(1, new BigDecimal(saltAmount));
+            setSaltClaimStmt.setLong(2, System.currentTimeMillis() / TimeStrings.DAY_MILLI);
+            setSaltClaimStmt.setLong(3, id);
+            if (setSaltClaimStmt.executeUpdate() > 0) {
+                connection.commit();
+                return saltAmount;
+            }
+
+            throw new RuntimeException();
+        }
+    }
+
+    public BigInteger giveSalt(long idSender, long idRecipient, BigInteger amount) throws SQLException {
+        synchronized (connection) {
+            BigInteger senderSalt = getSaltAmount(idSender);
+            BigInteger recipientSalt = getSaltAmount(idRecipient);
+
+            senderSalt = senderSalt.subtract(amount);
+            recipientSalt = recipientSalt.add(amount);
+            if (senderSalt.signum() == -1) {
+                return senderSalt;
+            }
+
+            try {
+                setSaltStmt.setBigDecimal(1, new BigDecimal(senderSalt));
+                setSaltStmt.setLong(2, idSender);
+                if (setSaltStmt.executeUpdate() > 0) {
+                    setSaltStmt.setBigDecimal(1, new BigDecimal(recipientSalt));
+                    setSaltStmt.setLong(2, idRecipient);
+                    if (setSaltStmt.executeUpdate() > 0) {
+                        connection.commit();
+                        return senderSalt;
+                    }
+                }
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+
+            throw new RuntimeException();
+        }
+    }
+
+    public boolean toggleRemind(long id) throws SQLException {
+        synchronized (connection) {
+            getRemindStmt.setLong(1, id);
+            ResultSet rs = getRemindStmt.executeQuery();
+            boolean remind;
+            if (rs.next()) {
+                remind = rs.getBoolean("salt_remind");
+            } else {
+                remind = false;
+                initializeUser(id);
+            }
+
+            setRemindStmt.setBoolean(1, !remind);
+            setRemindStmt.setLong(2, id);
+            if (setRemindStmt.executeUpdate() > 0) {
+                connection.commit();
+                return !remind;
+            }
+
+            throw new RuntimeException();
+        }
+    }
+
+    public List<Snowflake> getRemindIds() throws SQLException {
+        synchronized (connection) {
+            ResultSet rs = getRemindIdsStmt.executeQuery();
+
+            ArrayList<Snowflake> ids = new ArrayList<>();
+            while (rs.next()) {
+                ids.add(Snowflake.of(rs.getLong("user_id")));
+            }
+
+            return ids;
+        }
+    }
+
+    public void setSetMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
+        synchronized (connection) {
+            DatabaseManager.getServerData().initializeServer(serverId);
+            initializeUser(userId);
+
+            setMemberLastMsgStmt.setLong(1, userId);
+            setMemberLastMsgStmt.setLong(2, serverId);
+            setMemberLastMsgStmt.setLong(3, lastMsg);
+            setMemberLastMsgStmt.executeUpdate();
             connection.commit();
-            return !remind;
         }
-
-        throw new RuntimeException();
     }
 
-    public static List<Snowflake> getRemindIds() throws SQLException {
-        ResultSet rs = getRemindIdsStmt.executeQuery();
+    public long getSetMemberLastMsg(long userId, long serverId) throws SQLException {
+        synchronized (connection) {
+            getMemberLastMsgStmt.setLong(1, userId);
+            getMemberLastMsgStmt.setLong(2, serverId);
+            ResultSet rs = getMemberLastMsgStmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("last_msg");
+            }
 
-        ArrayList<Snowflake> ids = new ArrayList<>();
-        while (rs.next()) {
-            ids.add(Snowflake.of(rs.getLong("user_id")));
+            long lastMsg = System.currentTimeMillis() / TimeStrings.DAY_MILLI;
+            setSetMemberLastMsg(userId, serverId, lastMsg);
+            return lastMsg;
         }
-
-        return ids;
-    }
-
-    public static void setSetMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
-        ServerData.initializeServer(serverId);
-        UserData.initializeUser(userId);
-
-        setMemberLastMsgStmt.setLong(1, userId);
-        setMemberLastMsgStmt.setLong(2, serverId);
-        setMemberLastMsgStmt.setLong(3, lastMsg);
-        setMemberLastMsgStmt.executeUpdate();
-        connection.commit();
-    }
-
-    public static long getSetMemberLastMsg(long userId, long serverId) throws SQLException {
-        getMemberLastMsgStmt.setLong(1, userId);
-        getMemberLastMsgStmt.setLong(2, serverId);
-        ResultSet rs = getMemberLastMsgStmt.executeQuery();
-        if (rs.next()) {
-            return rs.getLong("last_msg");
-        }
-
-        long lastMsg = System.currentTimeMillis() / UserData.DAY_MILLI;
-        setSetMemberLastMsg(userId, serverId, lastMsg);
-        return lastMsg;
     }
 }

@@ -5,6 +5,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.User;
+import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.UserData;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
@@ -28,6 +29,7 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subBalance(ChatInputInteractionEvent event) {
+        UserData userData = DatabaseManager.getUserData();
         return event.getOptions().get(0).getOption("user")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asUser).map(userMono -> userMono.flatMap(user -> {
@@ -37,7 +39,7 @@ public class SaltCommand implements SlashCommand {
 
                     BigInteger saltAmount;
                     try {
-                        saltAmount = UserData.getSaltAmount(user.getId().asLong());
+                        saltAmount = userData.getSaltAmount(user.getId().asLong());
                     } catch (SQLException e) {
                         e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
@@ -49,7 +51,7 @@ public class SaltCommand implements SlashCommand {
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger saltAmount;
                     try {
-                        saltAmount = UserData.getSaltAmount(id);
+                        saltAmount = userData.getSaltAmount(id);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
@@ -59,11 +61,12 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subClaim(ChatInputInteractionEvent event) {
+        UserData userData = DatabaseManager.getUserData();
         return Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger result;
                     try {
-                        result = UserData.claimSalt(id);
+                        result = userData.claimSalt(id);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
@@ -80,11 +83,12 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subRemind(ChatInputInteractionEvent event) {
+        UserData userData = DatabaseManager.getUserData();
         return Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     boolean remind;
                     try {
-                        remind = UserData.toggleRemind(id);
+                        remind = userData.toggleRemind(id);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         return event.reply("**[Error]** Database error").withEphemeral(true);
@@ -94,6 +98,7 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subGive(ChatInputInteractionEvent event) {
+        UserData userData = DatabaseManager.getUserData();
         long amount = event.getOptions().get(0).getOption("amount")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong).orElse(0L);
@@ -119,7 +124,7 @@ public class SaltCommand implements SlashCommand {
 
                                 BigInteger result;
                                 try {
-                                    result = UserData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
+                                    result = userData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
                                 } catch (SQLException e) {
                                     e.printStackTrace();
                                     return event.reply("**[Error]** Database error").withEphemeral(true);

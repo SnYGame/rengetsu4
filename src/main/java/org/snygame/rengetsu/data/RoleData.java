@@ -16,28 +16,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class RoleData {
-    private static Connection connection;
+    private final Connection connection;
 
-    private static PreparedStatement getRoleDataStmt;
-    private static PreparedStatement getRoleRequestDataStmt;
-    private static PreparedStatement getRoleOnRemoveDataStmt;
-    private static PreparedStatement getRoleOnAddDataStmt;
+    private final PreparedStatement getRoleDataStmt;
+    private final PreparedStatement getRoleRequestDataStmt;
+    private final PreparedStatement getRoleOnRemoveDataStmt;
+    private final PreparedStatement getRoleOnAddDataStmt;
 
-    private static PreparedStatement setRoleDataStmt;
-    private static PreparedStatement setRoleRequestDataStmt;
-    private static PreparedStatement deleteRoleRequestDataStmt;
-    private static PreparedStatement clearRoleOnRemoveDataStmt;
-    private static PreparedStatement clearRoleOnAddDataStmt;
-    private static PreparedStatement addRoleOnRemoveDataStmt;
-    private static PreparedStatement addRoleOnAddDataStmt;
+    private final PreparedStatement setRoleDataStmt;
+    private final PreparedStatement setRoleRequestDataStmt;
+    private final PreparedStatement deleteRoleRequestDataStmt;
+    private final PreparedStatement clearRoleOnRemoveDataStmt;
+    private final PreparedStatement clearRoleOnAddDataStmt;
+    private final PreparedStatement addRoleOnRemoveDataStmt;
+    private final PreparedStatement addRoleOnAddDataStmt;
 
-    private static PreparedStatement clearRoleDataStmt;
+    private final PreparedStatement clearRoleDataStmt;
 
-    private static PreparedStatement getRolesToAddOnJoinStmt;
-    private static PreparedStatement getRolesToAddOnInactiveStmt;
+    private final PreparedStatement getRolesToAddOnJoinStmt;
+    private final PreparedStatement getRolesToAddOnInactiveStmt;
 
-    static void initializeStatements(Connection connection) throws SQLException {
-        RoleData.connection = connection;
+    RoleData(Connection connection) throws SQLException {
+        this.connection = connection;
 
         QueryBuilder qb;
 
@@ -118,145 +118,159 @@ public class RoleData {
         getRolesToAddOnInactiveStmt = qb.build(connection);
     }
 
-    public static Data getRoleData(long roleId, long serverId) throws SQLException {
-        getRoleDataStmt.setLong(1, roleId);
-        getRoleDataStmt.setLong(2, serverId);
-        ResultSet rs = getRoleDataStmt.executeQuery();
+    public Data getRoleData(long roleId, long serverId) throws SQLException {
+        synchronized (connection) {
+            getRoleDataStmt.setLong(1, roleId);
+            getRoleDataStmt.setLong(2, serverId);
+            ResultSet rs = getRoleDataStmt.executeQuery();
 
-        Data data = new Data(roleId, serverId);
+            Data data = new Data(roleId, serverId);
 
-        if (!rs.next()) {
+            if (!rs.next()) {
+                return data;
+            }
+
+            data.addJoin = rs.getBoolean("add_on_join");
+            data.addInactive = rs.getBoolean("add_on_inactive");
+
+            getRoleRequestDataStmt.setLong(1, roleId);
+            getRoleRequestDataStmt.setLong(2, serverId);
+            rs = getRoleRequestDataStmt.executeQuery();
+
+            if (rs.next()) {
+                data.requestable = new Data.Requestable(rs.getBoolean("temp"), rs.getString("agreement"));
+            }
+
+            getRoleOnRemoveDataStmt.setLong(1, roleId);
+            getRoleOnRemoveDataStmt.setLong(2, serverId);
+            rs = getRoleOnRemoveDataStmt.executeQuery();
+
+            while (rs.next()) {
+                data.addWhenRemoved.add(rs.getLong("to_add_id"));
+            }
+
+            getRoleOnAddDataStmt.setLong(1, roleId);
+            getRoleOnAddDataStmt.setLong(2, serverId);
+            rs = getRoleOnAddDataStmt.executeQuery();
+
+            while (rs.next()) {
+                data.removeWhenAdded.add(rs.getLong("to_remove_id"));
+            }
+
             return data;
         }
-
-        data.addJoin = rs.getBoolean("add_on_join");
-        data.addInactive = rs.getBoolean("add_on_inactive");
-
-        getRoleRequestDataStmt.setLong(1, roleId);
-        getRoleRequestDataStmt.setLong(2, serverId);
-        rs = getRoleRequestDataStmt.executeQuery();
-
-        if (rs.next()) {
-            data.requestable = new Data.Requestable(rs.getBoolean("temp"), rs.getString("agreement"));
-        }
-
-        getRoleOnRemoveDataStmt.setLong(1, roleId);
-        getRoleOnRemoveDataStmt.setLong(2, serverId);
-        rs = getRoleOnRemoveDataStmt.executeQuery();
-
-        while (rs.next()) {
-            data.addWhenRemoved.add(rs.getLong("to_add_id"));
-        }
-
-        getRoleOnAddDataStmt.setLong(1, roleId);
-        getRoleOnAddDataStmt.setLong(2, serverId);
-        rs = getRoleOnAddDataStmt.executeQuery();
-
-        while (rs.next()) {
-            data.removeWhenAdded.add(rs.getLong("to_remove_id"));
-        }
-
-        return data;
     }
 
-    public static void saveRoleData(Data data) throws SQLException {
-        try {
-            ServerData.initializeServer(data.serverId);
+    public void saveRoleData(Data data) throws SQLException {
+        DatabaseManager.getServerData().initializeServer(data.serverId);
 
-            setRoleDataStmt.setLong(1, data.roleId);
-            setRoleDataStmt.setLong(2, data.serverId);
-            setRoleDataStmt.setBoolean(3, data.addJoin);
-            setRoleDataStmt.setBoolean(4, data.addInactive);
-            setRoleDataStmt.executeUpdate();
+        synchronized (connection) {
+            try {
+                setRoleDataStmt.setLong(1, data.roleId);
+                setRoleDataStmt.setLong(2, data.serverId);
+                setRoleDataStmt.setBoolean(3, data.addJoin);
+                setRoleDataStmt.setBoolean(4, data.addInactive);
+                setRoleDataStmt.executeUpdate();
 
-            if (data.requestable == null) {
-                deleteRoleRequestDataStmt.setLong(1, data.roleId);
-                deleteRoleRequestDataStmt.setLong(2, data.serverId);
-                deleteRoleRequestDataStmt.executeUpdate();
-            } else {
-                setRoleRequestDataStmt.setLong(1, data.roleId);
-                setRoleRequestDataStmt.setLong(2, data.serverId);
-                setRoleRequestDataStmt.setBoolean(3, data.requestable.temp);
-                setRoleRequestDataStmt.setString(4, data.requestable.agreement);
-                setRoleRequestDataStmt.executeUpdate();
+                if (data.requestable == null) {
+                    deleteRoleRequestDataStmt.setLong(1, data.roleId);
+                    deleteRoleRequestDataStmt.setLong(2, data.serverId);
+                    deleteRoleRequestDataStmt.executeUpdate();
+                } else {
+                    setRoleRequestDataStmt.setLong(1, data.roleId);
+                    setRoleRequestDataStmt.setLong(2, data.serverId);
+                    setRoleRequestDataStmt.setBoolean(3, data.requestable.temp);
+                    setRoleRequestDataStmt.setString(4, data.requestable.agreement);
+                    setRoleRequestDataStmt.executeUpdate();
+                }
+
+                clearRoleOnRemoveDataStmt.setLong(1, data.roleId);
+                clearRoleOnRemoveDataStmt.setLong(2, data.serverId);
+                clearRoleOnRemoveDataStmt.executeUpdate();
+
+                clearRoleOnAddDataStmt.setLong(1, data.roleId);
+                clearRoleOnAddDataStmt.setLong(2, data.serverId);
+                clearRoleOnAddDataStmt.executeUpdate();
+
+                addRoleOnRemoveDataStmt.setLong(1, data.roleId);
+                addRoleOnRemoveDataStmt.setLong(2, data.serverId);
+                for (Long roleId : data.addWhenRemoved) {
+                    addRoleOnRemoveDataStmt.setLong(3, roleId);
+                    addRoleOnRemoveDataStmt.executeUpdate();
+                }
+
+                addRoleOnAddDataStmt.setLong(1, data.roleId);
+                addRoleOnAddDataStmt.setLong(2, data.serverId);
+                for (Long roleId : data.removeWhenAdded) {
+                    addRoleOnAddDataStmt.setLong(3, roleId);
+                    addRoleOnAddDataStmt.executeUpdate();
+                }
+
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
             }
+        }
+    }
 
-            clearRoleOnRemoveDataStmt.setLong(1, data.roleId);
-            clearRoleOnRemoveDataStmt.setLong(2, data.serverId);
-            clearRoleOnRemoveDataStmt.executeUpdate();
-
-            clearRoleOnAddDataStmt.setLong(1, data.roleId);
-            clearRoleOnAddDataStmt.setLong(2, data.serverId);
-            clearRoleOnAddDataStmt.executeUpdate();
-
-            addRoleOnRemoveDataStmt.setLong(1, data.roleId);
-            addRoleOnRemoveDataStmt.setLong(2, data.serverId);
-            for (Long roleId : data.addWhenRemoved) {
-                addRoleOnRemoveDataStmt.setLong(3, roleId);
-                addRoleOnRemoveDataStmt.executeUpdate();
-            }
-
-            addRoleOnAddDataStmt.setLong(1, data.roleId);
-            addRoleOnAddDataStmt.setLong(2, data.serverId);
-            for (Long roleId : data.removeWhenAdded) {
-                addRoleOnAddDataStmt.setLong(3, roleId);
-                addRoleOnAddDataStmt.executeUpdate();
-            }
-
+    public void deleteRoleData(long roleId, long serverId) throws SQLException {
+        synchronized (connection) {
+            clearRoleDataStmt.setLong(1, roleId);
+            clearRoleDataStmt.setLong(2, serverId);
+            clearRoleDataStmt.executeUpdate();
             connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
         }
     }
 
-    public static void deleteRoleData(long roleId, long serverId) throws SQLException {
-        clearRoleDataStmt.setLong(1, roleId);
-        clearRoleDataStmt.setLong(2, serverId);
-        clearRoleDataStmt.executeUpdate();
-        connection.commit();
+    public List<Long> getRolesToAddWhenRemoved(long roleId, long serverId) throws SQLException {
+        synchronized (connection) {
+            getRoleOnRemoveDataStmt.setLong(1, roleId);
+            getRoleOnRemoveDataStmt.setLong(2, serverId);
+            ResultSet rs = getRoleOnRemoveDataStmt.executeQuery();
+            ArrayList<Long> ids = new ArrayList<>();
+            while (rs.next()) {
+                ids.add(rs.getLong("to_add_id"));
+            }
+            return ids;
+        }
     }
 
-    public static List<Long> getRolesToAddWhenRemoved(long roleId, long serverId) throws SQLException {
-        getRoleOnRemoveDataStmt.setLong(1, roleId);
-        getRoleOnRemoveDataStmt.setLong(2, serverId);
-        ResultSet rs = getRoleOnRemoveDataStmt.executeQuery();
-        ArrayList<Long> ids = new ArrayList<>();
-        while (rs.next()) {
-            ids.add(rs.getLong("to_add_id"));
+    public List<Long> getRolesToRemoveWhenAdded(long roleId, long serverId) throws SQLException {
+        synchronized (connection) {
+            getRoleOnAddDataStmt.setLong(1, roleId);
+            getRoleOnAddDataStmt.setLong(2, serverId);
+            ResultSet rs = getRoleOnAddDataStmt.executeQuery();
+            ArrayList<Long> ids = new ArrayList<>();
+            while (rs.next()) {
+                ids.add(rs.getLong("to_remove_id"));
+            }
+            return ids;
         }
-        return ids;
     }
 
-    public static List<Long> getRolesToRemoveWhenAdded(long roleId, long serverId) throws SQLException {
-        getRoleOnAddDataStmt.setLong(1, roleId);
-        getRoleOnAddDataStmt.setLong(2, serverId);
-        ResultSet rs = getRoleOnAddDataStmt.executeQuery();
-        ArrayList<Long> ids = new ArrayList<>();
-        while (rs.next()) {
-            ids.add(rs.getLong("to_remove_id"));
+    public List<Long> getRolesToAddOnJoin(long serverId) throws SQLException {
+        synchronized (connection) {
+            getRolesToAddOnJoinStmt.setLong(1, serverId);
+            ResultSet rs = getRolesToAddOnJoinStmt.executeQuery();
+            ArrayList<Long> ids = new ArrayList<>();
+            while (rs.next()) {
+                ids.add(rs.getLong("role_id"));
+            }
+            return ids;
         }
-        return ids;
     }
 
-    public static List<Long> getRolesToAddOnJoin(long serverId) throws SQLException {
-        getRolesToAddOnJoinStmt.setLong(1, serverId);
-        ResultSet rs = getRolesToAddOnJoinStmt.executeQuery();
-        ArrayList<Long> ids = new ArrayList<>();
-        while (rs.next()) {
-            ids.add(rs.getLong("role_id"));
+    public List<Long> getRolesToAddOnInactive(long serverId) throws SQLException {
+        synchronized (connection) {
+            getRolesToAddOnInactiveStmt.setLong(1, serverId);
+            ResultSet rs = getRolesToAddOnInactiveStmt.executeQuery();
+            ArrayList<Long> ids = new ArrayList<>();
+            while (rs.next()) {
+                ids.add(rs.getLong("role_id"));
+            }
+            return ids;
         }
-        return ids;
-    }
-
-    public static List<Long> getRolesToAddOnInactive(long serverId) throws SQLException {
-        getRolesToAddOnInactiveStmt.setLong(1, serverId);
-        ResultSet rs = getRolesToAddOnInactiveStmt.executeQuery();
-        ArrayList<Long> ids = new ArrayList<>();
-        while (rs.next()) {
-            ids.add(rs.getLong("role_id"));
-        }
-        return ids;
     }
 
     public static InteractionApplicationCommandCallbackSpec buildMenu(Data roleData) {
@@ -313,18 +327,18 @@ public class RoleData {
         return builder.addEmbed(embed.build()).build();
     }
 
-    private static final HashMap<Key, Data> tempData = new HashMap<>();
+    private final HashMap<Key, Data> tempData = new HashMap<>();
 
-    public static Data getTempData(long roleId, long serverId) {
+    public Data getTempData(long roleId, long serverId) {
         return tempData.get(new Key(roleId, serverId));
     }
 
-    public static void removeTempData(Data data) {
+    public void removeTempData(Data data) {
         tempData.remove(new Key(data.roleId, data.serverId));
         data.removalTask.cancel(false);
     }
 
-    public static void putTempData(Data data) {
+    public void putTempData(Data data) {
         data.removalTask = TaskManager.service.schedule(() -> tempData.remove(new Key(data.roleId, data.serverId)), 30, TimeUnit.MINUTES);
         tempData.put(new Key(data.roleId, data.serverId), data);
     }

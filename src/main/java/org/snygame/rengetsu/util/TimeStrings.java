@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 public class TimeStrings {
     private static final Pattern ALNUM_RE = Pattern.compile("\\d+(\\.\\d*)?|[a-zA-Z]+");
 
+    public static final int DAY_MILLI = 1000 * 60 * 60 * 24;
+
     public static String secondsToEnglish(int seconds) {
         int w = seconds / (60 * 60 * 24 * 7);
         seconds %= (60 * 60 * 24 * 7);
