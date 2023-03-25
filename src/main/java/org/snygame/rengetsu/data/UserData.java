@@ -213,7 +213,7 @@ public class UserData {
         }
     }
 
-    public void setSetMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
+    public void setMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
         synchronized (connection) {
             DatabaseManager.getServerData().initializeServer(serverId);
             initializeUser(userId);
@@ -226,7 +226,7 @@ public class UserData {
         }
     }
 
-    public long getSetMemberLastMsg(long userId, long serverId) throws SQLException {
+    public long getMemberLastMsg(long userId, long serverId) throws SQLException {
         synchronized (connection) {
             getMemberLastMsgStmt.setLong(1, userId);
             getMemberLastMsgStmt.setLong(2, serverId);
@@ -235,8 +235,8 @@ public class UserData {
                 return rs.getLong("last_msg");
             }
 
-            long lastMsg = System.currentTimeMillis() / TimeStrings.DAY_MILLI;
-            setSetMemberLastMsg(userId, serverId, lastMsg);
+            long lastMsg = System.currentTimeMillis() / TimeStrings.DAY_MILLI - 1;
+            setMemberLastMsg(userId, serverId, lastMsg);
             return lastMsg;
         }
     }

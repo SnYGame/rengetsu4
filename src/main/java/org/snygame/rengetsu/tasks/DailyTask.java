@@ -16,7 +16,6 @@ import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +53,7 @@ public class DailyTask {
                         if (days > 0 && !idsToAdd.isEmpty()) {
                             return server.getMembers().filter(member -> !member.isBot()).flatMap(member -> {
                                 try {
-                                    long lastMsg = userData.getSetMemberLastMsg(member.getId().asLong(), server.getId().asLong());
+                                    long lastMsg = userData.getMemberLastMsg(member.getId().asLong(), server.getId().asLong());
                                     if (lastMsg + days < today) {
                                         return Flux.fromIterable(idsToAdd).map(Snowflake::of).flatMap(id -> member.addRole(id, "Added on inactivity"))
                                                 .then(Flux.fromIterable(idsToRemove).map(Snowflake::of).flatMap(id ->

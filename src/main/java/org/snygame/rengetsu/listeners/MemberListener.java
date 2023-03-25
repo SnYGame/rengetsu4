@@ -23,7 +23,7 @@ public class MemberListener {
         UserData userData = DatabaseManager.getUserData();
         return Mono.just(event.getMember()).flatMap(member -> {
                     try {
-                        userData.setSetMemberLastMsg(member.getId().asLong(), event.getGuildId().asLong(),
+                        userData.setMemberLastMsg(member.getId().asLong(), event.getGuildId().asLong(),
                                 System.currentTimeMillis() / TimeStrings.DAY_MILLI);
                         List<Long> roleIds = roleData.getRolesToAddOnJoin(event.getGuildId().asLong());
                         List<Long> channelIds = serverData.getUserLogs(event.getGuildId().asLong());

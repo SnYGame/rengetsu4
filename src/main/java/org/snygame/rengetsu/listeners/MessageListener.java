@@ -24,7 +24,7 @@ public class MessageListener {
         UserData userData = DatabaseManager.getUserData();
         return Mono.justOrEmpty(event.getMember()).filter(member -> !member.isBot()).flatMap(member -> {
             try {
-                userData.setSetMemberLastMsg(member.getId().asLong(), member.getGuildId().asLong(),
+                userData.setMemberLastMsg(member.getId().asLong(), member.getGuildId().asLong(),
                         System.currentTimeMillis() / TimeStrings.DAY_MILLI);
                 return Mono.empty();
             } catch (SQLException e) {
