@@ -6,6 +6,7 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.UserData;
 import org.snygame.rengetsu.util.TimeStrings;
@@ -14,7 +15,10 @@ import reactor.core.publisher.Mono;
 import java.math.BigInteger;
 import java.sql.SQLException;
 
-public class SaltClaimButton implements ButtonInteraction {
+public class SaltClaimButton extends ButtonInteraction {
+    public SaltClaimButton(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
 
     @Override
     public String getName() {
@@ -23,7 +27,8 @@ public class SaltClaimButton implements ButtonInteraction {
 
     @Override
     public Mono<Void> handle(ButtonInteractionEvent event) {
-        UserData userData = DatabaseManager.getUserData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        UserData userData = databaseManager.getUserData();
         long day = Long.parseLong(event.getCustomId().split(":")[1]);
 
         if (System.currentTimeMillis() / TimeStrings.DAY_MILLI > day) {

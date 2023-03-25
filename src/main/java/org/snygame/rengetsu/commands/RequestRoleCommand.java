@@ -8,10 +8,12 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.http.client.ClientException;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
 import org.snygame.rengetsu.tasks.RoleTimerTask;
+import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,8 +22,12 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-public class RequestRoleCommand implements SlashCommand {
+public class RequestRoleCommand extends SlashCommand {
     private static final int MAX_DURATION = 60 * 60 * 24 * 30;
+
+    public RequestRoleCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
 
     @Override
     public String getName() {
@@ -30,8 +36,10 @@ public class RequestRoleCommand implements SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        RoleData roleData = DatabaseManager.getRoleData();
-        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        TaskManager taskManager = rengetsu.getTaskManager();
+        RoleData roleData = databaseManager.getRoleData();
+        RoleTimerData roleTimerData = databaseManager.getRoleTimerData();
         return Mono.justOrEmpty(event.getOption("role")
                 .flatMap(ApplicationCommandInteractionOption::getValue))
                 .flatMap(ApplicationCommandInteractionOptionValue::asRole)
@@ -74,7 +82,7 @@ public class RequestRoleCommand implements SlashCommand {
                                             try {
                                                 long timerId = roleTimerData.addTimer(data.roleId, data.serverId, member.getId().asLong(),
                                                         Instant.ofEpochMilli(time + actualDuration * 1000L));
-                                                RoleTimerTask.startTask(event.getClient(), timerId, actualDuration * 1000L);
+                                                taskManager.getRoleTimerTask().startTask(event.getClient(), timerId, actualDuration * 1000L);
                                                 return member.addRole(role.getId(), "Requested").then(
                                                                 Flux.fromIterable(data.removeWhenAdded).map(Snowflake::of).flatMap(id ->
                                                                         member.removeRole(id, "Removed when adding new role")).then())

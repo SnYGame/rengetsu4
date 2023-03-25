@@ -4,6 +4,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import org.antlr.v4.runtime.*;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.parser.RengCalcLexer;
 import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.util.functions.StringSplitPredicate;
@@ -20,7 +21,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MathCommand implements SlashCommand {
+public class MathCommand extends SlashCommand {
+    public MathCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "math";

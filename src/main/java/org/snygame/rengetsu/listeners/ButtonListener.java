@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.buttons.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -8,18 +9,19 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ButtonListener {
-    private final static List<ButtonInteraction> commands = new ArrayList<>();
+public class ButtonListener extends Listener {
+    private final List<ButtonInteraction> commands = new ArrayList<>();
 
-    static {
-        //We register our commands here when the class is initialized
-        commands.add(new SaltClaimButton());
-        commands.add(new CancelTimerButton());
-        commands.add(new RoleSetButton());
-        commands.add(new RequestRoleAgreementButton());
+    public ButtonListener(Rengetsu rengetsu) {
+        super(rengetsu);
+
+        commands.add(new SaltClaimButton(rengetsu));
+        commands.add(new CancelTimerButton(rengetsu));
+        commands.add(new RoleSetButton(rengetsu));
+        commands.add(new RequestRoleAgreementButton(rengetsu));
     }
 
-    public static Mono<Void> handle(ButtonInteractionEvent event) {
+    public Mono<Void> handle(ButtonInteractionEvent event) {
         // Convert our array list to a flux that we can iterate through
         return Flux.fromIterable(commands)
                 //Filter out all commands that don't match the name of the command this event is for

@@ -15,11 +15,16 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class RoleTimerTask {
-    private static final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
+public class RoleTimerTask extends RengTask {
+    private final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
 
-    public static void startup(GatewayDiscordClient client) {
-        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
+    public RoleTimerTask(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
+    public void startup(GatewayDiscordClient client) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        RoleTimerData roleTimerData = databaseManager.getRoleTimerData();
         try {
             for (RoleTimerData.Data data: roleTimerData.getAllTimers()) {
                 startTask(client, data.timerId(), data.endOn().toEpochMilli() - System.currentTimeMillis());
@@ -29,9 +34,10 @@ public class RoleTimerTask {
         }
     }
 
-    public static void startTask(GatewayDiscordClient client, long timerId, long duration) {
-        RoleData roleData = DatabaseManager.getRoleData();
-        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
+    public void startTask(GatewayDiscordClient client, long timerId, long duration) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        RoleData roleData = databaseManager.getRoleData();
+        RoleTimerData roleTimerData = databaseManager.getRoleTimerData();
         ScheduledFuture<?> task = TaskManager.service.schedule(() -> {
             try {
                 RoleTimerData.Data data = roleTimerData.getData(timerId);
@@ -52,8 +58,9 @@ public class RoleTimerTask {
         tasks.put(timerId, task);
     }
 
-    public static boolean cancelTimer(long timerId) {
-        RoleTimerData roleTimerData = DatabaseManager.getRoleTimerData();
+    public boolean cancelTimer(long timerId) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        RoleTimerData roleTimerData = databaseManager.getRoleTimerData();
         ScheduledFuture<?> task;
         if ((task = tasks.remove(timerId)) != null) {
             task.cancel(false);

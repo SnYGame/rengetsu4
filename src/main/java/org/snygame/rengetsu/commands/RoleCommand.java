@@ -12,6 +12,7 @@ import discord4j.core.object.presence.Status;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import reactor.core.publisher.Mono;
@@ -20,7 +21,11 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class RoleCommand implements SlashCommand {
+public class RoleCommand extends SlashCommand {
+    public RoleCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "role";
@@ -28,7 +33,8 @@ public class RoleCommand implements SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        RoleData roleData = DatabaseManager.getRoleData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        RoleData roleData = databaseManager.getRoleData();
         return Mono.justOrEmpty(event.getOption("role")
                 .flatMap(ApplicationCommandInteractionOption::getValue))
                 .flatMap(ApplicationCommandInteractionOptionValue::asRole)

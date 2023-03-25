@@ -3,6 +3,7 @@ package org.snygame.rengetsu.commands;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.util.Diceroll;
 import org.snygame.rengetsu.util.functions.MapFirstElse;
 import org.snygame.rengetsu.util.functions.StringSplitPredicate;
@@ -15,7 +16,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class DiceCommand implements SlashCommand {
+public class DiceCommand extends SlashCommand {
+    public DiceCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "dice";

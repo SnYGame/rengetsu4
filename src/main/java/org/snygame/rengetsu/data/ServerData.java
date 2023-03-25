@@ -1,5 +1,7 @@
 package org.snygame.rengetsu.data;
 
+import org.snygame.rengetsu.Rengetsu;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,9 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ServerData {
-    private final Connection connection;
-
+public class ServerData extends TableData {
     private final PreparedStatement initializeServerStmt;
     private final PreparedStatement getInactiveDaysStmt;
     private final PreparedStatement getUserLogsStmt;
@@ -22,8 +22,8 @@ public class ServerData {
     private final PreparedStatement addMessageLogsStmt;
 
 
-    ServerData(Connection connection) throws SQLException {
-        this.connection = connection;
+    ServerData(Rengetsu rengetsu, Connection connection) throws SQLException {
+        super(rengetsu, connection);
 
         QueryBuilder qb;
 

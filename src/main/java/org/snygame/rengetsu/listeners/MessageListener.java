@@ -7,6 +7,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.AttachmentData;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
 import org.snygame.rengetsu.data.UserData;
@@ -19,9 +20,14 @@ import java.net.URL;
 import java.sql.SQLException;
 import java.util.List;
 
-public class MessageListener {
-    public static Mono<Void> handleCreate(MessageCreateEvent event) {
-        UserData userData = DatabaseManager.getUserData();
+public class MessageListener extends Listener {
+    public MessageListener(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
+    public Mono<Void> handleCreate(MessageCreateEvent event) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        UserData userData = databaseManager.getUserData();
         return Mono.justOrEmpty(event.getMember()).filter(member -> !member.isBot()).flatMap(member -> {
             try {
                 userData.setMemberLastMsg(member.getId().asLong(), member.getGuildId().asLong(),
@@ -33,8 +39,9 @@ public class MessageListener {
         }).then();
     }
 
-    public static Mono<Void> handleDelete(MessageDeleteEvent event) {
-        ServerData serverData = DatabaseManager.getServerData();
+    public Mono<Void> handleDelete(MessageDeleteEvent event) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
         return event.getGuild().flatMap(server -> {
             try {
                 List<Long> channelIds = serverData.getMessageLogs(server.getId().asLong());

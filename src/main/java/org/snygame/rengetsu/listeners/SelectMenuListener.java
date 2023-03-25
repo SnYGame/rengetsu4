@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.selectmenu.RoleRemovalSelectMenu;
 import org.snygame.rengetsu.selectmenu.SelectMenuInteraction;
 import reactor.core.publisher.Flux;
@@ -9,15 +10,16 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SelectMenuListener {
-    private final static List<SelectMenuInteraction> commands = new ArrayList<>();
+public class SelectMenuListener extends Listener {
+    private final List<SelectMenuInteraction> commands = new ArrayList<>();
 
-    static {
-        //We register our commands here when the class is initialized
-        commands.add(new RoleRemovalSelectMenu());
+    public SelectMenuListener(Rengetsu rengetsu) {
+        super(rengetsu);
+
+        commands.add(new RoleRemovalSelectMenu(rengetsu));
     }
 
-    public static Mono<Void> handle(SelectMenuInteractionEvent event) {
+    public Mono<Void> handle(SelectMenuInteractionEvent event) {
         // Convert our array list to a flux that we can iterate through
         return Flux.fromIterable(commands)
                 //Filter out all commands that don't match the name of the command this event is for

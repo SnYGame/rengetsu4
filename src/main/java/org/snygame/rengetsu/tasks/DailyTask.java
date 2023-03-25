@@ -6,6 +6,7 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.MessageCreateSpec;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.ServerData;
@@ -19,11 +20,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class DailyTask {
-    public static void startTask(GatewayDiscordClient client) {
-        RoleData roleData = DatabaseManager.getRoleData();
-        ServerData serverData = DatabaseManager.getServerData();
-        UserData userData = DatabaseManager.getUserData();
+public class DailyTask extends RengTask {
+    public DailyTask(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
+    public void startTask(GatewayDiscordClient client) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        RoleData roleData = databaseManager.getRoleData();
+        ServerData serverData = databaseManager.getServerData();
+        UserData userData = databaseManager.getUserData();
         TaskManager.service.scheduleAtFixedRate(() -> {
             try {
                 List<Snowflake> ids = userData.getRemindIds();

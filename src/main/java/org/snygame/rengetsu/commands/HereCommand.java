@@ -7,11 +7,16 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.presence.Presence;
 import discord4j.core.object.presence.Status;
+import org.snygame.rengetsu.Rengetsu;
 import reactor.core.publisher.Mono;
 
 import java.util.stream.Collectors;
 
-public class HereCommand implements SlashCommand {
+public class HereCommand extends SlashCommand {
+    public HereCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "here";

@@ -1,10 +1,16 @@
 package org.snygame.rengetsu.buttons;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import org.snygame.rengetsu.RengClass;
+import org.snygame.rengetsu.Rengetsu;
 import reactor.core.publisher.Mono;
 
-public interface ButtonInteraction {
-    String getName();
+public abstract class ButtonInteraction extends RengClass {
+    public ButtonInteraction(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
 
-    Mono<Void> handle(ButtonInteractionEvent event);
+    public abstract String getName();
+
+    public abstract Mono<Void> handle(ButtonInteractionEvent event);
 }

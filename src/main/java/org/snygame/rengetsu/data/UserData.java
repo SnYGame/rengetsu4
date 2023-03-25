@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.data;
 
 import discord4j.common.util.Snowflake;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.util.TimeStrings;
 
 import java.math.BigDecimal;
@@ -9,9 +10,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserData {
-    private final Connection connection;
-
+public class UserData extends TableData {
     private final PreparedStatement initializeUserStmt;
     private final PreparedStatement getSaltAmountStmt;
     private final PreparedStatement getSaltClaimStmt;
@@ -24,8 +23,8 @@ public class UserData {
     private final PreparedStatement setMemberLastMsgStmt;
     private final PreparedStatement getMemberLastMsgStmt;
 
-    UserData(Connection connection) throws SQLException {
-        this.connection = connection;
+    UserData(Rengetsu rengetsu, Connection connection) throws SQLException {
+        super(rengetsu, connection);
 
         QueryBuilder qb;
 
@@ -215,7 +214,8 @@ public class UserData {
 
     public void setMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
         synchronized (connection) {
-            DatabaseManager.getServerData().initializeServer(serverId);
+            DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+            databaseManager.getServerData().initializeServer(serverId);
             initializeUser(userId);
 
             setMemberLastMsgStmt.setLong(1, userId);

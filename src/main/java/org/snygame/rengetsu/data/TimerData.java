@@ -1,13 +1,13 @@
 package org.snygame.rengetsu.data;
 
+import org.snygame.rengetsu.Rengetsu;
+
 import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TimerData {
-    private final Connection connection;
-
+public class TimerData extends TableData {
     private final PreparedStatement countTimerStmt;
     private final PreparedStatement addTimerStmt;
     private final PreparedStatement getDataStmt;
@@ -16,9 +16,8 @@ public class TimerData {
     private final PreparedStatement cleanupTableStmt;
     private final PreparedStatement listTimersStmt;
 
-    TimerData(Connection connection) throws SQLException {
-        this.connection = connection;
-
+    TimerData(Rengetsu rengetsu, Connection connection) throws SQLException {
+        super(rengetsu, connection);
         QueryBuilder qb;
 
         qb = new QueryBuilder();

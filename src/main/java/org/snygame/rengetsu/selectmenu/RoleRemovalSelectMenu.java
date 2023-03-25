@@ -4,13 +4,18 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import discord4j.core.object.entity.PartialMember;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-public class RoleRemovalSelectMenu implements SelectMenuInteraction {
+public class RoleRemovalSelectMenu extends SelectMenuInteraction {
+    public RoleRemovalSelectMenu(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "role";
@@ -18,7 +23,8 @@ public class RoleRemovalSelectMenu implements SelectMenuInteraction {
 
     @Override
     public Mono<Void> handle(SelectMenuInteractionEvent event) {
-        RoleData roleData = DatabaseManager.getRoleData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        RoleData roleData = databaseManager.getRoleData();
         return Mono.justOrEmpty(event.getInteraction().getMember()).flatMap(PartialMember::getBasePermissions)
                 .map(permissions -> permissions.and(PermissionSet.of(Permission.MANAGE_ROLES))).flatMap(permissions -> {
                     if (permissions.isEmpty()) {

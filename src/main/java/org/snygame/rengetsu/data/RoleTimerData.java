@@ -1,21 +1,21 @@
 package org.snygame.rengetsu.data;
 
+import org.snygame.rengetsu.Rengetsu;
+
 import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RoleTimerData {
-    private final Connection connection;
-
+public class RoleTimerData extends TableData {
     private final PreparedStatement addTimerStmt;
     private final PreparedStatement getDataStmt;
     private final PreparedStatement removeDataStmt;
     private final PreparedStatement getAllTimersStmt;
     private final PreparedStatement getTimerIdStmt;
 
-    RoleTimerData(Connection connection) throws SQLException {
-        this.connection = connection;
+    RoleTimerData(Rengetsu rengetsu, Connection connection) throws SQLException {
+        super(rengetsu, connection);
 
         QueryBuilder qb;
 

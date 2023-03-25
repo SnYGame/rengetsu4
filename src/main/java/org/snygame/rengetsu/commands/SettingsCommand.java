@@ -7,6 +7,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
 import org.snygame.rengetsu.data.UserData;
@@ -20,7 +21,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class SettingsCommand implements SlashCommand {
+public class SettingsCommand extends SlashCommand {
+    public SettingsCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "settings";
@@ -36,7 +41,8 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subShow(ChatInputInteractionEvent event) {
-        ServerData serverData = DatabaseManager.getServerData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
         return Mono.justOrEmpty(event.getInteraction().getGuildId().map(Snowflake::asLong)).flatMap(serverId -> {
             try {
                 int inactive = serverData.getInactiveDays(serverId);
@@ -58,7 +64,8 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subInactive(ChatInputInteractionEvent event) {
-        ServerData serverData = DatabaseManager.getServerData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
         return Mono.justOrEmpty(event.getOptions().get(0).getOption("days")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong)).flatMap(days ->
@@ -79,7 +86,8 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subUserlog(ChatInputInteractionEvent event) {
-        ServerData serverData = DatabaseManager.getServerData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
         return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
             List<Long> ids = IntStream.range(1, 4).mapToObj("channel%d"::formatted)
                     .flatMap(name -> event.getOptions().get(0).getOption(name).stream())
@@ -103,7 +111,8 @@ public class SettingsCommand implements SlashCommand {
     }
 
     private Mono<Void> subMsglog(ChatInputInteractionEvent event) {
-        ServerData serverData = DatabaseManager.getServerData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
         return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
             List<Long> ids = IntStream.range(1, 4).mapToObj("channel%d"::formatted)
                     .flatMap(name -> event.getOptions().get(0).getOption(name).stream())

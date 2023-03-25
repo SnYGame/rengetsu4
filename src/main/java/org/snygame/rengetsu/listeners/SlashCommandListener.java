@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.commands.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -8,23 +9,24 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SlashCommandListener {
+public class SlashCommandListener extends Listener {
     //An array list of classes that implement the SlashCommand interface
-    private final static List<SlashCommand> commands = new ArrayList<>();
+    private final List<SlashCommand> commands = new ArrayList<>();
 
-    static {
-        //We register our commands here when the class is initialized
-        commands.add(new DiceCommand());
-        commands.add(new HereCommand());
-        commands.add(new MathCommand());
-        commands.add(new SaltCommand());
-        commands.add(new TimerCommand());
-        commands.add(new RoleCommand());
-        commands.add(new RequestRoleCommand());
-        commands.add(new SettingsCommand());
+    public SlashCommandListener(Rengetsu rengetsu) {
+        super(rengetsu);
+
+        commands.add(new DiceCommand(rengetsu));
+        commands.add(new HereCommand(rengetsu));
+        commands.add(new MathCommand(rengetsu));
+        commands.add(new SaltCommand(rengetsu));
+        commands.add(new TimerCommand(rengetsu));
+        commands.add(new RoleCommand(rengetsu));
+        commands.add(new RequestRoleCommand(rengetsu));
+        commands.add(new SettingsCommand(rengetsu));
     }
 
-    public static Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Void> handle(ChatInputInteractionEvent event) {
         // Convert our array list to a flux that we can iterate through
         return Flux.fromIterable(commands)
                 //Filter out all commands that don't match the name of the command this event is for

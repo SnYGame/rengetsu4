@@ -16,11 +16,16 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class TimerTask {
-    private static final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
+public class TimerTask extends RengTask {
+    private final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
 
-    public static void startup(GatewayDiscordClient client) {
-        TimerData timerData = DatabaseManager.getTimerData();
+    public TimerTask(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
+    public void startup(GatewayDiscordClient client) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        TimerData timerData = databaseManager.getTimerData();
         try {
             int cleared = timerData.cleanupTable();
             if (cleared > 0) {
@@ -34,8 +39,9 @@ public class TimerTask {
         }
     }
 
-    public static void startTask(GatewayDiscordClient client, long timerId, long duration) {
-        TimerData timerData = DatabaseManager.getTimerData();
+    public void startTask(GatewayDiscordClient client, long timerId, long duration) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        TimerData timerData = databaseManager.getTimerData();
         ScheduledFuture<?> task = TaskManager.service.schedule(() -> {
             try {
                 TimerData.Data data = timerData.getData(timerId);
@@ -59,8 +65,9 @@ public class TimerTask {
         tasks.put(timerId, task);
     }
 
-    public static boolean cancelTimer(long timerId) {
-        TimerData timerData = DatabaseManager.getTimerData();
+    public boolean cancelTimer(long timerId) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        TimerData timerData = databaseManager.getTimerData();
         ScheduledFuture<?> task;
         if ((task = tasks.remove(timerId)) != null) {
             task.cancel(false);

@@ -4,6 +4,7 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.tasks.TaskManager;
 
 import java.sql.Connection;
@@ -15,9 +16,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RoleData {
-    private final Connection connection;
-
+public class RoleData extends TableData {
     private final PreparedStatement getRoleDataStmt;
     private final PreparedStatement getRoleRequestDataStmt;
     private final PreparedStatement getRoleOnRemoveDataStmt;
@@ -36,8 +35,8 @@ public class RoleData {
     private final PreparedStatement getRolesToAddOnJoinStmt;
     private final PreparedStatement getRolesToAddOnInactiveStmt;
 
-    RoleData(Connection connection) throws SQLException {
-        this.connection = connection;
+    RoleData(Rengetsu rengetsu, Connection connection) throws SQLException {
+        super(rengetsu, connection);
 
         QueryBuilder qb;
 
@@ -162,10 +161,10 @@ public class RoleData {
     }
 
     public void saveRoleData(Data data) throws SQLException {
-        DatabaseManager.getServerData().initializeServer(data.serverId);
-
         synchronized (connection) {
             try {
+                DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+                databaseManager.getServerData().initializeServer(data.serverId);
                 setRoleDataStmt.setLong(1, data.roleId);
                 setRoleDataStmt.setLong(2, data.serverId);
                 setRoleDataStmt.setBoolean(3, data.addJoin);

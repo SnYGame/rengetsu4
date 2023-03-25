@@ -5,6 +5,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.User;
+import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.UserData;
 import org.snygame.rengetsu.util.TimeStrings;
@@ -13,7 +14,11 @@ import reactor.core.publisher.Mono;
 import java.math.BigInteger;
 import java.sql.SQLException;
 
-public class SaltCommand implements SlashCommand {
+public class SaltCommand extends SlashCommand {
+    public SaltCommand(Rengetsu rengetsu) {
+        super(rengetsu);
+    }
+
     @Override
     public String getName() {
         return "salt";
@@ -29,7 +34,8 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subBalance(ChatInputInteractionEvent event) {
-        UserData userData = DatabaseManager.getUserData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        UserData userData = databaseManager.getUserData();
         return event.getOptions().get(0).getOption("user")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asUser).map(userMono -> userMono.flatMap(user -> {
@@ -61,7 +67,8 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subClaim(ChatInputInteractionEvent event) {
-        UserData userData = DatabaseManager.getUserData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        UserData userData = databaseManager.getUserData();
         return Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     BigInteger result;
@@ -83,7 +90,8 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subRemind(ChatInputInteractionEvent event) {
-        UserData userData = DatabaseManager.getUserData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        UserData userData = databaseManager.getUserData();
         return Mono.justOrEmpty(event.getInteraction().getUser())
                 .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
                     boolean remind;
@@ -98,7 +106,8 @@ public class SaltCommand implements SlashCommand {
     }
 
     private Mono<Void> subGive(ChatInputInteractionEvent event) {
-        UserData userData = DatabaseManager.getUserData();
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        UserData userData = databaseManager.getUserData();
         long amount = event.getOptions().get(0).getOption("amount")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong).orElse(0L);
