@@ -17,10 +17,12 @@ public class DatabaseManager extends RengClass {
     private final ServerData serverData;
     private final RoleTimerData roleTimerData;
 
+    private final Connection connection;
+
     public DatabaseManager(Rengetsu rengetsu, String dbPath, String tablePath) throws SQLException, IOException {
         super(rengetsu);
 
-        Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+        connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
         connection.setAutoCommit(false);
         connection.createStatement().execute("PRAGMA foreign_keys = true");
 
@@ -57,5 +59,9 @@ public class DatabaseManager extends RengClass {
 
     public RoleTimerData getRoleTimerData() {
         return roleTimerData;
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 }

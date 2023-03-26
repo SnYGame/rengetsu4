@@ -75,14 +75,13 @@ public class Rengetsu {
         MessageListener messageListener = new MessageListener(this);
         client.on(MessageCreateEvent.class, messageListener::handleCreate).subscribe();
         client.on(MessageDeleteEvent.class, messageListener::handleDelete).subscribe();
-        //Register our slash command listener
-        client.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)::handle)
-                .then(client.onDisconnect())
-                .block(); // We use .block() as there is not another non-daemon thread and the jvm would close otherwise.
+        client.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)::handle).subscribe();
     }
 
     public static void main(String[] args) throws SQLException, IOException {
-        new Rengetsu(args[0], "reng.db");
+        Rengetsu rengetsu = new Rengetsu(args[0], "reng.db");
+        Console console = new Console(rengetsu);
+        console.runConsole();
     }
 
     public static Logger getLOGGER() {
