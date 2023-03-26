@@ -59,7 +59,7 @@ public class TimerTask extends RengTask {
                 timerData.removeData(timerId);
                 tasks.remove(timerId);
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
             }
         }, duration, TimeUnit.MILLISECONDS);
         tasks.put(timerId, task);
@@ -75,7 +75,7 @@ public class TimerTask extends RengTask {
                 try {
                     timerData.removeData(timerId);
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    Rengetsu.getLOGGER().error("SQL Error", e);
                 }
                 return true;
             }

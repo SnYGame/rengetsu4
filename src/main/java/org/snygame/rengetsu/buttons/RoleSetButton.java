@@ -93,7 +93,7 @@ public class RoleSetButton extends ButtonInteraction {
                                                 .description("<@&%d>".formatted(data.roleId)).build()
                                         ).components(Collections.emptyList()).build());
                             } catch (SQLException e) {
-                                e.printStackTrace();
+                                Rengetsu.getLOGGER().error("SQL Error", e);
                                 return event.reply("**[Error]** Database error").withEphemeral(true);
                             }
                         }
@@ -115,7 +115,7 @@ public class RoleSetButton extends ButtonInteraction {
                                                 .description("<@&%d>".formatted(data.roleId)).build()
                                         ).components(Collections.emptyList()).build());
                             } catch (SQLException e) {
-                                e.printStackTrace();
+                                Rengetsu.getLOGGER().error("SQL Error", e);
                                 return event.reply("**[Error]** Database error").withEphemeral(true);
                             }
                         }

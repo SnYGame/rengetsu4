@@ -59,14 +59,14 @@ public class MessageListener extends Listener {
                                     builder.addFile(attachment.filename(), url.openStream());
                                     continue;
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+                                    Rengetsu.getLOGGER().error("SQL Error", e);
                                 }
 
                                 try {
                                     URL url = new URL(attachment.url());
                                     builder.addFile(attachment.filename(), url.openStream());
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+                                    Rengetsu.getLOGGER().error("SQL Error", e);
                                 }
                             }
                             return channel.createMessage("Message deleted from channel: <#%d>\nAuthor: <@%d>\n\nMessage:"

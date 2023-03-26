@@ -79,9 +79,14 @@ public class Rengetsu {
     }
 
     public static void main(String[] args) throws SQLException, IOException {
-        Rengetsu rengetsu = new Rengetsu(args[0], "reng.db");
-        Console console = new Console(rengetsu);
-        console.runConsole();
+        try {
+            Rengetsu rengetsu = new Rengetsu(args[0], "reng.db");
+            Console console = new Console(rengetsu);
+            console.runConsole();
+        } catch (Exception e) {
+            LOGGER.error("Error starting up", e);
+            throw e;
+        }
     }
 
     public static Logger getLOGGER() {

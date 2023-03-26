@@ -97,7 +97,7 @@ public class MathCommand extends SlashCommand {
                 String result = Interpreter.interpret(generator.getBytecode());
                 return "`%s` %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), result);
             } catch (Exception e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("Error parsing calculation", e);
                 return "`%s` Error: %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), e.getMessage());
             }
         }).subscribeOn(Schedulers.boundedElastic()).windowUntil(StringSplitPredicate.get(2000), true)

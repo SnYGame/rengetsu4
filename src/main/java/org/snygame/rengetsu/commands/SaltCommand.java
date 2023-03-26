@@ -47,7 +47,7 @@ public class SaltCommand extends SlashCommand {
                     try {
                         saltAmount = userData.getSaltAmount(user.getId().asLong());
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        Rengetsu.getLOGGER().error("SQL Error", e);
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
 
@@ -59,7 +59,7 @@ public class SaltCommand extends SlashCommand {
                     try {
                         saltAmount = userData.getSaltAmount(id);
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        Rengetsu.getLOGGER().error("SQL Error", e);
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
                     return event.reply("You have %d salt.".formatted(saltAmount)).withEphemeral(true);
@@ -75,7 +75,7 @@ public class SaltCommand extends SlashCommand {
                     try {
                         result = userData.claimSalt(id);
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        Rengetsu.getLOGGER().error("SQL Error", e);
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
 
@@ -98,7 +98,7 @@ public class SaltCommand extends SlashCommand {
                     try {
                         remind = userData.toggleRemind(id);
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        Rengetsu.getLOGGER().error("SQL Error", e);
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
                     return event.reply("You have turned %s daily salt claim reminders.".formatted(remind ? "on" : "off")).withEphemeral(true);
@@ -135,7 +135,7 @@ public class SaltCommand extends SlashCommand {
                                 try {
                                     result = userData.giveSalt(id, user.getId().asLong(), BigInteger.valueOf(amount));
                                 } catch (SQLException e) {
-                                    e.printStackTrace();
+                                    Rengetsu.getLOGGER().error("SQL Error", e);
                                     return event.reply("**[Error]** Database error").withEphemeral(true);
                                 }
 

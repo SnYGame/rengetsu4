@@ -47,7 +47,7 @@ public class RoleCommand extends SlashCommand {
                         try {
                             data = roleData.getRoleData(role.getId().asLong(), role.getGuildId().asLong());
                         } catch (SQLException e) {
-                            e.printStackTrace();
+                            Rengetsu.getLOGGER().error("SQL Error", e);
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 

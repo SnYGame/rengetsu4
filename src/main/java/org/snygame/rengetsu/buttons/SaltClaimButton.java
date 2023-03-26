@@ -47,7 +47,7 @@ public class SaltClaimButton extends ButtonInteraction {
                     try {
                         result = userData.claimSalt(id);
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        Rengetsu.getLOGGER().error("SQL Error", e);
                         return event.reply("**[Error]** Database error").withEphemeral(true);
                     }
 

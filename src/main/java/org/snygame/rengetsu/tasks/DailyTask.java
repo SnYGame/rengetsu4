@@ -52,7 +52,7 @@ public class DailyTask extends RengTask {
                             try {
                                 return roleData.getRolesToRemoveWhenAdded(id, server.getId().asLong());
                             } catch (SQLException e) {
-                                e.printStackTrace();
+                                Rengetsu.getLOGGER().error("SQL Error", e);
                                 return new ArrayList<Long>();
                             }
                         }).flatMap(List::stream).distinct().toList();
@@ -77,7 +77,7 @@ public class DailyTask extends RengTask {
                     }
                 }).subscribe();
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
             }
         }, TimeStrings.DAY_MILLI - System.currentTimeMillis() % TimeStrings.DAY_MILLI, TimeStrings.DAY_MILLI,
                 TimeUnit.MILLISECONDS);

@@ -57,7 +57,7 @@ public class SettingsCommand extends SlashCommand {
                                         msgLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
                                 .build()).build());
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
                 return event.reply("**[Error]** Database error").withEphemeral(true);
             }
         });
@@ -78,7 +78,7 @@ public class SettingsCommand extends SlashCommand {
 
                         return event.reply("Inactivity disabled.");
                     } catch (SQLException e) {
-                        e.printStackTrace();
+                        Rengetsu.getLOGGER().error("SQL Error", e);
                     }
                     return event.reply("**[Error]** Database error").withEphemeral(true);
                 }).then()
@@ -104,7 +104,7 @@ public class SettingsCommand extends SlashCommand {
                 return event.reply("User logging channels set to %s.".formatted(ids.stream().map(
                         "<#%d>"::formatted).collect(Collectors.joining(", "))));
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
                 return event.reply("**[Error]** Database error").withEphemeral(true);
             }
         });
@@ -129,7 +129,7 @@ public class SettingsCommand extends SlashCommand {
                 return event.reply("Message logging channels set to %s.".formatted(ids.stream().map(
                         "<#%d>"::formatted).collect(Collectors.joining(", "))));
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
                 return event.reply("**[Error]** Database error").withEphemeral(true);
             }
         });

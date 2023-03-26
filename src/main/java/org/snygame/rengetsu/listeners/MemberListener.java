@@ -78,7 +78,7 @@ public class MemberListener extends Listener {
                 timerIds.stream().filter(timer -> !roles.contains(Snowflake.of(timer.roleId())))
                         .map(RoleTimerData.Data::timerId).forEach(taskManager.getRoleTimerTask()::cancelTimer);
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
             }
 
             return null;

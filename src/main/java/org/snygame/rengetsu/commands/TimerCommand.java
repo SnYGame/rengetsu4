@@ -71,7 +71,7 @@ public class TimerCommand extends SlashCommand {
                                 )
                         ).build());
             } catch (SQLException e) {
-                e.printStackTrace();
+                Rengetsu.getLOGGER().error("SQL Error", e);
                 return event.reply("**[Error]** Database error").withEphemeral(true);
             }
         });
@@ -95,7 +95,7 @@ public class TimerCommand extends SlashCommand {
                             .build()
             ).build());
         } catch (SQLException e) {
-            e.printStackTrace();
+            Rengetsu.getLOGGER().error("SQL Error", e);
             return event.reply("**[Error]** Database error").withEphemeral(true);
         }
     }
@@ -121,7 +121,7 @@ public class TimerCommand extends SlashCommand {
 
             return event.reply("**[Error]** Timer has already completed or canceled, or does not exist").withEphemeral(true);
         } catch (SQLException e) {
-            e.printStackTrace();
+            Rengetsu.getLOGGER().error("SQL Error", e);
             return event.reply("**[Error]** Database error").withEphemeral(true);
         }
     }

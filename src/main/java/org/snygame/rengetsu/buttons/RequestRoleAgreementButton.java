@@ -51,7 +51,7 @@ public class RequestRoleAgreementButton extends ButtonInteraction {
         try {
             toRemoveIds = roleData.getRolesToRemoveWhenAdded(Long.parseLong(args[1]), Long.parseLong(args[2]));
         } catch (SQLException e) {
-            e.printStackTrace();
+            Rengetsu.getLOGGER().error("SQL Error", e);
             return event.reply("**[Error]** Database error").withEphemeral(true);
         }
 
@@ -71,7 +71,7 @@ public class RequestRoleAgreementButton extends ButtonInteraction {
                                     timerId = roleTimerData.addTimer(Long.parseLong(args[1]), Long.parseLong(args[2]), member.getId().asLong(),
                                             Instant.ofEpochMilli(System.currentTimeMillis() + duration * 1000L));
                                 } catch (SQLException e) {
-                                    e.printStackTrace();
+                                    Rengetsu.getLOGGER().error("SQL Error", e);
                                     return event.reply("**[Error]** Database error").withEphemeral(true);
                                 }
                                 taskManager.getRoleTimerTask().startTask(event.getClient(), timerId, duration * 1000L);

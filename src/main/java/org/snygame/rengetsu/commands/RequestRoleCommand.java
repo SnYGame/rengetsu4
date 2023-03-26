@@ -50,7 +50,7 @@ public class RequestRoleCommand extends SlashCommand {
                         try {
                             data = roleData.getRoleData(role.getId().asLong(), role.getGuildId().asLong());
                         } catch (SQLException e) {
-                            e.printStackTrace();
+                            Rengetsu.getLOGGER().error("SQL Error", e);
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 
@@ -89,7 +89,7 @@ public class RequestRoleCommand extends SlashCommand {
                                                         .then(event.reply("You have been given the %s role for %s.".formatted(role.getName(),
                                                                 TimeStrings.secondsToEnglish(actualDuration))));
                                             } catch (SQLException e) {
-                                                e.printStackTrace();
+                                                Rengetsu.getLOGGER().error("SQL Error", e);
                                                 return event.reply("**[Error]** Database error").withEphemeral(true);
                                             }
                                         } else {
