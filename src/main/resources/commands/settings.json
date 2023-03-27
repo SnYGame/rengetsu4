@@ -1,0 +1,88 @@
+{
+  "name": "settings",
+  "description": "Manages server settings",
+  "options": [
+    {
+      "name": "show",
+      "description": "Shows the server settings",
+      "type": 1,
+      "required": false
+    },
+    {
+      "name": "inactive",
+      "description": "Sets the inactivity period",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "days",
+          "description": "Days before a user becomes inactive (0 to disable)",
+          "type": 4,
+          "required": true,
+          "min_value": 0,
+          "max_value": 365
+        }
+      ]
+    },
+    {
+      "name": "userlog",
+      "description": "Sets user logging channels",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "channel1",
+          "description": "Channel",
+          "type": 7,
+          "required": false,
+          "channel_types": [0]
+        },
+        {
+          "name": "channel2",
+          "description": "Channel",
+          "type": 7,
+          "required": false,
+          "channel_types": [0]
+        },
+        {
+          "name": "channel3",
+          "description": "Channel",
+          "type": 7,
+          "required": false,
+          "channel_types": [0]
+        }
+      ]
+    },
+    {
+      "name": "msglog",
+      "description": "Sets message logging channels",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "channel1",
+          "description": "Channel",
+          "type": 7,
+          "required": false,
+          "channel_types": [0]
+        },
+        {
+          "name": "channel2",
+          "description": "Channel",
+          "type": 7,
+          "required": false,
+          "channel_types": [0]
+        },
+        {
+          "name": "channel3",
+          "description": "Channel",
+          "type": 7,
+          "required": false,
+          "channel_types": [0]
+        }
+      ]
+    }
+  ],
+  "default_member_permissions": 32,
+  "dm_permission": false
+}

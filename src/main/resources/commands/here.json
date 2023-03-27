@@ -1,0 +1,13 @@
+{
+  "name": "here",
+  "description": "Pings online users of a specified role",
+  "options": [
+    {
+      "name": "role",
+      "description": "Role to ping",
+      "type": 8,
+      "required": true
+    }
+  ],
+  "dm_permission": false
+}
