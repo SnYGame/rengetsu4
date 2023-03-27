@@ -23,25 +23,28 @@ public class Console extends RengClass {
         for (;;) {
             try {
                 String line = br.readLine();
-                Statement statement = connection.createStatement();
-                if (statement.execute(line)) {
-                    ResultSet rs = statement.getResultSet();
-                    int columns = rs.getMetaData().getColumnCount();
-                    StringJoiner joiner = new StringJoiner(", ");
-                    for (int i = 0; i < columns; i++) {
-                        joiner.add(rs.getMetaData().getColumnLabel(i + 1));
-                    }
-                    System.out.println(joiner);
-                    while (rs.next()) {
-                        joiner = new StringJoiner(", ");
+                synchronized (connection) {
+                    Statement statement = connection.createStatement();
+                    if (statement.execute(line)) {
+                        ResultSet rs = statement.getResultSet();
+                        int columns = rs.getMetaData().getColumnCount();
+                        StringJoiner joiner = new StringJoiner(", ");
                         for (int i = 0; i < columns; i++) {
-                            joiner.add(rs.getString(i + 1));
+                            joiner.add(rs.getMetaData().getColumnLabel(i + 1));
                         }
                         System.out.println(joiner);
+                        while (rs.next()) {
+                            joiner = new StringJoiner(", ");
+                            for (int i = 0; i < columns; i++) {
+                                joiner.add(rs.getString(i + 1));
+                            }
+                            System.out.println(joiner);
+                        }
+                    } else {
+                        int rows = statement.getUpdateCount();
+                        System.out.printf("Update count: %d.", rows);
                     }
-                } else {
-                    int rows = statement.getUpdateCount();
-                    System.out.printf("Update count: %d.", rows);
+                    connection.commit();
                 }
             } catch (SQLException e) {
                 System.err.println(e.getMessage());
