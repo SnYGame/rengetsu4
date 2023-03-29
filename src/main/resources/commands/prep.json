@@ -28,7 +28,8 @@
           "description": "Effect key",
           "type": 3,
           "required": true,
-          "max_length": 50
+          "max_length": 50,
+          "autocomplete": true
         }
       ]
     },
@@ -43,7 +44,8 @@
           "description": "Effect key",
           "type": 3,
           "required": true,
-          "max_length": 50
+          "max_length": 50,
+          "autocomplete": true
         }
       ]
     },
@@ -58,7 +60,8 @@
           "description": "Effect key",
           "type": 3,
           "required": true,
-          "max_length": 50
+          "max_length": 50,
+          "autocomplete": true
         }
       ]
     },

@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
@@ -123,6 +124,7 @@ public class PrepData extends TableData {
                     }
                 }
                 connection.commit();
+                clearCacheIf(data.userId);
             } catch (SQLException e) {
                 connection.rollback();
                 throw e;
@@ -136,6 +138,7 @@ public class PrepData extends TableData {
             deletePrepDataStmt.setString(2, key);
             int rows = deletePrepDataStmt.executeUpdate();
             connection.commit();
+            clearCacheIf(userId);
             return rows > 0;
         }
     }
@@ -191,6 +194,7 @@ public class PrepData extends TableData {
     }
 
     public List<NameData> listPrepNames(long userId) throws SQLException {
+        System.out.println("call");
         synchronized (connection) {
             listPrepNamesStmt.setLong(1, userId);
             ResultSet rs = listPrepNamesStmt.executeQuery();
@@ -253,7 +257,7 @@ public class PrepData extends TableData {
         data.removalTask.cancel(false);
     }
 
-    public void putTempData(Data data) {
+    public boolean putTempData(Data data) {
         Key key = new Key(data.userId, data.key);
         if (tempData.containsKey(key)) {
             tempData.remove(key).removalTask.cancel(false);
@@ -261,6 +265,7 @@ public class PrepData extends TableData {
 
         data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 30, TimeUnit.MINUTES);
         tempData.put(key, data);
+        return true;
     }
 
     public record NameData(String key, String name) {}
@@ -306,5 +311,26 @@ public class PrepData extends TableData {
                 this.bytecode = bytecode;
             }
         }
+    }
+
+    private record AutoCompleteCache(long userId, List<NameData> nameData) {}
+    private AutoCompleteCache autoCompleteCache = null;
+
+    private void clearCacheIf(long userId) {
+        AutoCompleteCache cache = autoCompleteCache;
+        if (cache != null && cache.userId == userId) {
+            autoCompleteCache = null;
+        }
+    }
+
+    public List<NameData> getAutoCompleteData(long userId) throws SQLException {
+        AutoCompleteCache cache = autoCompleteCache;
+        if (cache != null && cache.userId == userId) {
+            return cache.nameData;
+        }
+
+        List<NameData> nameData = listPrepNames(userId);
+        autoCompleteCache = new AutoCompleteCache(userId, nameData);
+        return nameData;
     }
 }

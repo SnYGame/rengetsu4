@@ -6,10 +6,7 @@ import discord4j.core.event.domain.guild.BanEvent;
 import discord4j.core.event.domain.guild.MemberJoinEvent;
 import discord4j.core.event.domain.guild.MemberLeaveEvent;
 import discord4j.core.event.domain.guild.MemberUpdateEvent;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
+import discord4j.core.event.domain.interaction.*;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.event.domain.message.MessageDeleteEvent;
@@ -76,6 +73,7 @@ public class Rengetsu {
         client.on(MessageCreateEvent.class, messageListener::handleCreate).subscribe();
         client.on(MessageDeleteEvent.class, messageListener::handleDelete).subscribe();
         client.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)::handle).subscribe();
+        client.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)::handle).subscribe();
     }
 
     public static void main(String[] args) throws SQLException, IOException {
