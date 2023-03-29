@@ -4,7 +4,7 @@
   "options": [
     {
       "name": "create",
-      "description": "Create an effect",
+      "description": "Create a prepared effect",
       "type": 1,
       "required": false,
       "options": [
@@ -19,7 +19,7 @@
     },
     {
       "name": "edit",
-      "description": "Edit an effect",
+      "description": "Edit a prepared effect",
       "type": 1,
       "required": false,
       "options": [
@@ -34,7 +34,7 @@
     },
     {
       "name": "cast",
-      "description": "Cast an effect",
+      "description": "Cast a prepared effect",
       "type": 1,
       "required": false,
       "options": [
@@ -49,7 +49,7 @@
     },
     {
       "name": "delete",
-      "description": "Delete an effect",
+      "description": "Delete a prepared effect",
       "type": 1,
       "required": false,
       "options": [
@@ -64,7 +64,7 @@
     },
     {
       "name": "list",
-      "description": "Lists your effects",
+      "description": "Lists your prepared effects",
       "type": 1,
       "required": false
     }

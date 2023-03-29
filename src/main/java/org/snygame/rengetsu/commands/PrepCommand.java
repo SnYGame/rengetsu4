@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PrepCommand extends SlashCommand {
     public PrepCommand(Rengetsu rengetsu) {
@@ -37,6 +38,7 @@ public class PrepCommand extends SlashCommand {
                 .or(() -> event.getOption("edit").map(__ -> subEdit(event)))
                 .or(() -> event.getOption("cast").map(__ -> subCast(event)))
                 .or(() -> event.getOption("delete").map(__ -> subDelete(event)))
+                .or(() -> event.getOption("list").map(__ -> subList(event)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
@@ -114,5 +116,26 @@ public class PrepCommand extends SlashCommand {
 
     private Mono<Void> subDelete(ChatInputInteractionEvent event) {
         return event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true);
+    }
+
+    private Mono<Void> subList(ChatInputInteractionEvent event) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(id -> {
+            List<PrepData.NameData> datas;
+            try {
+                datas = prepData.listPrepNames(id);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (datas.isEmpty()) {
+                return event.reply("You have no prepared effects");
+            }
+
+            return event.reply("Your prepared effects:\n" + datas.stream().map(data -> "`%s`: %s".formatted(data.key(), data.name())).collect(Collectors.joining("\n")));
+        });
     }
 }

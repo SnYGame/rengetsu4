@@ -28,6 +28,7 @@ public class PrepData extends TableData {
     private final PreparedStatement hasPrepDataStmt;
     private final PreparedStatement getPrepDataStmt;
     private final PreparedStatement getPrepRollStmt;
+    private final PreparedStatement listPrepNamesStmt;
 
     PrepData(Rengetsu rengetsu, Connection connection) throws SQLException {
         super(rengetsu, connection);
@@ -75,6 +76,12 @@ public class PrepData extends TableData {
         qb.from("prep_roll");
         qb.where("prep_roll.user_id = ? AND prep_roll.key = ? AND prep_roll.pos = ?");
         getPrepRollStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("prep.key, prep.name");
+        qb.from("prep");
+        qb.where("prep.user_id = ?");
+        listPrepNamesStmt = qb.build(connection);
     }
 
     public void savePrepData(Data data) throws SQLException {
@@ -182,6 +189,19 @@ public class PrepData extends TableData {
         }
     }
 
+    public List<NameData> listPrepNames(long userId) throws SQLException {
+        synchronized (connection) {
+            listPrepNamesStmt.setLong(1, userId);
+            ResultSet rs = listPrepNamesStmt.executeQuery();
+
+            ArrayList<NameData> names = new ArrayList<>();
+            while (rs.next()) {
+                names.add(new NameData(rs.getString("key"), rs.getString("name")));
+            }
+            return names;
+        }
+    }
+
     public static InteractionApplicationCommandCallbackSpec buildMenu(Data prepData) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
         builder.content("Key: %s".formatted(prepData.key));
@@ -234,6 +254,8 @@ public class PrepData extends TableData {
         data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 30, TimeUnit.MINUTES);
         tempData.put(key, data);
     }
+
+    public record NameData(String key, String name) {}
 
     private record Key(long userId, String key) {}
 
