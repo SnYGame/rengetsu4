@@ -115,7 +115,27 @@ public class PrepCommand extends SlashCommand {
     }
 
     private Mono<Void> subDelete(ChatInputInteractionEvent event) {
-        return event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true);
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
+            long userId = event.getInteraction().getUser().getId().asLong();
+            boolean deleted;
+            try {
+                deleted = prepData.deletePrepData(userId, key);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (!deleted) {
+                return event.reply("**[Error]** Prepared effect with key `%s` does not exists".formatted(key)).withEphemeral(true);
+            }
+
+            return event.reply("Deleted prepared effect with key `%s`.".formatted(key));
+        });
     }
 
     private Mono<Void> subList(ChatInputInteractionEvent event) {
@@ -132,7 +152,7 @@ public class PrepCommand extends SlashCommand {
             }
 
             if (datas.isEmpty()) {
-                return event.reply("You have no prepared effects");
+                return event.reply("You do not have any prepared effects.");
             }
 
             return event.reply("Your prepared effects:\n" + datas.stream().map(data -> "`%s`: %s".formatted(data.key(), data.name())).collect(Collectors.joining("\n")));

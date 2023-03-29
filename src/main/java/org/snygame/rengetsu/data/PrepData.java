@@ -130,12 +130,13 @@ public class PrepData extends TableData {
         }
     }
 
-    public void deletePrepData(long userId, String key) throws SQLException {
+    public boolean deletePrepData(long userId, String key) throws SQLException {
         synchronized (connection) {
             deletePrepDataStmt.setLong(1, userId);
             deletePrepDataStmt.setString(2, key);
-            deletePrepDataStmt.executeUpdate();
+            int rows = deletePrepDataStmt.executeUpdate();
             connection.commit();
+            return rows > 0;
         }
     }
 
