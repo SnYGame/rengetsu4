@@ -77,7 +77,10 @@ public class PrepEditButton extends ButtonInteraction {
                                         .build());
                             }
 
-                            prepData.putTempData(data);
+                            if (!prepData.putTempData(data)) {
+                                return event.reply("**[Error]** A prepared effect with that key is currently being edited").withEphemeral(true);
+                            }
+
                             return event.reply(PrepData.buildMenu(data));
                         }
                     }

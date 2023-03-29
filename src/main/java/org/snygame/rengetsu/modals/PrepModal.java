@@ -64,7 +64,9 @@ public class PrepModal extends ModalInteraction {
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
         data.editing = false;
 
-        prepData.putTempData(data);
+        if (!prepData.putTempData(data)) {
+            return event.reply("**[Error]** A prepared effect with that key is currently being edited").withEphemeral(true);
+        }
         return event.reply(PrepData.buildMenu(data));
     }
 

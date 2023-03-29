@@ -329,22 +329,29 @@ public class RoleData extends TableData {
     private final HashMap<Key, Data> tempData = new HashMap<>();
 
     public Data getTempData(long roleId, long serverId) {
-        return tempData.get(new Key(roleId, serverId));
+        synchronized (tempData) {
+            return tempData.get(new Key(roleId, serverId));
+        }
     }
 
     public void removeTempData(Data data) {
-        tempData.remove(new Key(data.roleId, data.serverId));
-        data.removalTask.cancel(false);
+        synchronized (tempData) {
+            tempData.remove(new Key(data.roleId, data.serverId));
+            data.removalTask.cancel(false);
+        }
     }
 
-    public void putTempData(Data data) {
-        Key key = new Key(data.roleId, data.serverId);
-        if (tempData.containsKey(key)) {
-            tempData.remove(key).removalTask.cancel(false);
-        }
+    public boolean putTempData(Data data) {
+        synchronized (tempData) {
+            Key key = new Key(data.roleId, data.serverId);
+            if (tempData.containsKey(key)) {
+                return false;
+            }
 
-        data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 30, TimeUnit.MINUTES);
-        tempData.put(key, data);
+            data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 15, TimeUnit.MINUTES);
+            tempData.put(key, data);
+            return true;
+        }
     }
 
     private record Key(long roleId, long serverId) {}

@@ -249,23 +249,29 @@ public class PrepData extends TableData {
     private final HashMap<Key, Data> tempData = new HashMap<>();
 
     public Data getTempData(long userId, String key) {
-        return tempData.get(new Key(userId, key));
+        synchronized (tempData) {
+            return tempData.get(new Key(userId, key));
+        }
     }
 
     public void removeTempData(Data data) {
-        tempData.remove(new Key(data.userId, data.key));
-        data.removalTask.cancel(false);
+        synchronized (tempData) {
+            tempData.remove(new Key(data.userId, data.key));
+            data.removalTask.cancel(false);
+        }
     }
 
     public boolean putTempData(Data data) {
-        Key key = new Key(data.userId, data.key);
-        if (tempData.containsKey(key)) {
-            tempData.remove(key).removalTask.cancel(false);
-        }
+        synchronized (tempData) {
+            Key key = new Key(data.userId, data.key);
+            if (tempData.containsKey(key)) {
+                return false;
+            }
 
-        data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 30, TimeUnit.MINUTES);
-        tempData.put(key, data);
-        return true;
+            data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 15, TimeUnit.MINUTES);
+            tempData.put(key, data);
+            return true;
+        }
     }
 
     public record NameData(String key, String name) {}

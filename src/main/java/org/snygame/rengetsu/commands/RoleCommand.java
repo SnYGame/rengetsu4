@@ -51,7 +51,9 @@ public class RoleCommand extends SlashCommand {
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 
-                        roleData.putTempData(data);
+                        if (!roleData.putTempData(data)) {
+                            return event.reply("**[Error]** That role is already being edited").withEphemeral(true);
+                        }
                         return event.reply(RoleData.buildMenu(data));
                     }
                 });
