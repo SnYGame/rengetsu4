@@ -211,7 +211,7 @@ public class PrepData extends TableData {
         embed.description(prepData.description);
         embed.fields(prepData.dicerolls.stream().map(rollData ->
                 EmbedCreateFields.Field.of(rollData.description,
-                        rollData.query, true)).toList());
+                        rollData.query, false)).toList());
 
         String key = "%d:%s".formatted(prepData.userId, prepData.key);
 

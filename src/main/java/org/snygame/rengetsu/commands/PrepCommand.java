@@ -14,13 +14,16 @@ import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
 import org.snygame.rengetsu.data.TimerData;
 import org.snygame.rengetsu.tasks.TaskManager;
+import org.snygame.rengetsu.util.Diceroll;
 import org.snygame.rengetsu.util.TimeStrings;
+import org.snygame.rengetsu.util.math.Interpreter;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class PrepCommand extends SlashCommand {
     public PrepCommand(Rengetsu rengetsu) {
@@ -111,7 +114,70 @@ public class PrepCommand extends SlashCommand {
     }
 
     private Mono<Void> subCast(ChatInputInteractionEvent event) {
-        return event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true);
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
+            long userId = event.getInteraction().getUser().getId().asLong();
+
+            PrepData.Data data;
+            try {
+                data = prepData.getPrepData(userId, key);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (data == null) {
+                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
+                        .content("Prepared effect with key `%s` does not exists.".formatted(key))
+                        .addComponent(ActionRow.of(
+                                Button.primary("prep:%d:%s:create_instead".formatted(userId, key), "Create instead")
+                        ))
+                        .build());
+            }
+
+            InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
+            EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
+            embed.title(data.name);
+            embed.description(data.description);
+
+
+
+            embed.fields(data.dicerolls.stream().map(rollData -> {
+                switch (rollData) {
+                    case PrepData.Data.DicerollData dicerollData -> {
+                        Diceroll diceroll = Diceroll.parse(dicerollData.query);
+                        if (diceroll.getRepeat() == 1) {
+                            return EmbedCreateFields.Field.of(dicerollData.description,
+                                    "`%s` %s".formatted(dicerollData.query, diceroll.roll().toString())
+                                    , false);
+                        } else {
+                            return EmbedCreateFields.Field.of(dicerollData.description,
+                                    "`%s`\n%s".formatted(dicerollData.query, IntStream.range(0, diceroll.getRepeat())
+                                            .mapToObj(__ ->diceroll.roll().toString()).collect(Collectors.joining("\n")))
+                                    , false);
+                        }
+                    }
+                    case PrepData.Data.CalculationData calculationData -> {
+                        try {
+                            return EmbedCreateFields.Field.of(calculationData.description,
+                                    "`%s` %s".formatted(calculationData.query,
+                                            Interpreter.interpret(calculationData.bytecode)), false);
+                        } catch (Exception e) {
+                            return EmbedCreateFields.Field.of(calculationData.description,
+                                    "`%s` Error: %s".formatted(calculationData.query,
+                                            e.getMessage()), false);
+                        }
+                    }
+                }
+                throw new RuntimeException();
+            }).toList());
+
+            return event.reply(builder.addEmbed(embed.build()).build());
+        });
     }
 
     private Mono<Void> subDelete(ChatInputInteractionEvent event) {

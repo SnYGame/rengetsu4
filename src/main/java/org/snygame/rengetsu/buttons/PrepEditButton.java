@@ -134,7 +134,7 @@ public class PrepEditButton extends ButtonInteraction {
                                             .addEmbed(EmbedCreateSpec.builder()
                                                     .fields(data.dicerolls.stream().map(rollData ->
                                                             EmbedCreateFields.Field.of(rollData.description,
-                                                                    rollData.query, true)).toList())
+                                                                    rollData.query, false)).toList())
                                                     .build())
                                             .addComponent(ActionRow.of(
                                                     SelectMenu.of("prep:%d:%s:del_roll".formatted(data.userId,
