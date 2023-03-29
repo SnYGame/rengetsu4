@@ -8,8 +8,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Console extends RengClass {
     public Console(Rengetsu rengetsu) {

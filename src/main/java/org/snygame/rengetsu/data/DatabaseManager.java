@@ -16,6 +16,7 @@ public class DatabaseManager extends RengClass {
     private final RoleData roleData;
     private final ServerData serverData;
     private final RoleTimerData roleTimerData;
+    private final PrepData prepData;
 
     private final Connection connection;
 
@@ -32,6 +33,7 @@ public class DatabaseManager extends RengClass {
         roleData = new RoleData(rengetsu, connection);
         serverData = new ServerData(rengetsu, connection);
         roleTimerData = new RoleTimerData(rengetsu, connection);
+        prepData = new PrepData(rengetsu, connection);
         connection.commit();
     }
 
@@ -59,6 +61,10 @@ public class DatabaseManager extends RengClass {
 
     public RoleTimerData getRoleTimerData() {
         return roleTimerData;
+    }
+
+    public PrepData getPrepData() {
+        return prepData;
     }
 
     public Connection getConnection() {

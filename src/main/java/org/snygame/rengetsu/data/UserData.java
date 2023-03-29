@@ -87,11 +87,13 @@ public class UserData extends TableData {
         getMemberLastMsgStmt = qb.build(connection);
     }
 
-    private int initializeUser(long id) throws SQLException {
-        initializeUserStmt.setLong(1, id);
-        int rows = initializeUserStmt.executeUpdate();
-        connection.commit();
-        return rows;
+    public int initializeUser(long id) throws SQLException {
+        synchronized (connection) {
+            initializeUserStmt.setLong(1, id);
+            int rows = initializeUserStmt.executeUpdate();
+            connection.commit();
+            return rows;
+        }
     }
 
     public BigInteger getSaltAmount(long id) throws SQLException {

@@ -90,3 +90,25 @@ CREATE TABLE IF NOT EXISTS role_timer (
     FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
     FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS prep (
+    user_id INT NOT NULL,
+    key TEXT NOT NULL,
+    name TEXT NOT NULL,
+    descr TEXT,
+    roll_count INT NOT NULL,
+    PRIMARY KEY (user_id, key),
+    FOREIGN KEY (user_id) REFERENCES user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS prep_roll (
+    user_id INT NOT NULL,
+    key TEXT NOT NULL,
+    pos TEXT NOT NULL,
+    descr TEXT NOT NULL,
+    query TEXT NOT NULL,
+    bytecode BLOB,
+    PRIMARY KEY (user_id, key, pos),
+    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    FOREIGN KEY (key) REFERENCES prep(key)
+);

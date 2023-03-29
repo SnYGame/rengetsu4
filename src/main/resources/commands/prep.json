@@ -1,0 +1,72 @@
+{
+  "name": "prep",
+  "description": "Prepares effects",
+  "options": [
+    {
+      "name": "create",
+      "description": "Create an effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50
+        }
+      ]
+    },
+    {
+      "name": "edit",
+      "description": "Edit an effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50
+        }
+      ]
+    },
+    {
+      "name": "cast",
+      "description": "Cast an effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "description": "Delete an effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "Lists your effects",
+      "type": 1,
+      "required": false
+    }
+  ]
+}

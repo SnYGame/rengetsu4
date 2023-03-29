@@ -3,6 +3,7 @@ package org.snygame.rengetsu.listeners;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.modals.ModalInteraction;
+import org.snygame.rengetsu.modals.PrepModal;
 import org.snygame.rengetsu.modals.RoleAgreementModal;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,6 +18,7 @@ public class ModalListener extends Listener {
         super(rengetsu);
 
         commands.add(new RoleAgreementModal(rengetsu));
+        commands.add(new PrepModal(rengetsu));
     }
 
     public Mono<Void> handle(ModalSubmitInteractionEvent event) {

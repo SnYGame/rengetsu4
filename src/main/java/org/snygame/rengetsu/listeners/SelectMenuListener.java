@@ -2,6 +2,7 @@ package org.snygame.rengetsu.listeners;
 
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import org.snygame.rengetsu.Rengetsu;
+import org.snygame.rengetsu.selectmenu.PrepRollRemovalSelectMenu;
 import org.snygame.rengetsu.selectmenu.RoleRemovalSelectMenu;
 import org.snygame.rengetsu.selectmenu.SelectMenuInteraction;
 import reactor.core.publisher.Flux;
@@ -17,6 +18,7 @@ public class SelectMenuListener extends Listener {
         super(rengetsu);
 
         commands.add(new RoleRemovalSelectMenu(rengetsu));
+        commands.add(new PrepRollRemovalSelectMenu(rengetsu));
     }
 
     public Mono<Void> handle(SelectMenuInteractionEvent event) {

@@ -19,6 +19,7 @@ public class ButtonListener extends Listener {
         commands.add(new CancelTimerButton(rengetsu));
         commands.add(new RoleSetButton(rengetsu));
         commands.add(new RequestRoleAgreementButton(rengetsu));
+        commands.add(new PrepEditButton(rengetsu));
     }
 
     public Mono<Void> handle(ButtonInteractionEvent event) {

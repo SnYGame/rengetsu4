@@ -338,8 +338,13 @@ public class RoleData extends TableData {
     }
 
     public void putTempData(Data data) {
-        data.removalTask = TaskManager.service.schedule(() -> tempData.remove(new Key(data.roleId, data.serverId)), 30, TimeUnit.MINUTES);
-        tempData.put(new Key(data.roleId, data.serverId), data);
+        Key key = new Key(data.roleId, data.serverId);
+        if (tempData.containsKey(key)) {
+            tempData.remove(key).removalTask.cancel(false);
+        }
+
+        data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 30, TimeUnit.MINUTES);
+        tempData.put(key, data);
     }
 
     private record Key(long roleId, long serverId) {}
