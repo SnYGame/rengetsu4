@@ -167,7 +167,8 @@ public class PrepEditButton extends ButtonInteraction {
                             prepData.removeTempData(data);
                             return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                                     .addEmbed(EmbedCreateSpec.builder()
-                                            .title("Canceled changes to %s".formatted(data.name)).build()
+                                            .title("Canceled %s %s".formatted(data.editing ? "changes to" : "creation of"
+                                                    , data.name)).build()
                                     ).components(Collections.emptyList()).build());
                         }
                         case "delete" -> {

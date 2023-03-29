@@ -226,11 +226,18 @@ public class PrepData extends TableData {
                         .disabled(prepData.dicerolls.isEmpty())
         ));
 
-        builder.addComponent(ActionRow.of(
-                Button.success("prep:%s:save".formatted(key), "Save"),
-                Button.danger("prep:%s:no_save".formatted(key), "Cancel"),
-                Button.danger("prep:%s:delete".formatted(key), "Delete")
-        ));
+        if (prepData.editing) {
+            builder.addComponent(ActionRow.of(
+                    Button.success("prep:%s:save".formatted(key), "Save"),
+                    Button.danger("prep:%s:no_save".formatted(key), "Cancel"),
+                    Button.danger("prep:%s:delete".formatted(key), "Delete")
+            ));
+        } else {
+            builder.addComponent(ActionRow.of(
+                    Button.success("prep:%s:save".formatted(key), "Save"),
+                    Button.danger("prep:%s:no_save".formatted(key), "Cancel")
+            ));
+        }
 
         return builder.addEmbed(embed.build()).build();
     }
@@ -265,6 +272,7 @@ public class PrepData extends TableData {
         public String key;
         public String name;
         public String description;
+        public boolean editing = true;
         public final List<RollData> dicerolls = new ArrayList<>();
 
         private ScheduledFuture<?> removalTask;

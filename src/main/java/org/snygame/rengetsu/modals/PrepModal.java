@@ -62,6 +62,7 @@ public class PrepModal extends ModalInteraction {
         PrepData.Data data = new PrepData.Data(Long.parseLong(args[1]), args[2]);
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
+        data.editing = false;
 
         prepData.putTempData(data);
         return event.reply(PrepData.buildMenu(data));
