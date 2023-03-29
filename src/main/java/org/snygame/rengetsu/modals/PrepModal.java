@@ -143,7 +143,7 @@ public class PrepModal extends ModalInteraction {
         ast.getType();
         BytecodeGenerator generator = new BytecodeGenerator();
         ast.accept(generator);
-        List<Byte> bytecode = generator.getBytecode();
+        byte[] bytecode = generator.getBytecode();
 
         data.dicerolls.add(new PrepData.Data.CalculationData(description, query, bytecode));
         return event.edit(PrepData.buildMenu(data));

@@ -10,6 +10,7 @@ import org.snygame.rengetsu.tasks.TaskManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class PrepData extends TableData {
     private final PreparedStatement addPrepCalculationStmt;
     private final PreparedStatement deletePrepDataStmt;
 
+    private final PreparedStatement hasPrepDataStmt;
     private final PreparedStatement getPrepDataStmt;
     private final PreparedStatement getPrepRollStmt;
 
@@ -55,6 +57,12 @@ public class PrepData extends TableData {
         qb.deleteFrom("prep");
         qb.where("user_id = ? AND key = ?");
         deletePrepDataStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("COUNT(*) AS cnt");
+        qb.from("prep");
+        qb.where("prep.user_id = ? AND prep.key = ?");
+        hasPrepDataStmt = qb.build(connection);
 
         qb = new QueryBuilder();
         qb.select("prep.name, prep.descr, prep.roll_count");
@@ -102,7 +110,7 @@ public class PrepData extends TableData {
                             addPrepCalculationStmt.setInt(3, i);
                             addPrepCalculationStmt.setString(4, calculationData.description);
                             addPrepCalculationStmt.setString(5, calculationData.query);
-                            addPrepCalculationStmt.setObject(6, calculationData.bytecode);
+                            addPrepCalculationStmt.setBytes(6, calculationData.bytecode);
                             addPrepCalculationStmt.executeUpdate();
                         }
                     }
@@ -121,6 +129,56 @@ public class PrepData extends TableData {
             deletePrepDataStmt.setString(2, key);
             deletePrepDataStmt.executeUpdate();
             connection.commit();
+        }
+    }
+
+    public boolean hasPrepData(long userId, String key) throws SQLException {
+        synchronized (connection) {
+            hasPrepDataStmt.setLong(1, userId);
+            hasPrepDataStmt.setString(2, key);
+            ResultSet rs = hasPrepDataStmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("cnt") > 0;
+            }
+            throw new RuntimeException();
+        }
+    }
+
+    public Data getPrepData(long userId, String key) throws SQLException {
+        synchronized (connection) {
+            getPrepDataStmt.setLong(1, userId);
+            getPrepDataStmt.setString(2, key);
+            ResultSet rs = getPrepDataStmt.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
+            Data prepData = new Data(userId, key);
+            prepData.name = rs.getString("name");
+            prepData.description = rs.getString("descr");
+            int rollCount = rs.getInt("roll_count");
+
+            getPrepRollStmt.setLong(1, userId);
+            getPrepRollStmt.setString(2, key);
+            for (int i = 0; i < rollCount; i++) {
+                getPrepRollStmt.setInt(3, i);
+                rs = getPrepRollStmt.executeQuery();
+
+                if (!rs.next()) {
+                    throw new RuntimeException();
+                }
+
+                byte[] bytecode = rs.getBytes("bytecode");
+
+                if (bytecode == null) {
+                    prepData.dicerolls.add(new Data.DicerollData(rs.getString("descr"),
+                            rs.getString("query")));
+                } else {
+                    prepData.dicerolls.add(new Data.CalculationData(rs.getString("descr"),
+                            rs.getString("query"), bytecode));
+                }
+            }
+
+            return prepData;
         }
     }
 
@@ -210,9 +268,9 @@ public class PrepData extends TableData {
         }
 
         public static final class CalculationData extends RollData {
-            public List<Byte> bytecode;
+            public byte[] bytecode;
 
-            public CalculationData(String description, String query, List<Byte> bytecode) {
+            public CalculationData(String description, String query, byte[] bytecode) {
                 super(description, query);
                 this.bytecode = bytecode;
             }

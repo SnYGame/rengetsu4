@@ -37,11 +37,49 @@ public class PrepEditButton extends ButtonInteraction {
     public Mono<Void> handle(ButtonInteractionEvent event) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
+
         return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(userId -> {
                     String[] args = event.getCustomId().split(":");
 
                     if (userId != Long.parseLong(args[1])) {
                         return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
+                    }
+
+                    switch (args[3]) {
+                        case "create_instead" -> {
+                            return event.presentModal("Preparing", "prep:%d:%s:init".formatted(userId, args[2]), List.of(
+                                    ActionRow.of(
+                                            TextInput.small("name", "Name", 0, 100)
+                                                    .required(true)
+                                    ),
+                                    ActionRow.of(
+                                            TextInput.paragraph("description", "Effect description",
+                                                    0, 2000).required(false)
+                                    )
+                            ));
+                        }
+                        case "edit_instead" -> {
+                            PrepData.Data data;
+                            String key = args[2];
+                            try {
+                                data = prepData.getPrepData(userId, key);
+                            } catch (SQLException e) {
+                                Rengetsu.getLOGGER().error("SQL Error", e);
+                                return event.reply("**[Error]** Database error").withEphemeral(true);
+                            }
+
+                            if (data == null) {
+                                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
+                                        .content("Prepared effect with key `%s` does not exists.".formatted(key))
+                                        .addComponent(ActionRow.of(
+                                                Button.primary("prep:%d:%s:create_instead".formatted(userId, key), "Create instead")
+                                        ))
+                                        .build());
+                            }
+
+                            prepData.putTempData(data);
+                            return event.reply(PrepData.buildMenu(data));
+                        }
                     }
 
                     PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);

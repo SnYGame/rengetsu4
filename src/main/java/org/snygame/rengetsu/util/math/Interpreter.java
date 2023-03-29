@@ -16,15 +16,15 @@ public class Interpreter {
     static List<String> functions = List.of("sqrt", "ln", "sin", "cos", "tan", "floor", "ceil", "trunc", "abs", "fact");
 
 
-    public static String interpret(List<Byte> bytecode) {
+    public static String interpret(byte[] bytecode) {
         List<Object> constants = new ArrayList<>();
         Stack<Object> stack = new Stack<>();
 
         List<String> diceResults = new ArrayList<>();
 
         int[] i = new int[1];
-        while (i[0] < bytecode.size()) {
-            switch (Bytecode.Opcode.values()[bytecode.get(i[0])]) {
+        while (i[0] < bytecode.length) {
+            switch (Bytecode.Opcode.values()[bytecode[i[0]]]) {
                 case LOAD -> {
                     short index = getShort(bytecode, i);
                     stack.push(constants.get(index));
@@ -173,7 +173,7 @@ public class Interpreter {
                     continue;
                 }
                 case CALL -> {
-                    stack.push(functionCall(functions.get(bytecode.get(++i[0])), (Number) stack.pop()));
+                    stack.push(functionCall(functions.get(bytecode[++i[0]]), (Number) stack.pop()));
                 }
                 case ROLL -> {
                     short index = getShort(bytecode, i);
@@ -248,22 +248,22 @@ public class Interpreter {
                     }
                 }
                 case INT -> {
-                    byte[] intBytes = new byte[bytecode.get(++i[0])];
+                    byte[] intBytes = new byte[bytecode[++i[0]]];
                     for (int j = 0; j < intBytes.length; j++) {
-                        intBytes[j] = bytecode.get(++i[0]);
+                        intBytes[j] = bytecode[++i[0]];
                     }
                     constants.add(new BigInteger(intBytes));
                 }
                 case FLOAT -> {
-                    byte[] intBytes = new byte[bytecode.get(++i[0])];
-                    byte scale = bytecode.get(++i[0]);
+                    byte[] intBytes = new byte[bytecode[++i[0]]];
+                    byte scale = bytecode[++i[0]];
                     for (int j = 0; j < intBytes.length; j++) {
-                        intBytes[j] = bytecode.get(++i[0]);
+                        intBytes[j] = bytecode[++i[0]];
                     }
                     constants.add(new BigDecimal(new BigInteger(intBytes), scale));
                 }
                 case BOOL -> {
-                    constants.add(bytecode.get(++i[0]) != 0);
+                    constants.add(bytecode[++i[0]] != 0);
                 }
                 case DICE -> {
                     short countUnique = getShort(bytecode, i);
@@ -289,8 +289,8 @@ public class Interpreter {
         }
     }
 
-    private static short getShort(List<Byte> bytes, int[] i) {
-        return (short) ((bytes.get(++i[0]) << 8) | bytes.get(++i[0]) & 0xFF);
+    private static short getShort(byte[] bytes, int[] i) {
+        return (short) ((bytes[++i[0]] << 8) | bytes[++i[0]] & 0xFF);
     }
 
     private static Number arithmetic(Object lhs, Object rhs, BiFunction<BigInteger, BigInteger, BigInteger> intOp,
