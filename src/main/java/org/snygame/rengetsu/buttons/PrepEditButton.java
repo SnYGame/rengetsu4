@@ -113,8 +113,8 @@ public class PrepEditButton extends ButtonInteraction {
                                                     .required(true)
                                     ),
                                     ActionRow.of(
-                                            TextInput.paragraph("roll", "Diceroll",
-                                                            0, 2000).required(true)
+                                            TextInput.small("roll", "Diceroll",
+                                                            0, 500).required(true)
                                     )
                             ));
                         }
@@ -126,8 +126,8 @@ public class PrepEditButton extends ButtonInteraction {
                                                     .required(true)
                                     ),
                                     ActionRow.of(
-                                            TextInput.paragraph("calc", "Calculation",
-                                                    0, 2000).required(true)
+                                            TextInput.small("calc", "Calculation",
+                                                    0, 500).required(true)
                                     )
                             ));
                         }
