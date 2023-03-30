@@ -15,7 +15,6 @@ import java.util.stream.IntStream;
 public class Interpreter {
     static List<String> functions = List.of("sqrt", "ln", "sin", "cos", "tan", "floor", "ceil", "trunc", "abs", "fact");
 
-
     public static String interpret(byte[] bytecode) {
         List<Object> constants = new ArrayList<>();
         Stack<Object> stack = new Stack<>();
@@ -51,23 +50,15 @@ public class Interpreter {
                     switch (lhs) {
                         case BigInteger ilhs -> {
                             switch(rhs) {
-                                case BigInteger irhs -> {
-                                    stack.push(new BigDecimal(ilhs).divide(new BigDecimal(irhs), 16, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
-                                case BigDecimal frhs -> {
-                                    stack.push(new BigDecimal(ilhs).divide(frhs, 16, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
+                                case BigInteger irhs -> stack.push(new BigDecimal(ilhs).divide(new BigDecimal(irhs), 16, RoundingMode.HALF_EVEN));
+                                case BigDecimal frhs -> stack.push(new BigDecimal(ilhs).divide(frhs, 16, RoundingMode.HALF_EVEN));
                                 default -> throw new IllegalStateException("Unexpected value: " + rhs);
                             }
                         }
                         case BigDecimal flhs -> {
                             switch(rhs) {
-                                case BigInteger irhs -> {
-                                    stack.push(flhs.divide(new BigDecimal(irhs), 160, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
-                                case BigDecimal frhs -> {
-                                    stack.push(flhs.divide(frhs, 16, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
+                                case BigInteger irhs -> stack.push(flhs.divide(new BigDecimal(irhs), 160, RoundingMode.HALF_EVEN));
+                                case BigDecimal frhs -> stack.push(flhs.divide(frhs, 16, RoundingMode.HALF_EVEN));
                                 default -> throw new IllegalStateException("Unexpected value: " + rhs);
                             }
                         }
@@ -281,10 +272,14 @@ public class Interpreter {
         if (stack.size() != 1) {
             throw new IllegalStateException("Resulting stack has %d values".formatted(stack.size()));
         }
+        Object result = stack.pop();
+        if (result instanceof BigDecimal bdec) {
+            result = bdec.stripTrailingZeros();
+        }
         if (diceResults.isEmpty()) {
-            return "Result: **%s**".formatted(stack.pop());
+            return "Result: **%s**".formatted(result);
         } else {
-            return "Result: **%s** [%s]".formatted(stack.pop(), diceResults.stream().reduce("",
+            return "Result: **%s** [%s]".formatted(result, diceResults.stream().reduce("",
                     (a, b) -> a.length() > 175 ? (a.endsWith("\u2026") ? a : a + "\u2026") : a + b));
         }
     }
@@ -409,11 +404,21 @@ public class Interpreter {
                 }
             }
             case "fact" -> {
-                BigInteger bint = (BigInteger) argument;
-                if (bint.signum() < 0 || bint.compareTo(BigInteger.valueOf(50   )) > 0) {
+                BigInteger arg;
+                switch (argument) {
+                    case BigInteger bint -> arg = bint;
+                    case BigDecimal bdec -> {
+                        if (bdec.stripTrailingZeros().scale() != 0) {
+                            throw new IllegalArgumentException("Cannot take factorial of a non-integer");
+                        }
+                        arg = bdec.toBigIntegerExact();
+                    }
+                    default -> throw new IllegalStateException("Unexpected value: " + argument);
+                }
+                if (arg.signum() < 0 || arg.compareTo(BigInteger.valueOf(50)) > 0) {
                     throw new IllegalArgumentException("Factorial argument must be between 0 and 50");
                 }
-                return IntStream.range(1, bint.intValueExact() + 1).mapToObj(BigInteger::valueOf)
+                return IntStream.range(1, arg.intValueExact() + 1).mapToObj(BigInteger::valueOf)
                         .reduce(BigInteger.ONE, BigInteger::multiply);
             }
         }

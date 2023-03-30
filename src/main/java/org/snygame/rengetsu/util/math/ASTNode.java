@@ -1,7 +1,5 @@
 package org.snygame.rengetsu.util.math;
 
-import org.snygame.rengetsu.util.Diceroll;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.regex.Matcher;
@@ -37,7 +35,7 @@ public abstract class ASTNode {
         return Stream.of(children).map(String::valueOf).collect(Collectors.joining(", "));
     }
 
-    public static enum Type {
+    public enum Type {
         INT, FLOAT, BOOL;
     }
 
@@ -449,11 +447,7 @@ public abstract class ASTNode {
         @Override
         protected Type validateType() {
             switch (name) {
-                case "sqrt":
-                case "ln":
-                case "sin":
-                case "cos":
-                case "tan":
+                case "sqrt", "ln", "sin", "cos", "tan" -> {
                     if (arguments.length != 1) {
                         throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
                     }
@@ -461,9 +455,8 @@ public abstract class ASTNode {
                         throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
                     }
                     return Type.FLOAT;
-                case "floor":
-                case "ceil":
-                case "trunc":
+                }
+                case "floor", "ceil", "trunc", "fact" -> {
                     if (arguments.length != 1) {
                         throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
                     }
@@ -471,7 +464,8 @@ public abstract class ASTNode {
                         throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
                     }
                     return Type.INT;
-                case "abs":
+                }
+                case "abs" -> {
                     if (arguments.length != 1) {
                         throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
                     }
@@ -479,17 +473,8 @@ public abstract class ASTNode {
                         throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
                     }
                     return arguments[0].getType();
-                case "fact":
-                    if (arguments.length != 1) {
-                        throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
-                    }
-                    if (arguments[0].getType() != Type.INT) {
-                        throw new IllegalArgumentException("%s argument must be of type INT".formatted(name));
-                    }
-                    return Type.INT;
-                default:
-                    throw new IllegalArgumentException("Unknown function: %s".formatted(name));
-
+                }
+                default -> throw new IllegalArgumentException("Unknown function: %s".formatted(name));
             }
         }
 
