@@ -313,6 +313,12 @@ public abstract class ASTNode {
         }
 
         @Override
+        protected Type validateType() {
+            super.validateType();
+            return Type.FLOAT;
+        }
+
+        @Override
         public <T> T accept(ASTVisitor<T> visitor) {
             return visitor.visit(this);
         }
@@ -321,6 +327,12 @@ public abstract class ASTNode {
     public static class IntDiv extends ArithmeticOp {
         IntDiv(ASTNode lhs, ASTNode rhs) {
             super(lhs, rhs, "//");
+        }
+
+        @Override
+        protected Type validateType() {
+            super.validateType();
+            return Type.INT;
         }
 
         @Override

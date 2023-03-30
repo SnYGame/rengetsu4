@@ -68,7 +68,11 @@ public class Interpreter {
                 case IDIV -> {
                     Object rhs = stack.pop();
                     Object lhs = stack.pop();
-                    stack.push(arithmetic(lhs, rhs, BigInteger::divide, BigDecimal::divideToIntegralValue));
+                    Number quotient = arithmetic(lhs, rhs, BigInteger::divide, BigDecimal::divideToIntegralValue);
+                    if (quotient instanceof BigDecimal bdec) {
+                        quotient = bdec.toBigIntegerExact();
+                    }
+                    stack.push(quotient);
                 }
                 case MOD -> {
                     Object rhs = stack.pop();
