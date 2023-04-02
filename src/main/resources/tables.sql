@@ -74,6 +74,13 @@ CREATE TABLE IF NOT EXISTS timer (
     end_on TIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS timer_sub (
+    timer_id INT NOT NULL,
+    user_id INT NOT NULL,
+    PRIMARY KEY (timer_id, user_id),
+    FOREIGN KEY (timer_id) REFERENCES timer(timer_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS role_timer (
     timer_id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_id INT NOT NULL,
@@ -99,5 +106,5 @@ CREATE TABLE IF NOT EXISTS prep_roll (
     query TEXT NOT NULL,
     bytecode BLOB,
     PRIMARY KEY (user_id, key, pos),
-    FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key)
+    FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key) ON DELETE CASCADE
 );
