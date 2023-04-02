@@ -31,13 +31,28 @@
     },
     {
       "name": "cancel",
-      "description": "Cancels a timer",
+      "description": "Cancels or unsubscribes from a timer",
       "type": 1,
       "required": false,
       "options": [
         {
           "name": "id",
-          "description": "Id of the timer to cancel",
+          "description": "Id of the timer to cancel or unsubscribe to",
+          "type": 4,
+          "required": true,
+          "min_value": 0
+        }
+      ]
+    },
+    {
+      "name": "subscribe",
+      "description": "Subscribe to a timer",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "id",
+          "description": "Id of the timer to subscribe to",
           "type": 4,
           "required": true,
           "min_value": 0

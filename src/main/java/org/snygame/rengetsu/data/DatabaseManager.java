@@ -23,9 +23,8 @@ public class DatabaseManager extends RengClass {
     public DatabaseManager(Rengetsu rengetsu, String dbPath, String tablePath) throws SQLException, IOException {
         super(rengetsu);
 
-        connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+        connection = DriverManager.getConnection("jdbc:sqlite:%s?foreign_keys=on".formatted(dbPath));
         connection.setAutoCommit(false);
-        connection.createStatement().execute("PRAGMA foreign_keys = true");
 
         createTables(connection, tablePath);
         userData = new UserData(rengetsu, connection);

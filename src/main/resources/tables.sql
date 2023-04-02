@@ -17,8 +17,7 @@ CREATE TABLE IF NOT EXISTS role_requestable (
     temp INT DEFAULT FALSE,
     agreement TEXT,
     PRIMARY KEY (role_id, server_id),
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES role(server_id) ON DELETE CASCADE
+    FOREIGN KEY (role_id, server_id) REFERENCES role(role_id, server_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS role_add_when_removed (
@@ -26,19 +25,15 @@ CREATE TABLE IF NOT EXISTS role_add_when_removed (
     server_id INT NOT NULL,
     to_add_id INT NOT NULL,
     PRIMARY KEY (role_id, server_id, to_add_id),
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES role(server_id) ON DELETE CASCADE,
-    FOREIGN KEY (to_add_id) REFERENCES role(role_id) ON DELETE CASCADE
+    FOREIGN KEY (role_id, server_id) REFERENCES role(role_id, server_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS role_remove_when_added (
-    role_id INT NOT NULL,
-    server_id INT NOT NULL,
-    to_remove_id INT NOT NULL,
-    PRIMARY KEY (role_id, server_id, to_remove_id),
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES role(server_id) ON DELETE CASCADE,
-    FOREIGN KEY (to_remove_id) REFERENCES role(role_id) ON DELETE CASCADE
+     role_id INT NOT NULL,
+     server_id INT NOT NULL,
+     to_remove_id INT NOT NULL,
+     PRIMARY KEY (role_id, server_id, to_remove_id),
+     FOREIGN KEY (role_id, server_id) REFERENCES role(role_id, server_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS user (
@@ -104,6 +99,5 @@ CREATE TABLE IF NOT EXISTS prep_roll (
     query TEXT NOT NULL,
     bytecode BLOB,
     PRIMARY KEY (user_id, key, pos),
-    FOREIGN KEY (user_id) REFERENCES prep(user_id),
-    FOREIGN KEY (key) REFERENCES prep(key)
+    FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key)
 );
