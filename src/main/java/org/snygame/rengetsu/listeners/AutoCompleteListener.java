@@ -19,7 +19,7 @@ public class AutoCompleteListener extends Listener {
 
     public Mono<Void> handle(ChatInputAutoCompleteEvent event) {
         switch (event.getCommandName()) {
-            case "prep" -> {
+            case "prepare" -> {
                 return handlePrep(event);
             }
         }
