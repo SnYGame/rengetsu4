@@ -16,7 +16,7 @@ public class ButtonListener extends Listener {
         super(rengetsu);
 
         commands.add(new SaltClaimButton(rengetsu));
-        commands.add(new CancelTimerButton(rengetsu));
+        commands.add(new TimerButton(rengetsu));
         commands.add(new RoleSetButton(rengetsu));
         commands.add(new RequestRoleAgreementButton(rengetsu));
         commands.add(new PrepEditButton(rengetsu));
