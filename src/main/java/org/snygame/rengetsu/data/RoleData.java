@@ -163,8 +163,6 @@ public class RoleData extends TableData {
     public void saveRoleData(Data data) throws SQLException {
         synchronized (connection) {
             try {
-                DatabaseManager databaseManager = rengetsu.getDatabaseManager();
-                databaseManager.getServerData().initializeServer(data.serverId);
                 setRoleDataStmt.setLong(1, data.roleId);
                 setRoleDataStmt.setLong(2, data.serverId);
                 setRoleDataStmt.setBoolean(3, data.addJoin);

@@ -216,8 +216,6 @@ public class UserData extends TableData {
 
     public void setMemberLastMsg(long userId, long serverId, long lastMsg) throws SQLException {
         synchronized (connection) {
-            DatabaseManager databaseManager = rengetsu.getDatabaseManager();
-            databaseManager.getServerData().initializeServer(serverId);
             initializeUser(userId);
 
             setMemberLastMsgStmt.setLong(1, userId);

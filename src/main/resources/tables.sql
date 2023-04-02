@@ -8,8 +8,7 @@ CREATE TABLE IF NOT EXISTS role (
     server_id INT NOT NULL,
     add_on_join INT DEFAULT FALSE,
     add_on_inactive INT DEFAULT FALSE,
-    PRIMARY KEY (role_id, server_id),
-    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
+    PRIMARY KEY (role_id, server_id)
 );
 
 CREATE TABLE IF NOT EXISTS role_requestable (
@@ -54,8 +53,7 @@ CREATE TABLE IF NOT EXISTS member (
     server_id INT NOT NULL,
     last_msg INT NOT NULL,
     PRIMARY KEY (user_id, server_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS server_msg_log (
@@ -86,9 +84,7 @@ CREATE TABLE IF NOT EXISTS role_timer (
     role_id INT NOT NULL,
     server_id INT NOT NULL,
     user_id INT NOT NULL,
-    end_on TIME NOT NULL,
-    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
+    end_on TIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS prep (
@@ -97,8 +93,7 @@ CREATE TABLE IF NOT EXISTS prep (
     name TEXT NOT NULL,
     descr TEXT,
     roll_count INT NOT NULL,
-    PRIMARY KEY (user_id, key),
-    FOREIGN KEY (user_id) REFERENCES user(user_id)
+    PRIMARY KEY (user_id, key)
 );
 
 CREATE TABLE IF NOT EXISTS prep_roll (
@@ -109,6 +104,6 @@ CREATE TABLE IF NOT EXISTS prep_roll (
     query TEXT NOT NULL,
     bytecode BLOB,
     PRIMARY KEY (user_id, key, pos),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    FOREIGN KEY (user_id) REFERENCES prep(user_id),
     FOREIGN KEY (key) REFERENCES prep(key)
 );
