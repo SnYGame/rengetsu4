@@ -81,7 +81,9 @@ public class TimerCommand extends SlashCommand {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         TimerData timerData = databaseManager.getTimerData();
         try {
-            List<TimerData.Data> timers = timerData.listTimers(event.getInteraction().getUser().getId().asLong());
+            long userId = event.getInteraction().getUser().getId().asLong();
+            List<TimerData.Data> timers = timerData.listTimers(userId);
+            List<TimerData.Data> subscriptions = timerData.listSubscriptions(userId);
 
             if (timers.isEmpty()) {
                 return event.reply("You have no active timers.");
@@ -91,6 +93,9 @@ public class TimerCommand extends SlashCommand {
                     EmbedCreateSpec.builder()
                             .addAllFields(timers.stream().map(data -> EmbedCreateFields.Field.of("Timer #%d (%s remaining)".formatted(
                                     data.timerId(), TimeStrings.secondsToEnglish((int) ((data.endOn().toEpochMilli() - System.currentTimeMillis()) / 1000))),
+                                    "%s".formatted(data.message()), false)).toList())
+                            .addAllFields(subscriptions.stream().map(data -> EmbedCreateFields.Field.of("Timer subscription #%d (%s remaining)".formatted(
+                                        data.timerId(), TimeStrings.secondsToEnglish((int) ((data.endOn().toEpochMilli() - System.currentTimeMillis()) / 1000))),
                                     "%s".formatted(data.message()), false)).toList())
                             .build()
             ).build());
