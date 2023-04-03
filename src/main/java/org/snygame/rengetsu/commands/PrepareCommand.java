@@ -235,7 +235,7 @@ public class PrepareCommand extends SlashCommand {
                         if (diceroll.getRepeat() == 1) {
                             Diceroll.Result result = diceroll.roll();
                             if (dicerollData.variable != null) {
-                                variables[dicerollData.result] = BigInteger.valueOf(result.sum());
+                                variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
                                 return EmbedCreateFields.Field.of(dicerollData.description,
                                         "`%s = %s` %s".formatted(dicerollData.variable, dicerollData.query, result.toString())
                                         , false);
@@ -252,7 +252,7 @@ public class PrepareCommand extends SlashCommand {
                                             .mapToObj(__ -> {
                                                 Diceroll.Result result = diceroll.roll();
                                                 if (dicerollData.variable != null) {
-                                                    variables[dicerollData.result] = BigInteger.valueOf(result.sum());
+                                                    variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
                                                 }
                                                 return result.toString();
                                             }).collect(Collectors.joining("\n")))
