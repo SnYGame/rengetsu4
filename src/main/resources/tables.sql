@@ -54,14 +54,14 @@ CREATE TABLE IF NOT EXISTS member (
 CREATE TABLE IF NOT EXISTS server_msg_log (
     server_id INT NOT NULL,
     channel_id INT NOT NULL,
-    PRIMARY KEY (channel_id, server_id),
+    PRIMARY KEY (server_id, channel_id),
     FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS server_usr_log (
     server_id INT NOT NULL,
     channel_id INT NOT NULL,
-    PRIMARY KEY (channel_id, server_id),
+    PRIMARY KEY (server_id, channel_id),
     FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
 
