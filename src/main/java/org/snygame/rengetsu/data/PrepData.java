@@ -194,7 +194,6 @@ public class PrepData extends TableData {
     }
 
     public List<NameData> listPrepNames(long userId) throws SQLException {
-        System.out.println("call");
         synchronized (connection) {
             listPrepNamesStmt.setLong(1, userId);
             ResultSet rs = listPrepNamesStmt.executeQuery();
