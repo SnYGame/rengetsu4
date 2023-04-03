@@ -45,7 +45,6 @@ public class DailyTask extends RengTask {
                 long today = System.currentTimeMillis() / TimeStrings.DAY_MILLI;
                 client.getGuilds().flatMap(server -> {
                     try {
-                        System.out.println(server.getId());
                         int days = serverData.getInactiveDays(server.getId().asLong());
                         List<Long> idsToAdd = roleData.getRolesToAddOnInactive(server.getId().asLong());
                         List<Long> idsToRemove = idsToAdd.stream().map(id -> {
