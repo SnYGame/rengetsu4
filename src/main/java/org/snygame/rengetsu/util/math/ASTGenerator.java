@@ -8,11 +8,14 @@ import java.math.BigInteger;
 import java.util.HashMap;
 
 public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
-    private final HashMap<String, ASTNode.VarType> vMap = new HashMap<>();
+    private final HashMap<String, ASTNode.Type> vMap = new HashMap<>();
 
     @Override
     public ASTNode visitCalculation(RengCalcParser.CalculationContext ctx) {
-        return visitTernaryExpression(ctx.ternaryExpression());
+        if (ctx.Variable() == null) {
+            return visitTernaryExpression(ctx.ternaryExpression());
+        }
+        return new ASTNode.Assignment(vMap, ctx.Variable().getText(), visitTernaryExpression(ctx.ternaryExpression()));
     }
 
     @Override

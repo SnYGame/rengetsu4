@@ -10,9 +10,9 @@ import java.util.stream.Stream;
 
 public abstract class ASTNode {
     private final ASTNode[] children;
-    private final Map<String, VarType> vMap;
+    private final Map<String, Type> vMap;
 
-    public ASTNode(Map<String, VarType> vMap, ASTNode... children) {
+    public ASTNode(Map<String, Type> vMap, ASTNode... children) {
         this.vMap = vMap;
         this.children = children;
     }
@@ -25,7 +25,7 @@ public abstract class ASTNode {
         return Stream.of(children);
     }
 
-    public Map<String, VarType> getVariableTypes() {
+    public Map<String, Type> getVariableTypes() {
         return vMap;
     }
 
@@ -122,7 +122,7 @@ public abstract class ASTNode {
         final ASTNode rhs;
         private final String name;
 
-        BoolOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+        BoolOp(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs, String name) {
             super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
@@ -144,7 +144,7 @@ public abstract class ASTNode {
         private final ASTNode rhs;
         private final String name;
 
-        EqualityOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+        EqualityOp(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs, String name) {
             super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
@@ -166,7 +166,7 @@ public abstract class ASTNode {
         private final ASTNode rhs;
         private final String name;
 
-        ComparisonOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+        ComparisonOp(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs, String name) {
             super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
@@ -188,7 +188,7 @@ public abstract class ASTNode {
         private final ASTNode rhs;
         private final String name;
 
-        ArithmeticOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+        ArithmeticOp(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs, String name) {
             super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
@@ -209,7 +209,7 @@ public abstract class ASTNode {
         public final T value;
         private final FixedType type;
 
-        Constant(Map<String, VarType> vMap, T value, FixedType type) {
+        Constant(Map<String, Type> vMap, T value, FixedType type) {
             super(vMap);
             this.value = value;
             this.type = type;
@@ -226,12 +226,35 @@ public abstract class ASTNode {
         }
     }
 
+    public static class Assignment extends ASTNode {
+        final String name;
+        final ASTNode src;
+
+        Assignment(Map<String, Type> vMap, String name, ASTNode src) {
+            super(vMap);
+            this.name = name;
+            this.src = src;
+        }
+
+        @Override
+        public Type getType() {
+            Type type = src.getType();
+            getVariableTypes().put(name, type);
+            return type;
+        }
+
+        @Override
+        public <T> T accept(ASTVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
     public static class Ternary extends ASTNode {
         final ASTNode condition;
         final ASTNode trueResult;
         final ASTNode falseResult;
 
-        Ternary(Map<String, VarType> vMap, ASTNode condition, ASTNode trueResult, ASTNode falseResult) {
+        Ternary(Map<String, Type> vMap, ASTNode condition, ASTNode trueResult, ASTNode falseResult) {
             super(vMap, condition, trueResult, falseResult);
             this.condition = condition;
             this.trueResult = trueResult;
@@ -258,7 +281,7 @@ public abstract class ASTNode {
     }
 
     public static class LogicOr extends BoolOp {
-        LogicOr(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        LogicOr(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "||");
         }
 
@@ -269,7 +292,7 @@ public abstract class ASTNode {
     }
 
     public static class LogicAnd extends BoolOp {
-        LogicAnd(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        LogicAnd(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "&&");
         }
 
@@ -280,7 +303,7 @@ public abstract class ASTNode {
     }
 
     public static class Equals extends EqualityOp {
-        Equals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Equals(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "==");
         }
 
@@ -291,7 +314,7 @@ public abstract class ASTNode {
     }
 
     public static class NotEquals extends EqualityOp {
-        NotEquals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        NotEquals(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "!=");
         }
 
@@ -302,7 +325,7 @@ public abstract class ASTNode {
     }
 
     public static class LessThan extends ComparisonOp {
-        LessThan(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        LessThan(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "<");
         }
 
@@ -313,7 +336,7 @@ public abstract class ASTNode {
     }
 
     public static class GreaterThan extends ComparisonOp {
-        GreaterThan(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        GreaterThan(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, ">");
         }
 
@@ -324,7 +347,7 @@ public abstract class ASTNode {
     }
 
     public static class LessEquals extends ComparisonOp {
-        LessEquals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        LessEquals(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "<=");
         }
 
@@ -335,7 +358,7 @@ public abstract class ASTNode {
     }
 
     public static class GreaterEquals extends ComparisonOp {
-        GreaterEquals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        GreaterEquals(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, ">=");
         }
 
@@ -346,7 +369,7 @@ public abstract class ASTNode {
     }
 
     public static class Add extends ArithmeticOp {
-        Add(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Add(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "+");
         }
 
@@ -357,7 +380,7 @@ public abstract class ASTNode {
     }
 
     public static class Sub extends ArithmeticOp {
-        Sub(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Sub(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "-");
         }
 
@@ -368,7 +391,7 @@ public abstract class ASTNode {
     }
 
     public static class Mul extends ArithmeticOp {
-        Mul(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Mul(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "*");
         }
 
@@ -379,7 +402,7 @@ public abstract class ASTNode {
     }
 
     public static class Div extends ArithmeticOp {
-        Div(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Div(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "/");
         }
 
@@ -390,7 +413,7 @@ public abstract class ASTNode {
     }
 
     public static class IntDiv extends ArithmeticOp {
-        IntDiv(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        IntDiv(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "//");
         }
 
@@ -401,7 +424,7 @@ public abstract class ASTNode {
     }
 
     public static class Mod extends ArithmeticOp {
-        Mod(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Mod(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs, "%");
         }
 
@@ -414,7 +437,7 @@ public abstract class ASTNode {
     public static class Plus extends ASTNode {
         private final ASTNode value;
 
-        Plus(Map<String, VarType> vMap, ASTNode value) {
+        Plus(Map<String, Type> vMap, ASTNode value) {
             super(vMap, value);
             this.value = value;
         }
@@ -437,7 +460,7 @@ public abstract class ASTNode {
     public static class Minus extends ASTNode {
         private final ASTNode value;
 
-        Minus(Map<String, VarType> vMap, ASTNode value) {
+        Minus(Map<String, Type> vMap, ASTNode value) {
             super(vMap, value);
             this.value = value;
         }
@@ -460,7 +483,7 @@ public abstract class ASTNode {
     public static class LogicNot extends ASTNode {
         private final ASTNode value;
 
-        LogicNot(Map<String, VarType> vMap, ASTNode value) {
+        LogicNot(Map<String, Type> vMap, ASTNode value) {
             super(vMap, value);
             this.value = value;
         }
@@ -484,7 +507,7 @@ public abstract class ASTNode {
         private final ASTNode lhs;
         private final ASTNode rhs;
 
-        Power(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+        Power(Map<String, Type> vMap, ASTNode lhs, ASTNode rhs) {
             super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
@@ -509,7 +532,7 @@ public abstract class ASTNode {
         final String name;
         private final ASTNode[] arguments;
 
-        Function(Map<String, VarType> vMap, String name, ASTNode... arguments) {
+        Function(Map<String, Type> vMap, String name, ASTNode... arguments) {
             super(vMap, arguments);
             this.name = name;
             this.arguments = arguments;
@@ -551,7 +574,7 @@ public abstract class ASTNode {
         private final int dropHighest;
         private final boolean unique;
 
-        Dice(Map<String, VarType> vMap, String dice) {
+        Dice(Map<String, Type> vMap, String dice) {
             super(vMap);
             Matcher match = DICE_RE.matcher(dice);
 
@@ -596,7 +619,7 @@ public abstract class ASTNode {
     }
 
     public static class IntConst extends Constant<BigInteger> {
-        IntConst(Map<String, VarType> vMap, BigInteger value) {
+        IntConst(Map<String, Type> vMap, BigInteger value) {
             super(vMap, value, FixedType.NUM);
         }
 
@@ -607,7 +630,7 @@ public abstract class ASTNode {
     }
 
     public static class FloatConst extends Constant<BigDecimal> {
-        FloatConst(Map<String, VarType> vMap, BigDecimal value) {
+        FloatConst(Map<String, Type> vMap, BigDecimal value) {
             super(vMap, value, FixedType.NUM);
         }
 
@@ -618,7 +641,7 @@ public abstract class ASTNode {
     }
 
     public static class BoolConst extends Constant<Boolean> {
-        BoolConst(Map<String, VarType> vMap, Boolean value) {
+        BoolConst(Map<String, Type> vMap, Boolean value) {
             super(vMap, value, FixedType.BOOL);
         }
 
@@ -629,16 +652,20 @@ public abstract class ASTNode {
     }
 
     public static class Variable extends ASTNode {
-        private final String name;
+        final String name;
 
-        Variable(Map<String, VarType> vMap, String name) {
+        Variable(Map<String, Type> vMap, String name) {
             super(vMap);
             this.name = name;
         }
 
         @Override
         public Type getType() {
-            return getVariableTypes().computeIfAbsent(name, VarType::new);
+            Map<String, Type> vMap = getVariableTypes();
+            if (!vMap.containsKey(name)) {
+                throw new IllegalStateException("Undefined variable: %s".formatted(name));
+            }
+            return vMap.get(name);
         }
 
         @Override

@@ -9,7 +9,7 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
     private final HashMap<Object, Short> constantMap = new HashMap<>();
     private int byteCounter = 0;
 
-    private final HashMap<String, Short> varMap = new HashMap<>();
+    private final HashMap<String, Byte> varMap = new HashMap<>();
 
     public byte[] generate(ASTNode ast) {
         constants.clear();
@@ -19,6 +19,13 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
 
         ast.accept(this);
         return getBytecode();
+    }
+
+    @Override
+    public Void visit(ASTNode.Assignment node) {
+        node.src.accept(this);
+        addBytecode(new Bytecode(Bytecode.Opcode.STOVAR, varMap.computeIfAbsent(node.name, name -> (byte) varMap.size())));
+        return null;
     }
 
     @Override
@@ -257,8 +264,9 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
     }
 
     @Override
-    public Void visit(ASTNode.Variable variable) {
-        throw new UnsupportedOperationException("Not implemented");
+    public Void visit(ASTNode.Variable node) {
+        addBytecode(new Bytecode(Bytecode.Opcode.LOADVAR, varMap.get(node.name)));
+        return null;
     }
 
     public byte[] getBytecode() {

@@ -269,6 +269,14 @@ public class Interpreter {
                     short dh = getShort(bytecode, i);
                     constants.add(new Dice(count, faces, dl, dh, unique));
                 }
+                case STOVAR -> {
+                    byte index = bytecode[++i[0]];
+                    variables[index] = stack.peek();
+                }
+                case LOADVAR -> {
+                    byte index = bytecode[++i[0]];
+                    stack.push(variables[index]);
+                }
             }
             i[0]++;
         }

@@ -2,6 +2,7 @@ grammar RengCalc;
 
 calculation
  : ternaryExpression EOF
+ | Variable '=' ternaryExpression EOF
  ;
 
 ternaryExpression

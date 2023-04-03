@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.util.math;
 
 public interface ASTVisitor<T> {
+    T visit(ASTNode.Assignment assignment);
     T visit(ASTNode.Ternary node);
     T visit(ASTNode.LogicOr node);
     T visit(ASTNode.LogicAnd node);

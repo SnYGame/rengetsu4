@@ -92,13 +92,22 @@ public class MathCommand extends SlashCommand {
             ASTGenerator astGenerator = new ASTGenerator();
             ArrayList<ASTNode> asts = new ArrayList<>();
             for (RengCalcParser.CalculationContext pt : pts) {
-                ASTNode ast = astGenerator.visit(pt);
+                ASTNode ast;
+
+                try {
+                    ast = astGenerator.visit(pt);
+                } catch (Exception e) {
+                    return event.createFollowup("`%s` Error: %s\n".formatted(pt.getText().substring(0, pt.getText().length() - 5),
+                            e.getMessage())).withEphemeral(true);
+                }
+
                 try {
                     ast.getType();
                 } catch (Exception e) {
                     return event.createFollowup("`%s` Type Error: %s\n".formatted(pt.getText().substring(0, pt.getText().length() - 5),
                             e.getMessage())).withEphemeral(true);
                 }
+
                 asts.add(ast);
             }
             BytecodeGenerator bytecodeGenerator = new BytecodeGenerator();
@@ -111,6 +120,7 @@ public class MathCommand extends SlashCommand {
                     String result = Interpreter.interpret(bytecodes.get(i), variables);
                     return "`%s` %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), result);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     return "`%s` Error: %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), e.getMessage());
                 }
             })).subscribeOn(Schedulers.boundedElastic()).windowUntil(StringSplitPredicate.get(2000), true)
