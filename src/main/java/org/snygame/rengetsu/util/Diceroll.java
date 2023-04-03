@@ -268,7 +268,6 @@ public class Diceroll {
                     }
                 }
             }
-            default -> throw new IllegalStateException("Unexpected value: " + faces);
         }
 
         int drops = dropLowest + dropHighest;
@@ -395,7 +394,7 @@ public class Diceroll {
         }
     }
 
-    private interface Faces {
+    private sealed interface Faces permits Fixed, Ranges {
         long trueSize();
     }
 
@@ -410,7 +409,7 @@ public class Diceroll {
             return faces;
         }
     }
-    private static class Ranges implements Faces {
+    private static final class Ranges implements Faces {
         private final Map<Integer, Range> ranges;
         private final int[] scale;
         private final long size;

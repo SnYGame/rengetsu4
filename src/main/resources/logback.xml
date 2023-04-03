@@ -23,8 +23,8 @@
             <!-- daily rollover -->
             <fileNamePattern>logs/reng_log.%d{yyyy-MM-dd}.log</fileNamePattern>
 
-            <!-- keep 30 days' worth of history capped at 3GB total size -->
-            <maxHistory>30</maxHistory>
+            <!-- keep 10 days' worth of history -->
+            <maxHistory>10</maxHistory>
         </rollingPolicy>
 
         <encoder>

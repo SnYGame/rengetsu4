@@ -12,9 +12,11 @@ import org.snygame.rengetsu.data.TimerData;
 
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class TimerTask extends RengTask {
     private final Map<Long, ScheduledFuture<?>> tasks = new HashMap<>();
@@ -46,9 +48,17 @@ public class TimerTask extends RengTask {
             try {
                 TimerData.Data data = timerData.getData(timerId);
                 if (data != null) {
+                    List<Long> subscribers = timerData.getSubscribers(timerId);
+                    StringBuilder content = new StringBuilder("<@%d>".formatted(data.userId()));
+                    if (!subscribers.isEmpty()) {
+                        content.append("\n");
+                        content.append(timerData.getSubscribers(timerId).stream().map("<@%d>"::formatted)
+                                .collect(Collectors.joining(" ")));
+                    }
+
                     client.getChannelById(Snowflake.of(data.channelId())).filter(channel -> channel instanceof MessageChannel)
                             .map(channel -> (MessageChannel) channel).flatMap(channel ->
-                                    channel.createMessage(MessageCreateSpec.builder().content("<@%d>".formatted(data.userId()))
+                                    channel.createMessage(MessageCreateSpec.builder().content(content.toString())
                                             .addEmbed(EmbedCreateSpec.builder()
                                                     .title("Timer #%d".formatted(timerId))
                                                     .description(data.message())

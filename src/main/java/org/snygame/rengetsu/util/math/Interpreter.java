@@ -15,16 +15,15 @@ import java.util.stream.IntStream;
 public class Interpreter {
     static List<String> functions = List.of("sqrt", "ln", "sin", "cos", "tan", "floor", "ceil", "trunc", "abs", "fact");
 
-
-    public static String interpret(List<Byte> bytecode) {
+    public static String interpret(byte[] bytecode) {
         List<Object> constants = new ArrayList<>();
         Stack<Object> stack = new Stack<>();
 
         List<String> diceResults = new ArrayList<>();
 
         int[] i = new int[1];
-        while (i[0] < bytecode.size()) {
-            switch (Bytecode.Opcode.values()[bytecode.get(i[0])]) {
+        while (i[0] < bytecode.length) {
+            switch (Bytecode.Opcode.values()[bytecode[i[0]]]) {
                 case LOAD -> {
                     short index = getShort(bytecode, i);
                     stack.push(constants.get(index));
@@ -51,23 +50,15 @@ public class Interpreter {
                     switch (lhs) {
                         case BigInteger ilhs -> {
                             switch(rhs) {
-                                case BigInteger irhs -> {
-                                    stack.push(new BigDecimal(ilhs).divide(new BigDecimal(irhs), 16, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
-                                case BigDecimal frhs -> {
-                                    stack.push(new BigDecimal(ilhs).divide(frhs, 16, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
+                                case BigInteger irhs -> stack.push(new BigDecimal(ilhs).divide(new BigDecimal(irhs), 16, RoundingMode.HALF_EVEN));
+                                case BigDecimal frhs -> stack.push(new BigDecimal(ilhs).divide(frhs, 16, RoundingMode.HALF_EVEN));
                                 default -> throw new IllegalStateException("Unexpected value: " + rhs);
                             }
                         }
                         case BigDecimal flhs -> {
                             switch(rhs) {
-                                case BigInteger irhs -> {
-                                    stack.push(flhs.divide(new BigDecimal(irhs), 160, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
-                                case BigDecimal frhs -> {
-                                    stack.push(flhs.divide(frhs, 16, RoundingMode.HALF_EVEN).stripTrailingZeros());
-                                }
+                                case BigInteger irhs -> stack.push(flhs.divide(new BigDecimal(irhs), 160, RoundingMode.HALF_EVEN));
+                                case BigDecimal frhs -> stack.push(flhs.divide(frhs, 16, RoundingMode.HALF_EVEN));
                                 default -> throw new IllegalStateException("Unexpected value: " + rhs);
                             }
                         }
@@ -77,7 +68,11 @@ public class Interpreter {
                 case IDIV -> {
                     Object rhs = stack.pop();
                     Object lhs = stack.pop();
-                    stack.push(arithmetic(lhs, rhs, BigInteger::divide, BigDecimal::divideToIntegralValue));
+                    Number quotient = arithmetic(lhs, rhs, BigInteger::divide, BigDecimal::divideToIntegralValue);
+                    if (quotient instanceof BigDecimal bdec) {
+                        quotient = bdec.toBigIntegerExact();
+                    }
+                    stack.push(quotient);
                 }
                 case MOD -> {
                     Object rhs = stack.pop();
@@ -173,7 +168,7 @@ public class Interpreter {
                     continue;
                 }
                 case CALL -> {
-                    stack.push(functionCall(functions.get(bytecode.get(++i[0])), (Number) stack.pop()));
+                    stack.push(functionCall(functions.get(bytecode[++i[0]]), (Number) stack.pop()));
                 }
                 case ROLL -> {
                     short index = getShort(bytecode, i);
@@ -248,22 +243,22 @@ public class Interpreter {
                     }
                 }
                 case INT -> {
-                    byte[] intBytes = new byte[bytecode.get(++i[0])];
+                    byte[] intBytes = new byte[bytecode[++i[0]]];
                     for (int j = 0; j < intBytes.length; j++) {
-                        intBytes[j] = bytecode.get(++i[0]);
+                        intBytes[j] = bytecode[++i[0]];
                     }
                     constants.add(new BigInteger(intBytes));
                 }
                 case FLOAT -> {
-                    byte[] intBytes = new byte[bytecode.get(++i[0])];
-                    byte scale = bytecode.get(++i[0]);
+                    byte[] intBytes = new byte[bytecode[++i[0]]];
+                    byte scale = bytecode[++i[0]];
                     for (int j = 0; j < intBytes.length; j++) {
-                        intBytes[j] = bytecode.get(++i[0]);
+                        intBytes[j] = bytecode[++i[0]];
                     }
                     constants.add(new BigDecimal(new BigInteger(intBytes), scale));
                 }
                 case BOOL -> {
-                    constants.add(bytecode.get(++i[0]) != 0);
+                    constants.add(bytecode[++i[0]] != 0);
                 }
                 case DICE -> {
                     short countUnique = getShort(bytecode, i);
@@ -281,16 +276,20 @@ public class Interpreter {
         if (stack.size() != 1) {
             throw new IllegalStateException("Resulting stack has %d values".formatted(stack.size()));
         }
+        Object result = stack.pop();
+        if (result instanceof BigDecimal bdec) {
+            result = bdec.stripTrailingZeros();
+        }
         if (diceResults.isEmpty()) {
-            return "Result: **%s**".formatted(stack.pop());
+            return "Result: **%s**".formatted(result);
         } else {
-            return "Result: **%s** [%s]".formatted(stack.pop(), diceResults.stream().reduce("",
+            return "Result: **%s** [%s]".formatted(result, diceResults.stream().reduce("",
                     (a, b) -> a.length() > 175 ? (a.endsWith("\u2026") ? a : a + "\u2026") : a + b));
         }
     }
 
-    private static short getShort(List<Byte> bytes, int[] i) {
-        return (short) ((bytes.get(++i[0]) << 8) | bytes.get(++i[0]) & 0xFF);
+    private static short getShort(byte[] bytes, int[] i) {
+        return (short) ((bytes[++i[0]] << 8) | bytes[++i[0]] & 0xFF);
     }
 
     private static Number arithmetic(Object lhs, Object rhs, BiFunction<BigInteger, BigInteger, BigInteger> intOp,
@@ -409,11 +408,21 @@ public class Interpreter {
                 }
             }
             case "fact" -> {
-                BigInteger bint = (BigInteger) argument;
-                if (bint.signum() < 0 || bint.compareTo(BigInteger.valueOf(50   )) > 0) {
+                BigInteger arg;
+                switch (argument) {
+                    case BigInteger bint -> arg = bint;
+                    case BigDecimal bdec -> {
+                        if (bdec.stripTrailingZeros().scale() != 0) {
+                            throw new IllegalArgumentException("Cannot take factorial of a non-integer");
+                        }
+                        arg = bdec.toBigIntegerExact();
+                    }
+                    default -> throw new IllegalStateException("Unexpected value: " + argument);
+                }
+                if (arg.signum() < 0 || arg.compareTo(BigInteger.valueOf(50)) > 0) {
                     throw new IllegalArgumentException("Factorial argument must be between 0 and 50");
                 }
-                return IntStream.range(1, bint.intValueExact() + 1).mapToObj(BigInteger::valueOf)
+                return IntStream.range(1, arg.intValueExact() + 1).mapToObj(BigInteger::valueOf)
                         .reduce(BigInteger.ONE, BigInteger::multiply);
             }
         }

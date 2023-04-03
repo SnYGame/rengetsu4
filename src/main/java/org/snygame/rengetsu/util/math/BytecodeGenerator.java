@@ -250,7 +250,7 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
         return null;
     }
 
-    public List<Byte> getBytecode() {
+    public byte[] getBytecode() {
         List<Byte> bytecode = new ArrayList<>();
         for (Bytecode bytes: constants) {
             for (byte b: bytes.toBytes()) {
@@ -263,7 +263,13 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
                 bytecode.add(b);
             }
         }
-        return bytecode;
+
+        byte[] bytes = new byte[bytecode.size()];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = bytecode.get(i);
+        }
+
+        return bytes;
     }
 
     public String getAsm() {

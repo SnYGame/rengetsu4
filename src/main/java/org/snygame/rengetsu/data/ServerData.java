@@ -132,6 +132,7 @@ public class ServerData extends TableData {
     public void setUserLogs(long id, List<Long> channelIds) throws SQLException {
         synchronized (connection) {
             try {
+                initializeServer(id);
                 clearUserLogsStmt.setLong(1, id);
                 clearUserLogsStmt.executeUpdate();
 
@@ -151,6 +152,7 @@ public class ServerData extends TableData {
     public void setMessageLogs(long id, List<Long> channelIds) throws SQLException {
         synchronized (connection) {
             try {
+                initializeServer(id);
                 clearMessageLogsStmt.setLong(1, id);
                 clearMessageLogsStmt.executeUpdate();
 

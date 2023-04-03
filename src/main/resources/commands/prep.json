@@ -1,0 +1,75 @@
+{
+  "name": "prepare",
+  "description": "Prepares effects",
+  "options": [
+    {
+      "name": "create",
+      "description": "Create a prepared effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50
+        }
+      ]
+    },
+    {
+      "name": "edit",
+      "description": "Edit a prepared effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "name": "cast",
+      "description": "Cast a prepared effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "description": "Delete a prepared effect",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "name": "list",
+      "description": "Lists your prepared effects",
+      "type": 1,
+      "required": false
+    }
+  ]
+}

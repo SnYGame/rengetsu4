@@ -15,6 +15,10 @@ public class TimerData extends TableData {
     private final PreparedStatement getAllTimersStmt;
     private final PreparedStatement cleanupTableStmt;
     private final PreparedStatement listTimersStmt;
+    private final PreparedStatement subscribeTimerStmt;
+    private final PreparedStatement unsubscribeTimerStmt;
+    private final PreparedStatement getSubscribersStmt;
+    private final PreparedStatement listSubscriptionsStmt;
 
     TimerData(Rengetsu rengetsu, Connection connection) throws SQLException {
         super(rengetsu, connection);
@@ -57,6 +61,28 @@ public class TimerData extends TableData {
         qb.from("timer");
         qb.where("timer.user_id = ?");
         listTimersStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.insertIgnoreInto("timer_sub");
+        qb.values("(?, ?)");
+        subscribeTimerStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.deleteFrom("timer_sub");
+        qb.where("timer_id = ? AND user_id = ?");
+        unsubscribeTimerStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("timer_sub.user_id");
+        qb.from("timer_sub");
+        qb.where("timer_sub.timer_id = ?");
+        getSubscribersStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("timer.timer_id, timer.channel_id, timer.user_id, timer.message, timer.set_on, timer.end_on");
+        qb.from("timer INNER JOIN timer_sub ON timer.timer_id = timer_sub.timer_id");
+        qb.where("timer_sub.user_id = ?");
+        listSubscriptionsStmt = qb.build(connection);
     }
 
     public long addTimer(long channelId, long userId, String message, Instant setOn, Instant endOn) throws SQLException {
@@ -130,10 +156,56 @@ public class TimerData extends TableData {
         }
     }
 
-    public List<Data> listTimers(long user_id) throws SQLException {
+    public List<Data> listTimers(long userId) throws SQLException {
         synchronized (connection) {
-            listTimersStmt.setLong(1, user_id);
+            listTimersStmt.setLong(1, userId);
             ResultSet rs = listTimersStmt.executeQuery();
+            ArrayList<Data> timers = new ArrayList<>();
+            while (rs.next()) {
+                timers.add(new Data(rs.getLong("timer_id"), rs.getLong("channel_id"), rs.getLong("user_id"),
+                        rs.getString("message"), rs.getTimestamp("set_on").toInstant(),
+                        rs.getTimestamp("end_on").toInstant()));
+            }
+            return timers;
+        }
+    }
+
+    public boolean subscribeTimer(long userId, long timerId) throws SQLException {
+        synchronized (connection) {
+            subscribeTimerStmt.setLong(1, timerId);
+            subscribeTimerStmt.setLong(2, userId);
+            int rows = subscribeTimerStmt.executeUpdate();
+            connection.commit();
+            return rows > 0;
+        }
+    }
+
+    public boolean unsubscribeTimer(long userId, long timerId) throws SQLException {
+        synchronized (connection) {
+            unsubscribeTimerStmt.setLong(1, timerId);
+            unsubscribeTimerStmt.setLong(2, userId);
+            int rows = unsubscribeTimerStmt.executeUpdate();
+            connection.commit();
+            return rows > 0;
+        }
+    }
+
+    public List<Long> getSubscribers(long timerId) throws SQLException {
+        synchronized (connection) {
+            getSubscribersStmt.setLong(1, timerId);
+            ResultSet rs = getSubscribersStmt.executeQuery();
+            ArrayList<Long> userIds = new ArrayList<>();
+            while (rs.next()) {
+                userIds.add(rs.getLong("user_id"));
+            }
+            return userIds;
+        }
+    }
+
+    public List<Data> listSubscriptions(long userId) throws SQLException {
+        synchronized (connection) {
+            listSubscriptionsStmt.setLong(1, userId);
+            ResultSet rs = listSubscriptionsStmt.executeQuery();
             ArrayList<Data> timers = new ArrayList<>();
             while (rs.next()) {
                 timers.add(new Data(rs.getLong("timer_id"), rs.getLong("channel_id"), rs.getLong("user_id"),
