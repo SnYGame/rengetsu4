@@ -11,6 +11,12 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
 
     private final HashMap<String, Byte> varMap = new HashMap<>();
 
+    public BytecodeGenerator(String... parameters) {
+        for (String param: parameters) {
+            varMap.computeIfAbsent(param, name -> (byte) varMap.size());
+        }
+    }
+
     public byte[] generate(ASTNode ast) {
         constants.clear();
         code.clear();
@@ -298,6 +304,10 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
 
     public int getVarCount() {
         return varMap.size();
+    }
+
+    public byte getVarIndex(String name) {
+        return varMap.computeIfAbsent(name, __ -> (byte) varMap.size());
     }
 
     private byte[] longToBytes(long l) {

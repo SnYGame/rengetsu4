@@ -1,21 +1,19 @@
 package org.snygame.rengetsu.buttons;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.component.TextInput;
-import discord4j.core.object.entity.PartialMember;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.rest.util.Permission;
-import discord4j.rest.util.PermissionSet;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
-import org.snygame.rengetsu.data.RoleData;
+import org.snygame.rengetsu.util.math.BytecodeGenerator;
+import org.snygame.rengetsu.util.math.Type;
+import org.snygame.rengetsu.util.math.TypeChecker;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
@@ -105,6 +103,15 @@ public class PrepEditButton extends ButtonInteraction {
                                     )
                             ));
                         }
+                        case "params" -> {
+                            return event.presentModal("Edit parameters", "prep:%d:%s:params".formatted(data.userId,
+                                    data.key), List.of(
+                                    ActionRow.of(
+                                            TextInput.small("params", "Parameters (comma separated)", 0, 1000)
+                                                    .required(false).prefilled(String.join(", ", data.params))
+                                    )
+                            ));
+                        }
                         case "add_roll" -> {
                             return event.presentModal("Add diceroll", "prep:%d:%s:add_roll".formatted(data.userId,
                                     data.key), List.of(
@@ -115,6 +122,10 @@ public class PrepEditButton extends ButtonInteraction {
                                     ActionRow.of(
                                             TextInput.small("roll", "Diceroll",
                                                             0, 500).required(true)
+                                    ),
+                                    ActionRow.of(
+                                            TextInput.small("variable", "Result variable",
+                                                    0, 50).required(false)
                                     )
                             ));
                         }
@@ -155,6 +166,65 @@ public class PrepEditButton extends ButtonInteraction {
                         case "cancel_menu" -> {}
                         case "save" -> {
                             try {
+                                TypeChecker typeChecker = new TypeChecker();
+                                Type.VarType[] paramTypes = typeChecker.addVariables(data.params);
+
+                                for (PrepData.Data.RollData rollData: data.dicerolls) {
+                                    switch (rollData) {
+                                        case PrepData.Data.DicerollData diceroll -> {
+                                            if (diceroll.variable != null) {
+                                                typeChecker.addVariable(diceroll.variable, Type.FixedType.NUM);
+                                            }
+                                        }
+                                        case PrepData.Data.CalculationData calculation -> {
+                                            try {
+                                                calculation.getAst().accept(typeChecker);
+                                            } catch (IllegalArgumentException e) {
+                                                return event.reply("`%s` Type Error: %s\n".formatted(calculation.query,
+                                                        e.getMessage())).withEphemeral(true);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                BytecodeGenerator bytecodeGenerator = new BytecodeGenerator(data.params);
+                                for (PrepData.Data.RollData rollData: data.dicerolls) {
+                                    switch (rollData) {
+                                        case PrepData.Data.DicerollData diceroll -> {
+                                            if (diceroll.variable != null) {
+                                                diceroll.result = bytecodeGenerator.getVarIndex(diceroll.variable);
+                                            }
+                                        }
+                                        case PrepData.Data.CalculationData calculation -> {
+                                            calculation.bytecode = bytecodeGenerator.generate(calculation.getAst());
+                                        }
+                                    }
+                                }
+
+                                data.parameterData.clear();
+                                for (int i = 0; i < data.params.length; i++) {
+                                    String param = data.params[i];
+                                    Type type = paramTypes[i].getInferredType();
+                                    switch (type) {
+                                        case Type.FixedType fixedType -> {
+                                            data.parameterData.add(new PrepData.Data.ParameterData(param, fixedType, (byte) 0,
+                                                    bytecodeGenerator.getVarIndex(param)));
+                                        }
+                                        case Type.VarType varType -> {
+                                            byte b;
+                                            for (b = 0; b < data.params.length; b++) {
+                                                if (data.params[b].equals(varType.getName())) {
+                                                    break;
+                                                }
+                                            }
+                                            data.parameterData.add(new PrepData.Data.ParameterData(param, Type.FixedType.VAR, b,
+                                                    bytecodeGenerator.getVarIndex(param)));
+                                        }
+                                    }
+                                }
+
+                                data.varCount = bytecodeGenerator.getVarCount();
+
                                 prepData.savePrepData(data);
                                 prepData.removeTempData(data);
                                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()

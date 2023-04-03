@@ -8,14 +8,12 @@ import java.math.BigInteger;
 import java.util.HashMap;
 
 public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
-    private final HashMap<String, ASTNode.Type> vMap = new HashMap<>();
-
     @Override
     public ASTNode visitCalculation(RengCalcParser.CalculationContext ctx) {
         if (ctx.Variable() == null) {
             return visitTernaryExpression(ctx.ternaryExpression());
         }
-        return new ASTNode.Assignment(vMap, ctx.Variable().getText(), visitTernaryExpression(ctx.ternaryExpression()));
+        return new ASTNode.Assignment(ctx.Variable().getText(), visitTernaryExpression(ctx.ternaryExpression()));
     }
 
     @Override
@@ -24,7 +22,7 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
             return visit(ctx.logicOrExpression());
         }
 
-        return new ASTNode.Ternary(vMap, visit(ctx.logicOrExpression()),
+        return new ASTNode.Ternary(visit(ctx.logicOrExpression()),
                 visit(ctx.ternaryExpression(0)), visit(ctx.ternaryExpression(1)));
     }
 
@@ -34,7 +32,7 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
             return visit(ctx.logicAndExpression());
         }
 
-        return new ASTNode.LogicOr(vMap, visit(ctx.logicOrExpression()), visit(ctx.logicAndExpression()));
+        return new ASTNode.LogicOr(visit(ctx.logicOrExpression()), visit(ctx.logicAndExpression()));
     }
 
     @Override
@@ -43,7 +41,7 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
             return visit(ctx.equalityExpression());
         }
 
-        return new ASTNode.LogicAnd(vMap, visit(ctx.logicAndExpression()), visit(ctx.equalityExpression()));
+        return new ASTNode.LogicAnd(visit(ctx.logicAndExpression()), visit(ctx.equalityExpression()));
     }
 
     @Override
@@ -54,9 +52,9 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
 
         switch (ctx.equalityOp().getText()) {
             case "==":
-                return new ASTNode.Equals(vMap, visit(ctx.equalityExpression()), visit(ctx.comparisonExpression()));
+                return new ASTNode.Equals(visit(ctx.equalityExpression()), visit(ctx.comparisonExpression()));
             case "!=":
-                return new ASTNode.NotEquals(vMap, visit(ctx.equalityExpression()), visit(ctx.comparisonExpression()));
+                return new ASTNode.NotEquals(visit(ctx.equalityExpression()), visit(ctx.comparisonExpression()));
         }
 
         throw new IllegalStateException();
@@ -70,13 +68,13 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
 
         switch (ctx.comparisonOp().getText()) {
             case "<":
-                return new ASTNode.LessThan(vMap, visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
+                return new ASTNode.LessThan(visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
             case "<=":
-                return new ASTNode.LessEquals(vMap, visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
+                return new ASTNode.LessEquals(visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
             case ">":
-                return new ASTNode.GreaterThan(vMap, visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
+                return new ASTNode.GreaterThan(visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
             case ">=":
-                return new ASTNode.GreaterEquals(vMap, visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
+                return new ASTNode.GreaterEquals(visit(ctx.comparisonExpression()), visit(ctx.additiveExpression()));
         }
 
         throw new IllegalStateException();
@@ -90,9 +88,9 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
 
         switch (ctx.additiveOp().getText()) {
             case "+":
-                return new ASTNode.Add(vMap, visit(ctx.additiveExpression()), visit(ctx.multiplicativeExpression()));
+                return new ASTNode.Add(visit(ctx.additiveExpression()), visit(ctx.multiplicativeExpression()));
             case "-":
-                return new ASTNode.Sub(vMap, visit(ctx.additiveExpression()), visit(ctx.multiplicativeExpression()));
+                return new ASTNode.Sub(visit(ctx.additiveExpression()), visit(ctx.multiplicativeExpression()));
         }
 
         throw new IllegalStateException();
@@ -106,13 +104,13 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
 
         switch (ctx.multiplicativeOp().getText()) {
             case "*":
-                return new ASTNode.Mul(vMap, visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
+                return new ASTNode.Mul(visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
             case "/":
-                return new ASTNode.Div(vMap, visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
+                return new ASTNode.Div(visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
             case "//":
-                return new ASTNode.IntDiv(vMap, visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
+                return new ASTNode.IntDiv(visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
             case "%":
-                return new ASTNode.Mod(vMap, visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
+                return new ASTNode.Mod(visit(ctx.multiplicativeExpression()), visit(ctx.unaryExpression()));
         }
 
         throw new IllegalStateException();
@@ -126,11 +124,11 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
 
         switch (ctx.unaryOp().getText()) {
             case "+":
-                return new ASTNode.Plus(vMap, visit(ctx.exponentialExpression()));
+                return new ASTNode.Plus(visit(ctx.exponentialExpression()));
             case "-":
-                return new ASTNode.Minus(vMap, visit(ctx.exponentialExpression()));
+                return new ASTNode.Minus(visit(ctx.exponentialExpression()));
             case "!":
-                return new ASTNode.LogicNot(vMap, visit(ctx.exponentialExpression()));
+                return new ASTNode.LogicNot(visit(ctx.exponentialExpression()));
         }
 
         throw new IllegalStateException();
@@ -142,7 +140,7 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
             return visit(ctx.primaryExpression());
         }
 
-        return new ASTNode.Power(vMap, visit(ctx.primaryExpression()), visit(ctx.exponentialExpression()));
+        return new ASTNode.Power(visit(ctx.primaryExpression()), visit(ctx.exponentialExpression()));
     }
 
     @Override
@@ -156,23 +154,23 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
         }
 
         if (ctx.DiceRoll() != null) {
-            return new ASTNode.Dice(vMap, ctx.DiceRoll().getText());
+            return new ASTNode.Dice(ctx.DiceRoll().getText());
         }
 
         if (ctx.IntegerConstant() != null) {
-            return new ASTNode.IntConst(vMap, new BigInteger(ctx.IntegerConstant().getText()));
+            return new ASTNode.IntConst(new BigInteger(ctx.IntegerConstant().getText()));
         }
 
         if (ctx.FloatConstant() != null) {
-            return new ASTNode.FloatConst(vMap, new BigDecimal(ctx.FloatConstant().getText()));
+            return new ASTNode.FloatConst(new BigDecimal(ctx.FloatConstant().getText()));
         }
 
         if (ctx.BoolConstant() != null) {
-            return new ASTNode.BoolConst(vMap, Boolean.valueOf(ctx.BoolConstant().getText()));
+            return new ASTNode.BoolConst(Boolean.valueOf(ctx.BoolConstant().getText()));
         }
 
         if (ctx.Variable() != null) {
-            return new ASTNode.Variable(vMap, ctx.Variable().getText());
+            return new ASTNode.Variable(ctx.Variable().getText());
         }
 
         throw new IllegalStateException();
@@ -180,7 +178,7 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitCallExpression(RengCalcParser.CallExpressionContext ctx) {
-        return new ASTNode.Function(vMap, ctx.Variable().getText(),
+        return new ASTNode.Function(ctx.Variable().getText(),
                 ctx.parameterList().ternaryExpression().stream().map(this::visit).toArray(ASTNode[]::new));
     }
 }

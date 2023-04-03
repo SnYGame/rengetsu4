@@ -8,10 +8,7 @@ import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.parser.RengCalcLexer;
 import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.util.functions.StringSplitPredicate;
-import org.snygame.rengetsu.util.math.ASTGenerator;
-import org.snygame.rengetsu.util.math.ASTNode;
-import org.snygame.rengetsu.util.math.BytecodeGenerator;
-import org.snygame.rengetsu.util.math.Interpreter;
+import org.snygame.rengetsu.util.math.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -91,18 +88,13 @@ public class MathCommand extends SlashCommand {
         return Mono.just(parseTrees).flatMap(pts -> {
             ASTGenerator astGenerator = new ASTGenerator();
             ArrayList<ASTNode> asts = new ArrayList<>();
+            TypeChecker typeChecker = new TypeChecker();
+
             for (RengCalcParser.CalculationContext pt : pts) {
-                ASTNode ast;
+                ASTNode ast = astGenerator.visit(pt);
 
                 try {
-                    ast = astGenerator.visit(pt);
-                } catch (Exception e) {
-                    return event.createFollowup("`%s` Error: %s\n".formatted(pt.getText().substring(0, pt.getText().length() - 5),
-                            e.getMessage())).withEphemeral(true);
-                }
-
-                try {
-                    ast.getType();
+                    ast.accept(typeChecker);
                 } catch (Exception e) {
                     return event.createFollowup("`%s` Type Error: %s\n".formatted(pt.getText().substring(0, pt.getText().length() - 5),
                             e.getMessage())).withEphemeral(true);

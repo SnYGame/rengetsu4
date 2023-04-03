@@ -18,10 +18,14 @@ import org.snygame.rengetsu.util.math.BytecodeGenerator;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class PrepModal extends ModalInteraction {
+    private static final Pattern VAR_RE = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+
     public PrepModal(Rengetsu rengetsu) {
         super(rengetsu);
     }
@@ -47,6 +51,9 @@ public class PrepModal extends ModalInteraction {
             }
             case "add_calc" -> {
                 return handleAddCalc(event);
+            }
+            case "params" -> {
+                return handleParams(event);
             }
             default -> {
                 return event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true);
@@ -98,13 +105,20 @@ public class PrepModal extends ModalInteraction {
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         String query = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
+        String variable = event.getComponents().get(2).getData().components().get().get(0).value().toOptional().orElse(null);
 
         Diceroll diceroll = Diceroll.parse(query);
         if (diceroll.hasError()) {
             return event.reply("**[Error]** %s".formatted(diceroll.getError())).withEphemeral(true);
         }
 
-        data.dicerolls.add(new PrepData.Data.DicerollData(description, diceroll.toString()));
+        if (variable != null && !VAR_RE.matcher(variable).matches()) {
+            return event.reply(
+                    "**[Error]** Variable name must start with a letter or underscore and only contain letters, numbers, or underscore")
+                    .withEphemeral(true);
+        }
+
+        data.dicerolls.add(new PrepData.Data.DicerollData(description, diceroll.toString(), variable));
         return event.edit(PrepData.buildMenu(data));
     }
 
@@ -143,12 +157,47 @@ public class PrepModal extends ModalInteraction {
         }
 
         ASTNode ast = new ASTGenerator().visit(pt);
-        ast.getType();
-        BytecodeGenerator generator = new BytecodeGenerator();
-        ast.accept(generator);
-        byte[] bytecode = generator.getBytecode();
+        data.dicerolls.add(new PrepData.Data.CalculationData(description,
+                pt.getText().substring(0, pt.getText().length() - 5), ast));
+        return event.edit(PrepData.buildMenu(data));
+    }
 
-        data.dicerolls.add(new PrepData.Data.CalculationData(description, query, bytecode));
+    private Mono<Void> handleParams(ModalSubmitInteractionEvent event) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+        String[] args = event.getCustomId().split(":");
+
+        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        if (data == null) {
+            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+        }
+
+        String paramsRaw = event.getComponents().get(0).getData().components().get().get(0).value().toOptional()
+                .orElse("");
+        if (paramsRaw.isBlank()) {
+            data.params = new String[0];
+            return event.edit(PrepData.buildMenu(data));
+        }
+        String[] params = paramsRaw.split(",");
+        ArrayList<String> errors = new ArrayList<>();
+        for (int i = 0; i < params.length; i++) {
+            params[i] = params[i].strip();
+            if (!VAR_RE.matcher(params[i]).matches()) {
+                errors.add(params[i]);
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            return event.reply(
+                    "**[Error]** Parameters must start with a letter or underscore and only contain letters, numbers, or underscore\nInvalid parameters: %s"
+                    .formatted(String.join(", ", errors))).withEphemeral(true);
+        }
+
+        if (params.length != Arrays.stream(params).distinct().count()) {
+            return event.reply("**[Error]** Cannot have multiple parameters with the same name").withEphemeral(true);
+        }
+
+        data.params = params;
         return event.edit(PrepData.buildMenu(data));
     }
 }

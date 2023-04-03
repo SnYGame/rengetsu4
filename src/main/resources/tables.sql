@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS prep (
     name TEXT NOT NULL,
     descr TEXT,
     roll_count INT NOT NULL,
+    var_count INT NOT NULL,
+    param_count INT NOT NULL,
     PRIMARY KEY (user_id, key)
 );
 
@@ -105,6 +107,20 @@ CREATE TABLE IF NOT EXISTS prep_roll (
     descr TEXT NOT NULL,
     query TEXT NOT NULL,
     bytecode BLOB,
+    variable TEXT,
+    result INT,
+    PRIMARY KEY (user_id, key, pos),
+    FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS prep_param (
+    user_id INT NOT NULL,
+    key TEXT NOT NULL,
+    pos TEXT NOT NULL,
+    name TEXT NOT NULL,
+    fixed_type INT NOT NULL,
+    var_type INT NOT NULL,
+    result INT NOT NULL,
     PRIMARY KEY (user_id, key, pos),
     FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key) ON DELETE CASCADE
 );
