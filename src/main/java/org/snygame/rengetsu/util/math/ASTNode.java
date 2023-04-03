@@ -2,6 +2,7 @@ package org.snygame.rengetsu.util.math;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -9,21 +10,23 @@ import java.util.stream.Stream;
 
 public abstract class ASTNode {
     private final ASTNode[] children;
+    private final Map<String, VarType> vMap;
 
-    public ASTNode(ASTNode... children) {
+    public ASTNode(Map<String, VarType> vMap, ASTNode... children) {
+        this.vMap = vMap;
         this.children = children;
     }
 
-    protected abstract Type validateType();
-
-    public Type getType() {
-        return validateType();
-    }
+    public abstract Type getType();
 
     public abstract <T> T accept(ASTVisitor<T> visitor);
 
     public Stream<ASTNode> children() {
         return Stream.of(children);
+    }
+
+    public Map<String, VarType> getVariableTypes() {
+        return vMap;
     }
 
     @Override
@@ -35,8 +38,83 @@ public abstract class ASTNode {
         return Stream.of(children).map(String::valueOf).collect(Collectors.joining(", "));
     }
 
-    public enum Type {
-        INT, FLOAT, BOOL;
+    public sealed interface Type permits FixedType, VarType {
+        boolean unify(Type type);
+    }
+
+    public enum FixedType implements Type {
+        ANY, BOOL, NUM;
+
+        @Override
+        public boolean unify(Type other) {
+            if (other instanceof FixedType) {
+                return this == other;
+            }
+            return other.unify(this);
+        }
+    }
+
+    public static final class VarType implements Type {
+        private Type type = null;
+        private final String name;
+
+        public VarType(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public boolean unify(Type other) {
+            if (this == other) {
+                return true;
+            }
+
+            if (type == null) {
+                switch (other) {
+                    case FixedType fixedType -> type = fixedType;
+                    case VarType varType -> {
+                        while (varType.type instanceof VarType vType) {
+                            varType = vType;
+                        }
+                        if (varType != this) {
+                            type = varType.type == null ? varType : varType.type;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            return type.unify(other);
+        }
+
+        public Type getInferredType() {
+            if (type == null) {
+                return FixedType.ANY;
+            }
+
+            VarType varType = this;
+            while (varType.type instanceof VarType vType) {
+                varType = vType;
+            }
+
+            if (varType.type == null) {
+                return varType;
+            }
+            return varType.type;
+        }
+
+        @Override
+        public String toString() {
+            switch (getInferredType()) {
+                case VarType type -> {
+                    return "VarType(Same as %s)".formatted(type.name);
+                }
+                case FixedType type -> {
+                    return "VarType(%s)".formatted(type);
+                }
+            }
+
+            return null;
+        }
     }
 
     public static abstract class BoolOp extends ASTNode {
@@ -44,20 +122,20 @@ public abstract class ASTNode {
         final ASTNode rhs;
         private final String name;
 
-        BoolOp(ASTNode lhs, ASTNode rhs, String name) {
-            super(lhs, rhs);
+        BoolOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+            super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
             this.name = name;
         }
 
         @Override
-        protected Type validateType() {
-            if (lhs.getType() != Type.BOOL || rhs.getType() != Type.BOOL) {
+        public Type getType() {
+            if (!lhs.getType().unify(FixedType.BOOL) || !rhs.getType().unify(FixedType.BOOL)) {
                 throw new IllegalArgumentException("%s operands must be of type BOOL".formatted(name));
             }
 
-            return Type.BOOL;
+            return FixedType.BOOL;
         }
     }
 
@@ -66,20 +144,20 @@ public abstract class ASTNode {
         private final ASTNode rhs;
         private final String name;
 
-        EqualityOp(ASTNode lhs, ASTNode rhs, String name) {
-            super(lhs, rhs);
+        EqualityOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+            super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
             this.name = name;
         }
 
         @Override
-        protected Type validateType() {
-            if (lhs.getType() != rhs.getType() && (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL)) {
+        public Type getType() {
+            if (!lhs.getType().unify(rhs.getType())) {
                 throw new IllegalArgumentException("%s operands must be of the same type".formatted(name));
             }
 
-            return Type.BOOL;
+            return FixedType.BOOL;
         }
     }
 
@@ -88,20 +166,20 @@ public abstract class ASTNode {
         private final ASTNode rhs;
         private final String name;
 
-        ComparisonOp(ASTNode lhs, ASTNode rhs, String name) {
-            super(lhs, rhs);
+        ComparisonOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+            super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
             this.name = name;
         }
 
         @Override
-        protected Type validateType() {
-            if (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL) {
+        public Type getType() {
+            if (!lhs.getType().unify(FixedType.NUM) || !rhs.getType().unify(FixedType.NUM)) {
                 throw new IllegalArgumentException("%s operands must be numerical".formatted(name));
             }
 
-            return Type.BOOL;
+            return FixedType.BOOL;
         }
     }
 
@@ -110,38 +188,35 @@ public abstract class ASTNode {
         private final ASTNode rhs;
         private final String name;
 
-        ArithmeticOp(ASTNode lhs, ASTNode rhs, String name) {
-            super(lhs, rhs);
+        ArithmeticOp(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs, String name) {
+            super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
             this.name = name;
         }
 
         @Override
-        protected Type validateType() {
-            if (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL) {
+        public Type getType() {
+            if (!lhs.getType().unify(FixedType.NUM) || !rhs.getType().unify(FixedType.NUM)) {
                 throw new IllegalArgumentException("%s operands must be numerical".formatted(name));
             }
 
-            if (lhs.getType() == Type.FLOAT || rhs.getType() == Type.FLOAT) {
-                return Type.FLOAT;
-            }
-
-            return Type.INT;
+            return FixedType.NUM;
         }
     }
 
     public static abstract class Constant<T> extends ASTNode {
         public final T value;
-        private final Type type;
+        private final FixedType type;
 
-        Constant(T value, Type type) {
+        Constant(Map<String, VarType> vMap, T value, FixedType type) {
+            super(vMap);
             this.value = value;
             this.type = type;
         }
 
         @Override
-        protected Type validateType() {
+        public Type getType() {
             return type;
         }
 
@@ -156,28 +231,24 @@ public abstract class ASTNode {
         final ASTNode trueResult;
         final ASTNode falseResult;
 
-        Ternary(ASTNode condition, ASTNode trueResult, ASTNode falseResult) {
-            super(condition, trueResult, falseResult);
+        Ternary(Map<String, VarType> vMap, ASTNode condition, ASTNode trueResult, ASTNode falseResult) {
+            super(vMap, condition, trueResult, falseResult);
             this.condition = condition;
             this.trueResult = trueResult;
             this.falseResult = falseResult;
         }
 
         @Override
-        protected Type validateType() {
-            if (condition.getType() != Type.BOOL) {
+        public Type getType() {
+            if (!condition.getType().unify(FixedType.BOOL)) {
                 throw new IllegalArgumentException("Condition must be of type BOOL");
             }
 
-            if (trueResult.getType() == falseResult.getType()) {
-                return trueResult.getType();
-            }
-
-            if (trueResult.getType() == Type.BOOL || falseResult.getType() == Type.BOOL) {
+            if (!trueResult.getType().unify(falseResult.getType())) {
                 throw new IllegalArgumentException("Ternary result must be of the same type");
             }
 
-            return Type.FLOAT;
+            return trueResult.getType();
         }
 
         @Override
@@ -187,8 +258,8 @@ public abstract class ASTNode {
     }
 
     public static class LogicOr extends BoolOp {
-        LogicOr(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "||");
+        LogicOr(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "||");
         }
 
         @Override
@@ -198,8 +269,8 @@ public abstract class ASTNode {
     }
 
     public static class LogicAnd extends BoolOp {
-        LogicAnd(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "&&");
+        LogicAnd(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "&&");
         }
 
         @Override
@@ -209,8 +280,8 @@ public abstract class ASTNode {
     }
 
     public static class Equals extends EqualityOp {
-        Equals(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "==");
+        Equals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "==");
         }
 
         @Override
@@ -220,8 +291,8 @@ public abstract class ASTNode {
     }
 
     public static class NotEquals extends EqualityOp {
-        NotEquals(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "!=");
+        NotEquals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "!=");
         }
 
         @Override
@@ -231,8 +302,8 @@ public abstract class ASTNode {
     }
 
     public static class LessThan extends ComparisonOp {
-        LessThan(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "<");
+        LessThan(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "<");
         }
 
         @Override
@@ -242,8 +313,8 @@ public abstract class ASTNode {
     }
 
     public static class GreaterThan extends ComparisonOp {
-        GreaterThan(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, ">");
+        GreaterThan(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, ">");
         }
 
         @Override
@@ -253,8 +324,8 @@ public abstract class ASTNode {
     }
 
     public static class LessEquals extends ComparisonOp {
-        LessEquals(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "<=");
+        LessEquals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "<=");
         }
 
         @Override
@@ -264,8 +335,8 @@ public abstract class ASTNode {
     }
 
     public static class GreaterEquals extends ComparisonOp {
-        GreaterEquals(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, ">=");
+        GreaterEquals(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, ">=");
         }
 
         @Override
@@ -275,8 +346,8 @@ public abstract class ASTNode {
     }
 
     public static class Add extends ArithmeticOp {
-        Add(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "+");
+        Add(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "+");
         }
 
         @Override
@@ -286,8 +357,8 @@ public abstract class ASTNode {
     }
 
     public static class Sub extends ArithmeticOp {
-        Sub(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "-");
+        Sub(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "-");
         }
 
         @Override
@@ -297,8 +368,8 @@ public abstract class ASTNode {
     }
 
     public static class Mul extends ArithmeticOp {
-        Mul(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "*");
+        Mul(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "*");
         }
 
         @Override
@@ -308,14 +379,8 @@ public abstract class ASTNode {
     }
 
     public static class Div extends ArithmeticOp {
-        Div(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "/");
-        }
-
-        @Override
-        protected Type validateType() {
-            super.validateType();
-            return Type.FLOAT;
+        Div(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "/");
         }
 
         @Override
@@ -325,14 +390,8 @@ public abstract class ASTNode {
     }
 
     public static class IntDiv extends ArithmeticOp {
-        IntDiv(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "//");
-        }
-
-        @Override
-        protected Type validateType() {
-            super.validateType();
-            return Type.INT;
+        IntDiv(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "//");
         }
 
         @Override
@@ -342,8 +401,8 @@ public abstract class ASTNode {
     }
 
     public static class Mod extends ArithmeticOp {
-        Mod(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs, "%");
+        Mod(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs, "%");
         }
 
         @Override
@@ -355,18 +414,18 @@ public abstract class ASTNode {
     public static class Plus extends ASTNode {
         private final ASTNode value;
 
-        Plus(ASTNode value) {
-            super(value);
+        Plus(Map<String, VarType> vMap, ASTNode value) {
+            super(vMap, value);
             this.value = value;
         }
 
         @Override
-        protected Type validateType() {
-            if (value.getType() == Type.BOOL) {
+        public Type getType() {
+            if (value.getType().unify(FixedType.NUM)) {
                 throw new IllegalArgumentException("+ operand must be numerical");
             }
 
-            return value.getType();
+            return FixedType.NUM;
         }
 
         @Override
@@ -378,18 +437,18 @@ public abstract class ASTNode {
     public static class Minus extends ASTNode {
         private final ASTNode value;
 
-        Minus(ASTNode value) {
-            super(value);
+        Minus(Map<String, VarType> vMap, ASTNode value) {
+            super(vMap, value);
             this.value = value;
         }
 
         @Override
-        protected Type validateType() {
-            if (value.getType() == Type.BOOL) {
+        public Type getType() {
+            if (value.getType().unify(FixedType.NUM)) {
                 throw new IllegalArgumentException("- operand must be numerical");
             }
 
-            return value.getType();
+            return FixedType.NUM;
         }
 
         @Override
@@ -401,18 +460,18 @@ public abstract class ASTNode {
     public static class LogicNot extends ASTNode {
         private final ASTNode value;
 
-        LogicNot(ASTNode value) {
-            super(value);
+        LogicNot(Map<String, VarType> vMap, ASTNode value) {
+            super(vMap, value);
             this.value = value;
         }
 
         @Override
-        protected Type validateType() {
-            if (value.getType() != Type.BOOL) {
+        public Type getType() {
+            if (value.getType().unify(FixedType.BOOL)) {
                 throw new IllegalArgumentException("! operand must be of type BOOL");
             }
 
-            return Type.BOOL;
+            return FixedType.BOOL;
         }
 
         @Override
@@ -425,19 +484,19 @@ public abstract class ASTNode {
         private final ASTNode lhs;
         private final ASTNode rhs;
 
-        Power(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs);
+        Power(Map<String, VarType> vMap, ASTNode lhs, ASTNode rhs) {
+            super(vMap, lhs, rhs);
             this.lhs = lhs;
             this.rhs = rhs;
         }
 
         @Override
-        protected Type validateType() {
-            if (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL) {
+        public Type getType() {
+            if (!lhs.getType().unify(FixedType.NUM) || !rhs.getType().unify(FixedType.NUM)) {
                 throw new IllegalArgumentException("^ operands must be numerical");
             }
 
-            return Type.FLOAT;
+            return FixedType.NUM;
         }
 
         @Override
@@ -450,41 +509,23 @@ public abstract class ASTNode {
         final String name;
         private final ASTNode[] arguments;
 
-        Function(String name, ASTNode... arguments) {
-            super(arguments);
+        Function(Map<String, VarType> vMap, String name, ASTNode... arguments) {
+            super(vMap, arguments);
             this.name = name;
             this.arguments = arguments;
         }
 
         @Override
-        protected Type validateType() {
+        public Type getType() {
             switch (name) {
-                case "sqrt", "ln", "sin", "cos", "tan" -> {
+                case "sqrt", "ln", "sin", "cos", "tan", "floor", "ceil", "trunc", "fact", "abs" -> {
                     if (arguments.length != 1) {
                         throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
                     }
-                    if (arguments[0].getType() == Type.BOOL) {
+                    if (!arguments[0].getType().unify(FixedType.NUM)) {
                         throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
                     }
-                    return Type.FLOAT;
-                }
-                case "floor", "ceil", "trunc", "fact" -> {
-                    if (arguments.length != 1) {
-                        throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
-                    }
-                    if (arguments[0].getType() == Type.BOOL) {
-                        throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
-                    }
-                    return Type.INT;
-                }
-                case "abs" -> {
-                    if (arguments.length != 1) {
-                        throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
-                    }
-                    if (arguments[0].getType() == Type.BOOL) {
-                        throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
-                    }
-                    return arguments[0].getType();
+                    return FixedType.NUM;
                 }
                 default -> throw new IllegalArgumentException("Unknown function: %s".formatted(name));
             }
@@ -510,7 +551,8 @@ public abstract class ASTNode {
         private final int dropHighest;
         private final boolean unique;
 
-        Dice(String dice) {
+        Dice(Map<String, VarType> vMap, String dice) {
+            super(vMap);
             Matcher match = DICE_RE.matcher(dice);
 
             if (!match.matches()) {
@@ -538,8 +580,8 @@ public abstract class ASTNode {
         }
 
         @Override
-        protected Type validateType() {
-            return Type.INT;
+        public Type getType() {
+            return FixedType.NUM;
         }
 
         @Override
@@ -554,8 +596,8 @@ public abstract class ASTNode {
     }
 
     public static class IntConst extends Constant<BigInteger> {
-        IntConst(BigInteger value) {
-            super(value, Type.INT);
+        IntConst(Map<String, VarType> vMap, BigInteger value) {
+            super(vMap, value, FixedType.NUM);
         }
 
         @Override
@@ -565,8 +607,8 @@ public abstract class ASTNode {
     }
 
     public static class FloatConst extends Constant<BigDecimal> {
-        FloatConst(BigDecimal value) {
-            super(value, Type.FLOAT);
+        FloatConst(Map<String, VarType> vMap, BigDecimal value) {
+            super(vMap, value, FixedType.NUM);
         }
 
         @Override
@@ -576,8 +618,27 @@ public abstract class ASTNode {
     }
 
     public static class BoolConst extends Constant<Boolean> {
-        BoolConst(Boolean value) {
-            super(value, Type.BOOL);
+        BoolConst(Map<String, VarType> vMap, Boolean value) {
+            super(vMap, value, FixedType.BOOL);
+        }
+
+        @Override
+        public <T> T accept(ASTVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static class Variable extends ASTNode {
+        private final String name;
+
+        Variable(Map<String, VarType> vMap, String name) {
+            super(vMap);
+            this.name = name;
+        }
+
+        @Override
+        public Type getType() {
+            return getVariableTypes().computeIfAbsent(name, VarType::new);
         }
 
         @Override

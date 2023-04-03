@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 public class Interpreter {
     static List<String> functions = List.of("sqrt", "ln", "sin", "cos", "tan", "floor", "ceil", "trunc", "abs", "fact");
 
-    public static String interpret(byte[] bytecode) {
+    public static String interpret(byte[] bytecode, Object[] variables) {
         List<Object> constants = new ArrayList<>();
         Stack<Object> stack = new Stack<>();
 

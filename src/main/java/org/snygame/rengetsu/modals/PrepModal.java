@@ -142,7 +142,7 @@ public class PrepModal extends ModalInteraction {
             return event.reply("**Syntax error(s)**\n" + String.join("\n", errors)).withEphemeral(true);
         }
 
-        ASTNode ast = pt.accept(new ASTGenerator());
+        ASTNode ast = new ASTGenerator().visit(pt);
         ast.getType();
         BytecodeGenerator generator = new BytecodeGenerator();
         ast.accept(generator);

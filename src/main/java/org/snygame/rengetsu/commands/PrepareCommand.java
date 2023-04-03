@@ -163,7 +163,7 @@ public class PrepareCommand extends SlashCommand {
                         try {
                             return EmbedCreateFields.Field.of(calculationData.description,
                                     "`%s` %s".formatted(calculationData.query,
-                                            Interpreter.interpret(calculationData.bytecode)), false);
+                                            Interpreter.interpret(calculationData.bytecode, new Object[0])), false);
                         } catch (Exception e) {
                             return EmbedCreateFields.Field.of(calculationData.description,
                                     "`%s` Error: %s".formatted(calculationData.query,

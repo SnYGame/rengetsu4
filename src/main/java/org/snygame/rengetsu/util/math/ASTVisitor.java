@@ -25,4 +25,5 @@ public interface ASTVisitor<T> {
     T visit(ASTNode.IntConst node);
     T visit(ASTNode.FloatConst node);
     T visit(ASTNode.BoolConst node);
+    T visit(ASTNode.Variable variable);
 }

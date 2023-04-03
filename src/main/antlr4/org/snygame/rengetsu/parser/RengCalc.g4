@@ -86,10 +86,11 @@ primaryExpression
  | IntegerConstant
  | FloatConstant
  | BoolConstant
+ | Variable
  ;
 
 callExpression
- : Function '(' parameterList ')'
+ : Variable '(' parameterList ')'
  ;
 
 parameterList
@@ -120,8 +121,8 @@ BoolConstant
  | 'false'
  ;
 
-Function
- : [a-zA-Z]+
+Variable
+ : [a-zA-Z_][a-zA-Z0-9_]*
  ;
 
 WhiteSpaces
