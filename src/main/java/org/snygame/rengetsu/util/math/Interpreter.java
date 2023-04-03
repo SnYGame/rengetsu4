@@ -286,7 +286,12 @@ public class Interpreter {
         }
         Object result = stack.pop();
         if (result instanceof BigDecimal bdec) {
-            result = bdec.stripTrailingZeros();
+            bdec = bdec.stripTrailingZeros();
+            if (bdec.scale() <= 0) {
+                result = bdec.toBigIntegerExact();
+            } else {
+                result = bdec;
+            }
         }
         if (diceResults.isEmpty()) {
             return "Result: **%s**".formatted(result);
@@ -420,7 +425,7 @@ public class Interpreter {
                 switch (argument) {
                     case BigInteger bint -> arg = bint;
                     case BigDecimal bdec -> {
-                        if (bdec.stripTrailingZeros().scale() != 0) {
+                        if (bdec.stripTrailingZeros().scale() > 0) {
                             throw new IllegalArgumentException("Cannot take factorial of a non-integer");
                         }
                         arg = bdec.toBigIntegerExact();
