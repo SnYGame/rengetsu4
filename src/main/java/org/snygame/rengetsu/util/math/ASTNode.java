@@ -2,6 +2,7 @@ package org.snygame.rengetsu.util.math;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -14,12 +15,6 @@ public abstract class ASTNode {
         this.children = children;
     }
 
-    protected abstract Type validateType();
-
-    public Type getType() {
-        return validateType();
-    }
-
     public abstract <T> T accept(ASTVisitor<T> visitor);
 
     public Stream<ASTNode> children() {
@@ -28,21 +23,17 @@ public abstract class ASTNode {
 
     @Override
     public String toString() {
-        return "%s(%s)[%s]".formatted(getClass().getSimpleName(), getType(), repr());
+        return "%s[%s]".formatted(getClass().getSimpleName(), repr());
     }
 
     protected String repr() {
         return Stream.of(children).map(String::valueOf).collect(Collectors.joining(", "));
     }
 
-    public enum Type {
-        INT, FLOAT, BOOL;
-    }
-
     public static abstract class BoolOp extends ASTNode {
         final ASTNode lhs;
         final ASTNode rhs;
-        private final String name;
+        final String name;
 
         BoolOp(ASTNode lhs, ASTNode rhs, String name) {
             super(lhs, rhs);
@@ -50,21 +41,12 @@ public abstract class ASTNode {
             this.rhs = rhs;
             this.name = name;
         }
-
-        @Override
-        protected Type validateType() {
-            if (lhs.getType() != Type.BOOL || rhs.getType() != Type.BOOL) {
-                throw new IllegalArgumentException("%s operands must be of type BOOL".formatted(name));
-            }
-
-            return Type.BOOL;
-        }
     }
 
     public static abstract class EqualityOp extends ASTNode {
-        private final ASTNode lhs;
-        private final ASTNode rhs;
-        private final String name;
+        final ASTNode lhs;
+        final ASTNode rhs;
+        final String name;
 
         EqualityOp(ASTNode lhs, ASTNode rhs, String name) {
             super(lhs, rhs);
@@ -72,21 +54,12 @@ public abstract class ASTNode {
             this.rhs = rhs;
             this.name = name;
         }
-
-        @Override
-        protected Type validateType() {
-            if (lhs.getType() != rhs.getType() && (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL)) {
-                throw new IllegalArgumentException("%s operands must be of the same type".formatted(name));
-            }
-
-            return Type.BOOL;
-        }
     }
 
     public static abstract class ComparisonOp extends ASTNode {
-        private final ASTNode lhs;
-        private final ASTNode rhs;
-        private final String name;
+        final ASTNode lhs;
+        final ASTNode rhs;
+        final String name;
 
         ComparisonOp(ASTNode lhs, ASTNode rhs, String name) {
             super(lhs, rhs);
@@ -94,21 +67,12 @@ public abstract class ASTNode {
             this.rhs = rhs;
             this.name = name;
         }
-
-        @Override
-        protected Type validateType() {
-            if (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL) {
-                throw new IllegalArgumentException("%s operands must be numerical".formatted(name));
-            }
-
-            return Type.BOOL;
-        }
     }
 
     public static abstract class ArithmeticOp extends ASTNode {
-        private final ASTNode lhs;
-        private final ASTNode rhs;
-        private final String name;
+        final ASTNode lhs;
+        final ASTNode rhs;
+        final String name;
 
         ArithmeticOp(ASTNode lhs, ASTNode rhs, String name) {
             super(lhs, rhs);
@@ -116,38 +80,33 @@ public abstract class ASTNode {
             this.rhs = rhs;
             this.name = name;
         }
-
-        @Override
-        protected Type validateType() {
-            if (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL) {
-                throw new IllegalArgumentException("%s operands must be numerical".formatted(name));
-            }
-
-            if (lhs.getType() == Type.FLOAT || rhs.getType() == Type.FLOAT) {
-                return Type.FLOAT;
-            }
-
-            return Type.INT;
-        }
     }
 
     public static abstract class Constant<T> extends ASTNode {
         public final T value;
-        private final Type type;
 
-        Constant(T value, Type type) {
+        Constant(T value) {
             this.value = value;
-            this.type = type;
-        }
-
-        @Override
-        protected Type validateType() {
-            return type;
         }
 
         @Override
         protected String repr() {
             return value.toString();
+        }
+    }
+
+    public static class Assignment extends ASTNode {
+        final String name;
+        final ASTNode src;
+
+        Assignment(String name, ASTNode src) {
+            this.name = name;
+            this.src = src;
+        }
+
+        @Override
+        public <T> T accept(ASTVisitor<T> visitor) {
+            return visitor.visit(this);
         }
     }
 
@@ -161,23 +120,6 @@ public abstract class ASTNode {
             this.condition = condition;
             this.trueResult = trueResult;
             this.falseResult = falseResult;
-        }
-
-        @Override
-        protected Type validateType() {
-            if (condition.getType() != Type.BOOL) {
-                throw new IllegalArgumentException("Condition must be of type BOOL");
-            }
-
-            if (trueResult.getType() == falseResult.getType()) {
-                return trueResult.getType();
-            }
-
-            if (trueResult.getType() == Type.BOOL || falseResult.getType() == Type.BOOL) {
-                throw new IllegalArgumentException("Ternary result must be of the same type");
-            }
-
-            return Type.FLOAT;
         }
 
         @Override
@@ -313,12 +255,6 @@ public abstract class ASTNode {
         }
 
         @Override
-        protected Type validateType() {
-            super.validateType();
-            return Type.FLOAT;
-        }
-
-        @Override
         public <T> T accept(ASTVisitor<T> visitor) {
             return visitor.visit(this);
         }
@@ -327,12 +263,6 @@ public abstract class ASTNode {
     public static class IntDiv extends ArithmeticOp {
         IntDiv(ASTNode lhs, ASTNode rhs) {
             super(lhs, rhs, "//");
-        }
-
-        @Override
-        protected Type validateType() {
-            super.validateType();
-            return Type.INT;
         }
 
         @Override
@@ -353,20 +283,11 @@ public abstract class ASTNode {
     }
 
     public static class Plus extends ASTNode {
-        private final ASTNode value;
+        final ASTNode value;
 
         Plus(ASTNode value) {
             super(value);
             this.value = value;
-        }
-
-        @Override
-        protected Type validateType() {
-            if (value.getType() == Type.BOOL) {
-                throw new IllegalArgumentException("+ operand must be numerical");
-            }
-
-            return value.getType();
         }
 
         @Override
@@ -376,20 +297,11 @@ public abstract class ASTNode {
     }
 
     public static class Minus extends ASTNode {
-        private final ASTNode value;
+        final ASTNode value;
 
         Minus(ASTNode value) {
             super(value);
             this.value = value;
-        }
-
-        @Override
-        protected Type validateType() {
-            if (value.getType() == Type.BOOL) {
-                throw new IllegalArgumentException("- operand must be numerical");
-            }
-
-            return value.getType();
         }
 
         @Override
@@ -399,45 +311,21 @@ public abstract class ASTNode {
     }
 
     public static class LogicNot extends ASTNode {
-        private final ASTNode value;
+        final ASTNode value;
 
         LogicNot(ASTNode value) {
             super(value);
             this.value = value;
         }
-
-        @Override
-        protected Type validateType() {
-            if (value.getType() != Type.BOOL) {
-                throw new IllegalArgumentException("! operand must be of type BOOL");
-            }
-
-            return Type.BOOL;
-        }
-
         @Override
         public <T> T accept(ASTVisitor<T> visitor) {
             return visitor.visit(this);
         }
     }
 
-    public static class Power extends ASTNode {
-        private final ASTNode lhs;
-        private final ASTNode rhs;
-
+    public static class Power extends ArithmeticOp {
         Power(ASTNode lhs, ASTNode rhs) {
-            super(lhs, rhs);
-            this.lhs = lhs;
-            this.rhs = rhs;
-        }
-
-        @Override
-        protected Type validateType() {
-            if (lhs.getType() == Type.BOOL || rhs.getType() == Type.BOOL) {
-                throw new IllegalArgumentException("^ operands must be numerical");
-            }
-
-            return Type.FLOAT;
+            super(lhs, rhs, "^");
         }
 
         @Override
@@ -448,46 +336,12 @@ public abstract class ASTNode {
 
     public static class Function extends ASTNode {
         final String name;
-        private final ASTNode[] arguments;
+        final ASTNode[] arguments;
 
         Function(String name, ASTNode... arguments) {
             super(arguments);
             this.name = name;
             this.arguments = arguments;
-        }
-
-        @Override
-        protected Type validateType() {
-            switch (name) {
-                case "sqrt", "ln", "sin", "cos", "tan" -> {
-                    if (arguments.length != 1) {
-                        throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
-                    }
-                    if (arguments[0].getType() == Type.BOOL) {
-                        throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
-                    }
-                    return Type.FLOAT;
-                }
-                case "floor", "ceil", "trunc", "fact" -> {
-                    if (arguments.length != 1) {
-                        throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
-                    }
-                    if (arguments[0].getType() == Type.BOOL) {
-                        throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
-                    }
-                    return Type.INT;
-                }
-                case "abs" -> {
-                    if (arguments.length != 1) {
-                        throw new IllegalArgumentException("%s only takes 1 argument".formatted(name));
-                    }
-                    if (arguments[0].getType() == Type.BOOL) {
-                        throw new IllegalArgumentException("%s argument must be numerical".formatted(name));
-                    }
-                    return arguments[0].getType();
-                }
-                default -> throw new IllegalArgumentException("Unknown function: %s".formatted(name));
-            }
         }
 
         @Override
@@ -538,11 +392,6 @@ public abstract class ASTNode {
         }
 
         @Override
-        protected Type validateType() {
-            return Type.INT;
-        }
-
-        @Override
         protected String repr() {
             return "%dd%ddl%ddh%d%s".formatted(count, faces, dropLowest, dropHighest, unique ? "u" : "");
         }
@@ -555,7 +404,7 @@ public abstract class ASTNode {
 
     public static class IntConst extends Constant<BigInteger> {
         IntConst(BigInteger value) {
-            super(value, Type.INT);
+            super(value);
         }
 
         @Override
@@ -566,7 +415,7 @@ public abstract class ASTNode {
 
     public static class FloatConst extends Constant<BigDecimal> {
         FloatConst(BigDecimal value) {
-            super(value, Type.FLOAT);
+            super(value);
         }
 
         @Override
@@ -577,7 +426,20 @@ public abstract class ASTNode {
 
     public static class BoolConst extends Constant<Boolean> {
         BoolConst(Boolean value) {
-            super(value, Type.BOOL);
+            super(value);
+        }
+
+        @Override
+        public <T> T accept(ASTVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    public static class Variable extends ASTNode {
+        final String name;
+
+        Variable(String name) {
+            this.name = name;
         }
 
         @Override

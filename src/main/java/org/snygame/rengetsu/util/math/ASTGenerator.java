@@ -5,11 +5,15 @@ import org.snygame.rengetsu.parser.RengCalcParser;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashMap;
 
 public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
     @Override
     public ASTNode visitCalculation(RengCalcParser.CalculationContext ctx) {
-        return visitTernaryExpression(ctx.ternaryExpression());
+        if (ctx.Variable() == null) {
+            return visitTernaryExpression(ctx.ternaryExpression());
+        }
+        return new ASTNode.Assignment(ctx.Variable().getText(), visitTernaryExpression(ctx.ternaryExpression()));
     }
 
     @Override
@@ -165,12 +169,16 @@ public class ASTGenerator extends RengCalcBaseVisitor<ASTNode> {
             return new ASTNode.BoolConst(Boolean.valueOf(ctx.BoolConstant().getText()));
         }
 
+        if (ctx.Variable() != null) {
+            return new ASTNode.Variable(ctx.Variable().getText());
+        }
+
         throw new IllegalStateException();
     }
 
     @Override
     public ASTNode visitCallExpression(RengCalcParser.CallExpressionContext ctx) {
-        return new ASTNode.Function(ctx.Function().getText(),
+        return new ASTNode.Function(ctx.Variable().getText(),
                 ctx.parameterList().ternaryExpression().stream().map(this::visit).toArray(ASTNode[]::new));
     }
 }

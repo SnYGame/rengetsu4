@@ -46,6 +46,12 @@
           "required": true,
           "max_length": 50,
           "autocomplete": true
+        },
+        {
+          "name": "arguments",
+          "description": "Argument list (comma separated)",
+          "type": 3,
+          "required": false
         }
       ]
     },

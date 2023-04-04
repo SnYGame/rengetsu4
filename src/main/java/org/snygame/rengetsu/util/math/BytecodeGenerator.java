@@ -4,15 +4,34 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class BytecodeGenerator implements ASTVisitor<Void> {
-    private List<Bytecode> constants;
-    private List<Bytecode> code;
-    private Map<Object, Short> constantMap;
+    private final ArrayList<Bytecode> constants = new ArrayList<>();
+    private final ArrayList<Bytecode> code = new ArrayList<>();
+    private final HashMap<Object, Short> constantMap = new HashMap<>();
     private int byteCounter = 0;
 
-    public BytecodeGenerator() {
-        constants = new ArrayList<>();
-        code = new ArrayList<>();
-        constantMap = new HashMap<>();
+    private final HashMap<String, Byte> varMap = new HashMap<>();
+
+    public BytecodeGenerator(String... parameters) {
+        for (String param: parameters) {
+            varMap.computeIfAbsent(param, name -> (byte) varMap.size());
+        }
+    }
+
+    public byte[] generate(ASTNode ast) {
+        constants.clear();
+        code.clear();
+        constantMap.clear();
+        byteCounter = 0;
+
+        ast.accept(this);
+        return getBytecode();
+    }
+
+    @Override
+    public Void visit(ASTNode.Assignment node) {
+        node.src.accept(this);
+        addBytecode(new Bytecode(Bytecode.Opcode.STOVAR, varMap.computeIfAbsent(node.name, name -> (byte) varMap.size())));
+        return null;
     }
 
     @Override
@@ -250,6 +269,12 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visit(ASTNode.Variable node) {
+        addBytecode(new Bytecode(Bytecode.Opcode.LOADVAR, varMap.get(node.name)));
+        return null;
+    }
+
     public byte[] getBytecode() {
         List<Byte> bytecode = new ArrayList<>();
         for (Bytecode bytes: constants) {
@@ -275,6 +300,14 @@ public class BytecodeGenerator implements ASTVisitor<Void> {
     public String getAsm() {
         return constants.stream().map("%s\n"::formatted).collect(Collectors.joining())
                 + code.stream().map(Bytecode::toString).collect(Collectors.joining("\n"));
+    }
+
+    public int getVarCount() {
+        return varMap.size();
+    }
+
+    public byte getVarIndex(String name) {
+        return varMap.computeIfAbsent(name, __ -> (byte) varMap.size());
     }
 
     private byte[] longToBytes(long l) {

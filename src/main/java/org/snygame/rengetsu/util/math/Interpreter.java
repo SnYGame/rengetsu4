@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 public class Interpreter {
     static List<String> functions = List.of("sqrt", "ln", "sin", "cos", "tan", "floor", "ceil", "trunc", "abs", "fact");
 
-    public static String interpret(byte[] bytecode) {
+    public static String interpret(byte[] bytecode, Object[] variables) {
         List<Object> constants = new ArrayList<>();
         Stack<Object> stack = new Stack<>();
 
@@ -269,6 +269,14 @@ public class Interpreter {
                     short dh = getShort(bytecode, i);
                     constants.add(new Dice(count, faces, dl, dh, unique));
                 }
+                case STOVAR -> {
+                    byte index = bytecode[++i[0]];
+                    variables[index] = stack.peek();
+                }
+                case LOADVAR -> {
+                    byte index = bytecode[++i[0]];
+                    stack.push(variables[index]);
+                }
             }
             i[0]++;
         }
@@ -278,7 +286,12 @@ public class Interpreter {
         }
         Object result = stack.pop();
         if (result instanceof BigDecimal bdec) {
-            result = bdec.stripTrailingZeros();
+            bdec = bdec.stripTrailingZeros();
+            if (bdec.scale() <= 0) {
+                result = bdec.toBigIntegerExact();
+            } else {
+                result = bdec;
+            }
         }
         if (diceResults.isEmpty()) {
             return "Result: **%s**".formatted(result);
@@ -412,7 +425,7 @@ public class Interpreter {
                 switch (argument) {
                     case BigInteger bint -> arg = bint;
                     case BigDecimal bdec -> {
-                        if (bdec.stripTrailingZeros().scale() != 0) {
+                        if (bdec.stripTrailingZeros().scale() > 0) {
                             throw new IllegalArgumentException("Cannot take factorial of a non-integer");
                         }
                         arg = bdec.toBigIntegerExact();

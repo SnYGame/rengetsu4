@@ -32,9 +32,9 @@ public class Bytecode {
         return "%s %s".formatted(opcode.name(), String.join(", ", paramStr));
     }
 
-    public static enum Opcode {
+    public enum Opcode {
         NOP, LOAD, ADD, SUB, MUL, DIV, IDIV, MOD, POW, NEG, EQ, NE, LT, LE, GT, GE, BRANCH, JUMP,
-        CALL, ROLL, INT, FLOAT, BOOL, DICE;
+        CALL, ROLL, INT, FLOAT, BOOL, DICE, STOVAR, LOADVAR;
     }
 
     public static class Placeholder extends Bytecode {

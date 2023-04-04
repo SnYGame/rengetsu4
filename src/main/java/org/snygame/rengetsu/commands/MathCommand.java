@@ -8,10 +8,7 @@ import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.parser.RengCalcLexer;
 import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.util.functions.StringSplitPredicate;
-import org.snygame.rengetsu.util.math.ASTGenerator;
-import org.snygame.rengetsu.util.math.ASTNode;
-import org.snygame.rengetsu.util.math.BytecodeGenerator;
-import org.snygame.rengetsu.util.math.Interpreter;
+import org.snygame.rengetsu.util.math.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -20,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class MathCommand extends SlashCommand {
     public MathCommand(Rengetsu rengetsu) {
@@ -87,22 +85,40 @@ public class MathCommand extends SlashCommand {
     }
 
     private Mono<Void> delayedHandle(ChatInputInteractionEvent event, boolean ephemeral, List<RengCalcParser.CalculationContext> parseTrees) {
-        ASTGenerator astGenerator = new ASTGenerator();
-        return Flux.fromIterable(parseTrees).map(pt -> {
-            try {
-                ASTNode ast = pt.accept(astGenerator);
-                ast.getType();
-                BytecodeGenerator generator = new BytecodeGenerator();
-                ast.accept(generator);
-                String result = Interpreter.interpret(generator.getBytecode());
-                return "`%s` %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), result);
-            } catch (Exception e) {
-                Rengetsu.getLOGGER().error("Error parsing calculation", e);
-                return "`%s` Error: %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), e.getMessage());
+        return Mono.just(parseTrees).flatMap(pts -> {
+            ASTGenerator astGenerator = new ASTGenerator();
+            ArrayList<ASTNode> asts = new ArrayList<>();
+            TypeChecker typeChecker = new TypeChecker();
+
+            for (RengCalcParser.CalculationContext pt : pts) {
+                ASTNode ast = astGenerator.visit(pt);
+
+                try {
+                    ast.accept(typeChecker);
+                } catch (Exception e) {
+                    return event.createFollowup("`%s` Type Error: %s\n".formatted(pt.getText().substring(0, pt.getText().length() - 5),
+                            e.getMessage())).withEphemeral(true);
+                }
+
+                asts.add(ast);
             }
-        }).subscribeOn(Schedulers.boundedElastic()).windowUntil(StringSplitPredicate.get(2000), true)
-                .flatMap(stringFlux -> stringFlux.collect(Collectors.joining()))
-                .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral)).then();
+            BytecodeGenerator bytecodeGenerator = new BytecodeGenerator();
+            List<byte[]> bytecodes = asts.stream().map(bytecodeGenerator::generate).toList();
+            Object[] variables = new Object[bytecodeGenerator.getVarCount()];
+
+            return Flux.fromStream(IntStream.range(0, pts.size()).mapToObj(i -> {
+                RengCalcParser.CalculationContext pt = pts.get(i);
+                try {
+                    String result = Interpreter.interpret(bytecodes.get(i), variables);
+                    return "`%s` %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), result);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "`%s` Error: %s\n".formatted(shorten(pt.getText().substring(0, pt.getText().length() - 5), 50), e.getMessage());
+                }
+            })).subscribeOn(Schedulers.boundedElastic()).windowUntil(StringSplitPredicate.get(2000), true)
+                    .flatMap(stringFlux -> stringFlux.collect(Collectors.joining()))
+                    .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral)).then();
+        }).then();
     }
 
     private String shorten(String text, int limit) {

@@ -40,7 +40,7 @@ public class Console extends RengClass {
                         }
                     } else {
                         int rows = statement.getUpdateCount();
-                        System.out.printf("Update count: %d.", rows);
+                        System.out.printf("Update count: %d.\n", rows);
                     }
                     connection.commit();
                 }

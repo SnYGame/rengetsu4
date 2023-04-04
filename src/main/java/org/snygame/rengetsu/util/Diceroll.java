@@ -392,6 +392,13 @@ public class Diceroll {
                 return "Rolled %s%s Total: **%d**".formatted(start, offStr, sum);
             }
         }
+
+        public long actualSum() {
+            if (sum != null) {
+                return sum;
+            }
+            return Arrays.stream(rolls).mapToLong(i -> i).sum();
+        }
     }
 
     private sealed interface Faces permits Fixed, Ranges {
