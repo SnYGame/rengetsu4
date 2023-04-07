@@ -1,6 +1,6 @@
 {
   "name": "math",
-  "description": "Performs a calculation",
+  "description": "Performs calculations",
   "options": [
     {
       "name": "queries",

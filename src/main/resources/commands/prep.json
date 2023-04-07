@@ -1,6 +1,6 @@
 {
   "name": "prepare",
-  "description": "Prepares effects",
+  "description": "Manages prepared effects",
   "options": [
     {
       "name": "create",

@@ -1,0 +1,31 @@
+{
+  "name": "/help",
+  "pages": [
+    {
+      "title": "Help Command",
+      "fields": [
+        {
+          "name": "Usage: /help",
+          "value": "This command opens the help manual, as you have done."
+        }
+      ]
+    },
+    {
+      "title": "Navigating the Help Manual",
+      "fields": [
+        {
+          "name": "Next page",
+          "value": "This button turns to the next page in the manual."
+        },
+        {
+          "name": "Prev page",
+          "value": "This button turns to the next page in the manual."
+        },
+        {
+          "name": "Jump to section",
+          "value": "Selecting an option will jump to the specified section in the manual."
+        }
+      ]
+    }
+  ]
+}

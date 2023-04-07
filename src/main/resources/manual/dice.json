@@ -1,0 +1,116 @@
+{
+  "name": "/dice",
+  "pages": [
+    {
+      "title": "Dice Command",
+      "fields": [
+        {
+          "name": "Usage: /dice <queries>",
+          "value": "This command will generate random numbers as specified by the **queries**."
+        },
+        {
+          "name": "Usage: /dice <queries> [hide]",
+          "value": "Setting the **hide** option to true will cause the result to be only visible to you."
+        }
+      ]
+    },
+    {
+      "title": "Diceroll Syntax 1",
+      "subtitle": "Basic dice parameters",
+      "fields": [
+        {
+          "name": "XdY",
+          "value": "This will roll **X** dice with **Y** faces. Each of the individual die results will be given along with the sum. The maximum value for **X** and **Y** are 134217728"
+        },
+        {
+          "name": "X or dX",
+          "value": "This notation is equivalent to **1dX**."
+        },
+        {
+          "name": "X Y",
+          "value": "This will generate a random number between **X** and **Y** (inclusive). This is also equivalent to **1d[X:Y]** (see next page)."
+        }
+      ]
+    },
+    {
+      "title": "Diceroll Syntax 2",
+      "subtitle": "Advanced dice parameters",
+      "fields": [
+        {
+          "name": "Xd[A, B, C]",
+          "value": "Using this notation will instead use dice that have the faces **A**, **B**, **C**."
+        },
+        {
+          "name": "Xd[A:B]",
+          "value": "Using this notation will instead use dice that have the faces ranging from **A** to **B** (inclusive)."
+        },
+        {
+          "name": "Xd[A:B, C, D:E]",
+          "value": "The previous two notations can be combined. In this example, the die faces will have the values ranging from **A** to **B** (inclusive), C, and the values ranging from **D** to **E** (inclusive)."
+        },
+        {
+          "name": "[...]",
+          "value": "This is equivalent to **1d[...]**."
+        },
+        {
+          "name": "dX;dY;dZ",
+          "value": "Multiple queries can be listed. They each must be separated by a semicolon."
+        }
+      ]
+    },
+    {
+      "title": "Diceroll Syntax 3",
+      "subtitle": "Options introduction",
+      "fields": [
+        {
+          "name": "XdY [options]",
+          "value": "Options can be specified after the dice parameters. Options with parameters can be specified like **option N** or **option(N)**."
+        }
+      ]
+    },
+    {
+      "title": "Diceroll Syntax 4",
+      "subtitle": "Options that affect the result",
+      "fields": [
+        {
+          "name": "droplow or dl [N]",
+          "value": "The dice with the lowest **N** values will be ignored in the sum calculation. N defaults to 1. You cannot drop more dice than you rolled."
+        },
+        {
+          "name": "drophigh or dh [N]",
+          "value": "The dice with the highest **N** values will be ignored in the sum calculation. N defaults to 1. You cannot drop more dice than you rolled."
+        },
+        {
+          "name": "unique or u",
+          "value": "This option will force each dice to land on a unique face. You cannot use this option if there are less faces than there are dice. If this option is used, the number of dice that can be rolled is 33554432."
+        },
+        {
+          "name": "rep N",
+          "value": "The query will be executed **N** times instead of only 1. **N** cannot be greater than 20."
+        }
+      ]
+    },
+    {
+      "title": "Diceroll Syntax 5",
+      "subtitle": "Options that affect how results are displayed",
+      "fields": [
+        {
+          "name": "sorted",
+          "value": "Each individual die result will be listed in ascending order."
+        },
+        {
+          "name": "nosum",
+          "value": "The sum will not be displayed. This is on by default if there is only 1 die."
+        },
+        {
+          "name": "sumonly",
+          "value": "Only the sum will be displayed. This is on by default if there are more than 32 dice."
+        },
+        {
+          "name": "hidedrop",
+          "value": "Dice that are not included in the sum calculation will not be shown."
+        }
+      ]
+    }
+  ]
+}

@@ -25,6 +25,7 @@ public class SlashCommandListener extends Listener {
         commands.add(new RequestRoleCommand(rengetsu));
         commands.add(new SettingsCommand(rengetsu));
         commands.add(new PrepareCommand(rengetsu));
+        commands.add(new HelpCommand(rengetsu));
     }
 
     public Mono<Void> handle(ChatInputInteractionEvent event) {
