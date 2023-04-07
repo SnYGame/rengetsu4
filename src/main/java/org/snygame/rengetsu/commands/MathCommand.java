@@ -38,7 +38,7 @@ public class MathCommand extends SlashCommand {
         List<String> queries = event.getOption("queries").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .map(str -> str.split(";")).stream().flatMap(Arrays::stream)
-                .map(String::strip).toList();
+                .filter(str -> !str.isBlank()).map(String::strip).toList();
 
         if (queries.isEmpty()) {
             return event.reply("**[Error]** No queries").withEphemeral(true);

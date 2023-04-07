@@ -35,7 +35,7 @@ public class DiceCommand extends SlashCommand {
         List<Diceroll> dicerolls = event.getOption("queries").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .map(str -> str.split(";")).stream().flatMap(Arrays::stream)
-                .map(String::strip).map(Diceroll::parse)
+                .filter(str -> !str.isBlank()).map(String::strip).map(Diceroll::parse)
                 .toList();
 
         if (dicerolls.isEmpty()) {
