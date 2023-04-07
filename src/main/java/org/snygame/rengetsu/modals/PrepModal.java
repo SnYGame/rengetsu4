@@ -107,6 +107,10 @@ public class PrepModal extends ModalInteraction {
         String query = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
         String variable = event.getComponents().get(2).getData().components().get().get(0).value().toOptional().orElse(null);
 
+        if (variable != null && variable.isBlank()) {
+            variable = null;
+        }
+
         Diceroll diceroll = Diceroll.parse(query);
         if (diceroll.hasError()) {
             return event.reply("**[Error]** %s".formatted(diceroll.getError())).withEphemeral(true);
