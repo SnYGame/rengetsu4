@@ -71,12 +71,13 @@ public class RoleSetButton extends ButtonInteraction {
                                                     .contains(role.getId().asLong())))
                                     .collectList().flatMap(options ->
                                                     event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                                    .content("Select roles to add when <@&%d> is %s."
-                                                            .formatted(data.roleId, args[3].equals("on_remove") ? "removed" : "added"))
+                                                    .content(args[3].equals("on_remove") ? "Select roles to add when this role is removed." :
+                                                            "Select roles to remove when this role is added.")
                                                     .embeds(Collections.emptyList())
                                                     .addComponent(ActionRow.of(
                                                             SelectMenu.of("role:%d:%d:%s".formatted(data.roleId, data.serverId, args[3]), options)
                                                                     .withMaxValues(options.size()).withMinValues(0)
+                                                                    .withPlaceholder("Select roles to %s".formatted(args[3].equals("on_remove") ? "add" : "remove"))
                                                     )).addComponent(ActionRow.of(Button.danger("role:%d:%d:cancel_menu"
                                                                     .formatted(data.roleId, data.serverId), "Cancel")))
                                                     .build())

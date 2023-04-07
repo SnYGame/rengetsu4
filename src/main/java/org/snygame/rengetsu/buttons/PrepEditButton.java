@@ -144,7 +144,7 @@ public class PrepEditButton extends ButtonInteraction {
                         }
                         case "del_roll" -> {
                             return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                            .content("Select dicerolls or calculations to remove.")
+                                            .content("")
                                             .addEmbed(EmbedCreateSpec.builder()
                                                     .fields(data.dicerolls.stream().map(rollData ->
                                                             EmbedCreateFields.Field.of(rollData.description,
@@ -157,6 +157,7 @@ public class PrepEditButton extends ButtonInteraction {
                                                                     SelectMenu.Option.of(data.dicerolls.get(i).description,
                                                                     String.valueOf(i))).toList()
                                                             ).withMaxValues(data.dicerolls.size())
+                                                            .withPlaceholder("Select dicerolls or calculations to remove")
                                             ))
                                             .addComponent(ActionRow.of(
                                                             Button.danger("prep:%d:%s:cancel_menu".formatted(
