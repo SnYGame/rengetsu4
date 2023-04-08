@@ -30,7 +30,7 @@ public class Manual {
         }
     }
 
-    public InteractionApplicationCommandCallbackSpec getPage(long userId, int index) {
+    public InteractionApplicationCommandCallbackSpec getPage(int index) {
         Page page = pages.get(index);
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
         builder.embeds(List.of(EmbedCreateSpec.builder().title(page.title).description(page.subtitle == null ? "" : page.subtitle).fields(
@@ -38,11 +38,11 @@ public class Manual {
         ).footer("Page %d of %d".formatted(index + 1, pages.size()), null).build()));
         builder.components(List.of(
                 ActionRow.of(
-                        Button.primary("manual:%d:%d".formatted(userId, index - 1), "Prev page").disabled(index == 0),
-                        Button.primary("manual:%d:%d".formatted(userId, index + 1), "Next page").disabled(index == pages.size() - 1)
+                        Button.primary("manual:%d".formatted(index - 1), "Prev page").disabled(index == 0),
+                        Button.primary("manual:%d".formatted(index + 1), "Next page").disabled(index == pages.size() - 1)
                 ),
                 ActionRow.of(
-                        SelectMenu.of("manual:%d".formatted(userId), jumps.stream().map(jump -> SelectMenu.Option.of(jump.name, String.valueOf(jump.page))).toList())
+                        SelectMenu.of("manual", jumps.stream().map(jump -> SelectMenu.Option.of(jump.name, String.valueOf(jump.page))).toList())
                                 .withPlaceholder("Jump to section")
                 )
         ));

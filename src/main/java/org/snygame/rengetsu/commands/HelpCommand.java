@@ -16,6 +16,6 @@ public class HelpCommand extends SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        return event.reply(rengetsu.getManual().getPage(event.getInteraction().getUser().getId().asLong(), 0));
+        return event.reply(rengetsu.getManual().getPage(0));
     }
 }
