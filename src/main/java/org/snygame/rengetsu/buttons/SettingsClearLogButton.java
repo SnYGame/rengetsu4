@@ -1,5 +1,6 @@
 package org.snygame.rengetsu.buttons;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.entity.Message;
 import org.snygame.rengetsu.Rengetsu;
@@ -25,16 +26,18 @@ public class SettingsClearLogButton extends ButtonInteraction {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         ServerData serverData = databaseManager.getServerData();
         String[] args = event.getCustomId().split(":");
-        try {
-            switch (args[1]) {
-                case "usrlog" -> serverData.setUserLogs(event.getInteraction().getGuildId().get().asLong(), Collections.emptyList());
-                case "msglog" -> serverData.setMessageLogs(event.getInteraction().getGuildId().get().asLong(), Collections.emptyList());
+        return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
+            try {
+                switch (args[1]) {
+                    case "usrlog" -> serverData.setUserLogs(serverId, Collections.emptyList());
+                    case "msglog" -> serverData.setMessageLogs(serverId, Collections.emptyList());
+                }
+                return event.edit(args[1].equals("usrlog") ? "User logging channels cleared." : "Message logging channels cleared.")
+                        .withComponents();
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
             }
-            return event.edit(args[1].equals("usrlog") ? "User logging channels cleared." : "Message logging channels cleared.")
-                    .withComponents();
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
-        }
+        });
     }
 }

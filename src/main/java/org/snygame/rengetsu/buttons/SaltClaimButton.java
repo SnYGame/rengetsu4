@@ -41,36 +41,35 @@ public class SaltClaimButton extends ButtonInteraction {
                     ).build()).then();
         }
 
-        return Mono.justOrEmpty(event.getInteraction().getUser())
-                .map(User::getId).map(Snowflake::asLong).flatMap(id -> {
-                    BigInteger result;
-                    try {
-                        result = userData.claimSalt(id);
-                    } catch (SQLException e) {
-                        Rengetsu.getLOGGER().error("SQL Error", e);
-                        return event.reply("**[Error]** Database error").withEphemeral(true);
-                    }
+        long id = event.getInteraction().getUser().getId().asLong();
 
-                    if (result.signum() == -1) {
-                        int remain = result.negate().intValue();
-                        StringBuilder sb = new StringBuilder("Your next available claim is in ");
-                        sb.append(TimeStrings.secondsToEnglish(remain / 1000));
-                        return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                .content(sb.append(".").toString())
-                                .addComponent(
-                                        ActionRow.of(
-                                                Button.secondary("disabled", "Claim").disabled()
-                                        )
-                                ).build()).then();
-                    }
+        BigInteger result;
+        try {
+            result = userData.claimSalt(id);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
 
-                    return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                            .content("You now have %d salt.".formatted(result))
-                            .addComponent(
-                                    ActionRow.of(
-                                            Button.secondary("disabled", "Claim").disabled()
-                                    )
-                            ).build()).then();
-                }).then();
+        if (result.signum() == -1) {
+            int remain = result.negate().intValue();
+            StringBuilder sb = new StringBuilder("Your next available claim is in ");
+            sb.append(TimeStrings.secondsToEnglish(remain / 1000));
+            return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                    .content(sb.append(".").toString())
+                    .addComponent(
+                            ActionRow.of(
+                                    Button.secondary("disabled", "Claim").disabled()
+                            )
+                    ).build());
+        }
+
+        return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                .content("You now have %d salt.".formatted(result))
+                .addComponent(
+                        ActionRow.of(
+                                Button.secondary("disabled", "Claim").disabled()
+                        )
+                ).build());
     }
 }

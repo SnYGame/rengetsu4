@@ -7,23 +7,17 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.SelectMenu;
-import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
-import org.snygame.rengetsu.data.UserData;
-import org.snygame.rengetsu.util.TimeStrings;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class SettingsCommand extends SlashCommand {
     public SettingsCommand(Rengetsu rengetsu) {
@@ -37,59 +31,59 @@ public class SettingsCommand extends SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        return event.getOption("show").map(__ -> subShow(event))
-                .or(() -> event.getOption("inactive").map(__ -> subInactive(event)))
-                .or(() -> event.getOption("userlog").map(__ -> subUserlog(event)))
-                .or(() -> event.getOption("msglog").map(__ -> subMsglog(event)))
+        return event.getOption("show").map(option -> subShow(event, option))
+                .or(() -> event.getOption("inactive").map(option -> subInactive(event, option)))
+                .or(() -> event.getOption("userlog").map(option -> subUserlog(event, option)))
+                .or(() -> event.getOption("msglog").map(option -> subMsglog(event, option)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
-    private Mono<Void> subShow(ChatInputInteractionEvent event) {
+    private Mono<Void> subShow(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         ServerData serverData = databaseManager.getServerData();
-        return Mono.justOrEmpty(event.getInteraction().getGuildId().map(Snowflake::asLong)).flatMap(serverId -> {
-            try {
-                int inactive = serverData.getInactiveDays(serverId);
-                List<Long> usrLogs = serverData.getUserLogs(serverId);
-                List<Long> msgLogs = serverData.getMessageLogs(serverId);
-                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                        .addEmbed(EmbedCreateSpec.builder()
-                                .addField("Inactivity Period", inactive == 0 ? "N/A" : String.valueOf(inactive), false)
-                                .addField("User Logging Channels", usrLogs.isEmpty() ? "N/A" :
-                                        usrLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
-                                .addField("Message Logging Channels", msgLogs.isEmpty() ? "N/A" :
-                                        msgLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
-                                .build()).build());
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
+
+        long serverId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(0L);
+
+        try {
+            int inactive = serverData.getInactiveDays(serverId);
+            List<Long> usrLogs = serverData.getUserLogs(serverId);
+            List<Long> msgLogs = serverData.getMessageLogs(serverId);
+            return event.reply(InteractionApplicationCommandCallbackSpec.builder()
+                    .addEmbed(EmbedCreateSpec.builder()
+                            .addField("Inactivity Period", inactive == 0 ? "N/A" : String.valueOf(inactive), false)
+                            .addField("User Logging Channels", usrLogs.isEmpty() ? "N/A" :
+                                    usrLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
+                            .addField("Message Logging Channels", msgLogs.isEmpty() ? "N/A" :
+                                    msgLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
+                            .build()).build());
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+    }
+
+    private Mono<Void> subInactive(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
+
+        long days = option.getOption("days").flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asLong).orElse(0L);
+        long serverId = event.getInteraction().getGuildId().map(Snowflake::asLong).orElse(0L);
+
+        try {
+            serverData.setInactiveDays(serverId, Math.toIntExact(days));
+            if (days > 0) {
+                return event.reply("Inactivity time set to %d days.".formatted(days)).withEphemeral(true);
             }
-        });
+
+            return event.reply("Inactivity disabled.").withEphemeral(true);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+        }
+        return event.reply("**[Error]** Database error").withEphemeral(true);
     }
 
-    private Mono<Void> subInactive(ChatInputInteractionEvent event) {
-        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
-        ServerData serverData = databaseManager.getServerData();
-        return Mono.justOrEmpty(event.getOptions().get(0).getOption("days")
-                .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asLong)).flatMap(days ->
-                Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(id -> {
-                    try {
-                        serverData.setInactiveDays(id, Math.toIntExact(days));
-                        if (days > 0) {
-                            return event.reply("Inactivity time set to %d days.".formatted(days)).withEphemeral(true);
-                        }
-
-                        return event.reply("Inactivity disabled.").withEphemeral(true);
-                    } catch (SQLException e) {
-                        Rengetsu.getLOGGER().error("SQL Error", e);
-                    }
-                    return event.reply("**[Error]** Database error").withEphemeral(true);
-                }).then()
-        );
-    }
-
-    private Mono<Void> subUserlog(ChatInputInteractionEvent event) {
+    private Mono<Void> subUserlog(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         return event.reply().withComponents(List.of(
                 ActionRow.of(
                         SelectMenu.ofChannel("settings:usrlog", Channel.Type.GUILD_TEXT).withMaxValues(25)
@@ -100,7 +94,7 @@ public class SettingsCommand extends SlashCommand {
         )).withEphemeral(true);
     }
 
-    private Mono<Void> subMsglog(ChatInputInteractionEvent event) {
+    private Mono<Void> subMsglog(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         return event.reply().withComponents(List.of(
                 ActionRow.of(
                         SelectMenu.ofChannel("settings:msglog", Channel.Type.GUILD_TEXT).withMaxValues(25)

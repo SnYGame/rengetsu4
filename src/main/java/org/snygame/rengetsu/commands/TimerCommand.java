@@ -33,51 +33,51 @@ public class TimerCommand extends SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        return event.getOption("set").map(__ -> subSet(event))
-                .or(() -> event.getOption("list").map(__ -> subList(event)))
-                .or(() -> event.getOption("cancel").map(__ -> subCancel(event)))
-                .or(() -> event.getOption("subscribe").map(__ -> subSubscribe(event)))
+        return event.getOption("set").map(option -> subSet(event, option))
+                .or(() -> event.getOption("list").map(option -> subList(event, option)))
+                .or(() -> event.getOption("cancel").map(option -> subCancel(event, option)))
+                .or(() -> event.getOption("subscribe").map(option -> subSubscribe(event, option)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
-    private Mono<Void> subSet(ChatInputInteractionEvent event) {
+    private Mono<Void> subSet(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         TaskManager taskManager = rengetsu.getTaskManager();
         TimerData timerData = databaseManager.getTimerData();
-        return Mono.just(event.getOptions().get(0).getOption("duration").flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString).map(TimeStrings::readDuration)
-                .orElse(0)).flatMap(duration -> {
-            if (duration <= 0 || duration > MAX_DURATION) {
-                return event.reply("**[Error]** Duration must represent time between 1 second and 30 days").withEphemeral(true);
-            }
-            String message = event.getOptions().get(0).getOption("message").flatMap(ApplicationCommandInteractionOption::getValue)
-                    .map(ApplicationCommandInteractionOptionValue::asString).orElse("Timer has completed");
-            long time = System.currentTimeMillis();
-            try {
-                long userId = event.getInteraction().getUser().getId().asLong();
-                long timerId = timerData.addTimer(event.getInteraction().getChannelId().asLong(), userId,
-                        message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000L));
 
-                if (timerId == -1) {
-                    return event.reply("**[Error]** You cannot set more than 5 timers").withEphemeral(true);
-                }
-                String response = "Your timer (ID: %d) has been set for %s.".formatted(timerId, TimeStrings.secondsToEnglish(duration));
-                taskManager.getTimerTask().startTask(event.getClient(), timerId, duration * 1000L);
-                return event.reply(InteractionApplicationCommandCallbackSpec.builder().content(response)
-                        .addComponent(
-                                ActionRow.of(
-                                        Button.primary("timer:%d:%d:subscribe".formatted(timerId, userId),"Subscribe"),
-                                        Button.danger("timer:%d:%d:cancel".formatted(timerId, userId),"Cancel")
-                                )
-                        ).build());
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
+        int duration = option.getOption("duration").flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).map(TimeStrings::readDuration).orElse(0);
+
+        if (duration <= 0 || duration > MAX_DURATION) {
+            return event.reply("**[Error]** Duration must represent time between 1 second and 30 days").withEphemeral(true);
+        }
+        String message = event.getOptions().get(0).getOption("message").flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("Timer has completed");
+        long time = System.currentTimeMillis();
+        try {
+            long userId = event.getInteraction().getUser().getId().asLong();
+            long timerId = timerData.addTimer(event.getInteraction().getChannelId().asLong(), userId,
+                    message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000L));
+
+            if (timerId == -1) {
+                return event.reply("**[Error]** You cannot set more than 5 timers").withEphemeral(true);
             }
-        });
+            String response = "Your timer (ID: %d) has been set for %s.".formatted(timerId, TimeStrings.secondsToEnglish(duration));
+            taskManager.getTimerTask().startTask(event.getClient(), timerId, duration * 1000L);
+            return event.reply(InteractionApplicationCommandCallbackSpec.builder().content(response)
+                    .addComponent(
+                            ActionRow.of(
+                                    Button.primary("timer:%d:%d:subscribe".formatted(timerId, userId),"Subscribe"),
+                                    Button.danger("timer:%d:%d:cancel".formatted(timerId, userId),"Cancel")
+                            )
+                    ).build());
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
     }
 
-    private Mono<Void> subList(ChatInputInteractionEvent event) {
+    private Mono<Void> subList(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         TimerData timerData = databaseManager.getTimerData();
         try {
@@ -105,11 +105,11 @@ public class TimerCommand extends SlashCommand {
         }
     }
 
-    private Mono<Void> subCancel(ChatInputInteractionEvent event) {
+    private Mono<Void> subCancel(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         TaskManager taskManager = rengetsu.getTaskManager();
         TimerData timerData = databaseManager.getTimerData();
-        long timerId = event.getOptions().get(0).getOption("id").flatMap(ApplicationCommandInteractionOption::getValue)
+        long timerId = option.getOption("id").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong).orElse(-1L);
 
         try {
@@ -136,10 +136,10 @@ public class TimerCommand extends SlashCommand {
         }
     }
 
-    private Mono<Void> subSubscribe(ChatInputInteractionEvent event) {
+    private Mono<Void> subSubscribe(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         TimerData timerData = databaseManager.getTimerData();
-        long timerId = event.getOptions().get(0).getOption("id").flatMap(ApplicationCommandInteractionOption::getValue)
+        long timerId = option.getOption("id").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asLong).orElse(-1L);
 
         try {

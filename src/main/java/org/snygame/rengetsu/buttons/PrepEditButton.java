@@ -36,225 +36,225 @@ public class PrepEditButton extends ButtonInteraction {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(userId -> {
-                    String[] args = event.getCustomId().split(":");
+        long userId = event.getInteraction().getUser().getId().asLong();
 
-                    switch (args[1]) {
-                        case "create_instead" -> {
-                            boolean hasData;
-                            String key = args[2];
-                            try {
-                                hasData = prepData.hasPrepData(userId, key);
-                            } catch (SQLException e) {
-                                Rengetsu.getLOGGER().error("SQL Error", e);
-                                return event.reply("**[Error]** Database error").withEphemeral(true);
-                            }
-                            if (hasData) {
-                                return event.edit("Prepared effect with key `%s` already exists.".formatted(key))
-                                        .withComponents(ActionRow.of(
-                                                Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
-                                        )).withEphemeral(true);
-                            }
+        String[] args = event.getCustomId().split(":");
 
-                            return event.presentModal("Preparing", "prep:init_instead:%s".formatted(args[2]), List.of(
-                                    ActionRow.of(
-                                            TextInput.small("name", "Name", 0, 100)
-                                                    .required(true)
-                                    ),
-                                    ActionRow.of(
-                                            TextInput.paragraph("description", "Effect description",
-                                                    0, 2000).required(false)
-                                    )
-                            ));
-                        }
-                        case "edit_instead" -> {
-                            PrepData.Data data;
-                            String key = args[2];
-                            try {
-                                data = prepData.getPrepData(userId, key);
-                            } catch (SQLException e) {
-                                Rengetsu.getLOGGER().error("SQL Error", e);
-                                return event.reply("**[Error]** Database error").withEphemeral(true);
-                            }
+        switch (args[1]) {
+            case "create_instead" -> {
+                boolean hasData;
+                String key = args[2];
+                try {
+                    hasData = prepData.hasPrepData(userId, key);
+                } catch (SQLException e) {
+                    Rengetsu.getLOGGER().error("SQL Error", e);
+                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                }
+                if (hasData) {
+                    return event.edit("Prepared effect with key `%s` already exists.".formatted(key))
+                            .withComponents(ActionRow.of(
+                                    Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
+                            )).withEphemeral(true);
+                }
 
-                            if (data == null) {
-                                return event.edit("Prepared effect with key `%s` does not exists.".formatted(key))
-                                        .withComponents(ActionRow.of(
-                                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
-                                        )).withEphemeral(true);
-                            }
+                return event.presentModal("Preparing", "prep:init_instead:%s".formatted(args[2]), List.of(
+                        ActionRow.of(
+                                TextInput.small("name", "Name", 0, 100)
+                                        .required(true)
+                        ),
+                        ActionRow.of(
+                                TextInput.paragraph("description", "Effect description",
+                                        0, 2000).required(false)
+                        )
+                ));
+            }
+            case "edit_instead" -> {
+                PrepData.Data data;
+                String key = args[2];
+                try {
+                    data = prepData.getPrepData(userId, key);
+                } catch (SQLException e) {
+                    Rengetsu.getLOGGER().error("SQL Error", e);
+                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                }
 
-                            prepData.putTempData(data);
-                            return event.edit(PrepData.buildMenu(data));
-                        }
-                    }
+                if (data == null) {
+                    return event.edit("Prepared effect with key `%s` does not exists.".formatted(key))
+                            .withComponents(ActionRow.of(
+                                    Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                            )).withEphemeral(true);
+                }
 
-                    PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
-                    if (data == null) {
-                        return event.edit("**[Error]** Cached data is missing, run the command again")
-                                .withComponents().withEmbeds().withEphemeral(true);
-                    }
+                prepData.putTempData(data);
+                return event.edit(PrepData.buildMenu(data));
+            }
+        }
 
-                    switch (args[1]) {
-                        case "edit" -> {
-                            return event.presentModal("Edit descriptions", "prep:edit:%d".formatted(data.uid), List.of(
-                                    ActionRow.of(
-                                            TextInput.small("name", "Name", 0, 100)
-                                                    .required(true).prefilled(data.name)
-                                    ),
-                                    ActionRow.of(
-                                            TextInput.paragraph("description", "Effect description",
-                                                    0, 2000).required(false)
-                                                    .prefilled(data.description)
-                                    )
-                            ));
-                        }
-                        case "params" -> {
-                            return event.presentModal("Edit parameters", "prep:params:%d".formatted(data.uid), List.of(
-                                    ActionRow.of(
-                                            TextInput.small("params", "Parameters (comma separated)", 0, 1000)
-                                                    .required(false).prefilled(String.join(", ", data.params))
-                                    )
-                            ));
-                        }
-                        case "add_roll" -> {
-                            return event.presentModal("Add diceroll", "prep:add_roll:%d".formatted(data.uid), List.of(
-                                    ActionRow.of(
-                                            TextInput.small("description", "Description", 0, 100)
-                                                    .required(true)
-                                    ),
-                                    ActionRow.of(
-                                            TextInput.small("roll", "Diceroll",
-                                                            0, 500).required(true)
-                                    ),
-                                    ActionRow.of(
-                                            TextInput.small("variable", "Result variable",
-                                                    0, 50).required(false)
-                                    )
-                            ));
-                        }
-                        case "add_calc" -> {
-                            return event.presentModal("Add calculation", "prep:add_calc:%d".formatted(data.uid), List.of(
-                                    ActionRow.of(
-                                            TextInput.small("description", "Description", 0, 100)
-                                                    .required(true)
-                                    ),
-                                    ActionRow.of(
-                                            TextInput.small("calc", "Calculation",
-                                                    0, 500).required(true)
-                                    )
-                            ));
-                        }
-                        case "del_roll" -> {
-                            return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                            .content("")
-                                            .addEmbed(EmbedCreateSpec.builder()
-                                                    .fields(data.dicerolls.stream().map(rollData ->
-                                                            EmbedCreateFields.Field.of(rollData.description,
-                                                                    rollData.query, false)).toList())
-                                                    .build())
-                                            .addComponent(ActionRow.of(
-                                                    SelectMenu.of("prep:del_roll:%d".formatted(data.uid),
-                                                            IntStream.range(0, data.dicerolls.size()).mapToObj(i ->
-                                                                    SelectMenu.Option.of(data.dicerolls.get(i).description,
-                                                                    String.valueOf(i))).toList()
-                                                            ).withMaxValues(data.dicerolls.size())
-                                                            .withPlaceholder("Select dicerolls or calculations to remove")
-                                            ))
-                                            .addComponent(ActionRow.of(
-                                                            Button.danger("prep:cancel_menu:%d".formatted(data.uid),
-                                                                    "Cancel")))
-                                    .build());
-                        }
-                        case "cancel_menu" -> {}
-                        case "save" -> {
-                            try {
-                                TypeChecker typeChecker = new TypeChecker();
-                                Type.VarType[] paramTypes = typeChecker.addVariables(data.params);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
+        if (data == null) {
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
+        }
 
-                                for (PrepData.Data.RollData rollData: data.dicerolls) {
-                                    switch (rollData) {
-                                        case PrepData.Data.DicerollData diceroll -> {
-                                            if (diceroll.variable != null) {
-                                                typeChecker.addVariable(diceroll.variable, Type.FixedType.NUM);
-                                            }
-                                        }
-                                        case PrepData.Data.CalculationData calculation -> {
-                                            try {
-                                                calculation.getAst().accept(typeChecker);
-                                            } catch (IllegalArgumentException e) {
-                                                return event.reply("`%s` Type Error: %s\n".formatted(calculation.query,
-                                                        e.getMessage())).withEphemeral(true);
-                                            }
-                                        }
-                                    }
+        switch (args[1]) {
+            case "edit" -> {
+                return event.presentModal("Edit descriptions", "prep:edit:%d".formatted(data.uid), List.of(
+                        ActionRow.of(
+                                TextInput.small("name", "Name", 0, 100)
+                                        .required(true).prefilled(data.name)
+                        ),
+                        ActionRow.of(
+                                TextInput.paragraph("description", "Effect description",
+                                                0, 2000).required(false)
+                                        .prefilled(data.description)
+                        )
+                ));
+            }
+            case "params" -> {
+                return event.presentModal("Edit parameters", "prep:params:%d".formatted(data.uid), List.of(
+                        ActionRow.of(
+                                TextInput.small("params", "Parameters (comma separated)", 0, 1000)
+                                        .required(false).prefilled(String.join(", ", data.params))
+                        )
+                ));
+            }
+            case "add_roll" -> {
+                return event.presentModal("Add diceroll", "prep:add_roll:%d".formatted(data.uid), List.of(
+                        ActionRow.of(
+                                TextInput.small("description", "Description", 0, 100)
+                                        .required(true)
+                        ),
+                        ActionRow.of(
+                                TextInput.small("roll", "Diceroll",
+                                        0, 500).required(true)
+                        ),
+                        ActionRow.of(
+                                TextInput.small("variable", "Result variable",
+                                        0, 50).required(false)
+                        )
+                ));
+            }
+            case "add_calc" -> {
+                return event.presentModal("Add calculation", "prep:add_calc:%d".formatted(data.uid), List.of(
+                        ActionRow.of(
+                                TextInput.small("description", "Description", 0, 100)
+                                        .required(true)
+                        ),
+                        ActionRow.of(
+                                TextInput.small("calc", "Calculation",
+                                        0, 500).required(true)
+                        )
+                ));
+            }
+            case "del_roll" -> {
+                return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                        .content("")
+                        .addEmbed(EmbedCreateSpec.builder()
+                                .fields(data.dicerolls.stream().map(rollData ->
+                                        EmbedCreateFields.Field.of(rollData.description,
+                                                rollData.query, false)).toList())
+                                .build())
+                        .addComponent(ActionRow.of(
+                                SelectMenu.of("prep:del_roll:%d".formatted(data.uid),
+                                                IntStream.range(0, data.dicerolls.size()).mapToObj(i ->
+                                                        SelectMenu.Option.of(data.dicerolls.get(i).description,
+                                                                String.valueOf(i))).toList()
+                                        ).withMaxValues(data.dicerolls.size())
+                                        .withPlaceholder("Select dicerolls or calculations to remove")
+                        ))
+                        .addComponent(ActionRow.of(
+                                Button.danger("prep:cancel_menu:%d".formatted(data.uid),
+                                        "Cancel")))
+                        .build());
+            }
+            case "cancel_menu" -> {}
+            case "save" -> {
+                try {
+                    TypeChecker typeChecker = new TypeChecker();
+                    Type.VarType[] paramTypes = typeChecker.addVariables(data.params);
+
+                    for (PrepData.Data.RollData rollData: data.dicerolls) {
+                        switch (rollData) {
+                            case PrepData.Data.DicerollData diceroll -> {
+                                if (diceroll.variable != null) {
+                                    typeChecker.addVariable(diceroll.variable, Type.FixedType.NUM);
                                 }
-
-                                BytecodeGenerator bytecodeGenerator = new BytecodeGenerator(data.params);
-                                for (PrepData.Data.RollData rollData: data.dicerolls) {
-                                    switch (rollData) {
-                                        case PrepData.Data.DicerollData diceroll -> {
-                                            if (diceroll.variable != null) {
-                                                diceroll.result = bytecodeGenerator.getVarIndex(diceroll.variable);
-                                            }
-                                        }
-                                        case PrepData.Data.CalculationData calculation -> {
-                                            calculation.bytecode = bytecodeGenerator.generate(calculation.getAst());
-                                        }
-                                    }
-                                }
-
-                                data.parameterData.clear();
-                                for (int i = 0; i < data.params.length; i++) {
-                                    String param = data.params[i];
-                                    Type type = paramTypes[i].getInferredType();
-                                    switch (type) {
-                                        case Type.FixedType fixedType -> {
-                                            data.parameterData.add(new PrepData.Data.ParameterData(param, fixedType, (byte) 0,
-                                                    bytecodeGenerator.getVarIndex(param)));
-                                        }
-                                        case Type.VarType varType -> {
-                                            byte b;
-                                            for (b = 0; b < data.params.length; b++) {
-                                                if (data.params[b].equals(varType.getName())) {
-                                                    break;
-                                                }
-                                            }
-                                            data.parameterData.add(new PrepData.Data.ParameterData(param, Type.FixedType.VAR, b,
-                                                    bytecodeGenerator.getVarIndex(param)));
-                                        }
-                                    }
-                                }
-
-                                data.varCount = bytecodeGenerator.getVarCount();
-
-                                prepData.savePrepData(data);
-                                prepData.removeTempData(data);
-                                return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                        .addEmbed(EmbedCreateSpec.builder()
-                                                .title("Data saved for %s".formatted(data.name)).build()
-                                        ).components(Collections.emptyList()).build());
-                            } catch (SQLException e) {
-                                Rengetsu.getLOGGER().error("SQL Error", e);
-                                return event.reply("**[Error]** Database error").withEphemeral(true);
                             }
-                        }
-                        case "delete" -> {
-                            try {
-                                prepData.deletePrepData(data.userId, data.key);
-                                prepData.removeTempData(data);
-                                return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                        .addEmbed(EmbedCreateSpec.builder()
-                                                .title("Deleted %s".formatted(data.name)).build()
-                                        ).components(Collections.emptyList()).build());
-                            } catch (SQLException e) {
-                                Rengetsu.getLOGGER().error("SQL Error", e);
-                                return event.reply("**[Error]** Database error").withEphemeral(true);
+                            case PrepData.Data.CalculationData calculation -> {
+                                try {
+                                    calculation.getAst().accept(typeChecker);
+                                } catch (IllegalArgumentException e) {
+                                    return event.reply("`%s` Type Error: %s\n".formatted(calculation.query,
+                                            e.getMessage())).withEphemeral(true);
+                                }
                             }
                         }
                     }
 
-                    return event.edit(PrepData.buildMenu(data));
-                });
+                    BytecodeGenerator bytecodeGenerator = new BytecodeGenerator(data.params);
+                    for (PrepData.Data.RollData rollData: data.dicerolls) {
+                        switch (rollData) {
+                            case PrepData.Data.DicerollData diceroll -> {
+                                if (diceroll.variable != null) {
+                                    diceroll.result = bytecodeGenerator.getVarIndex(diceroll.variable);
+                                }
+                            }
+                            case PrepData.Data.CalculationData calculation -> {
+                                calculation.bytecode = bytecodeGenerator.generate(calculation.getAst());
+                            }
+                        }
+                    }
+
+                    data.parameterData.clear();
+                    for (int i = 0; i < data.params.length; i++) {
+                        String param = data.params[i];
+                        Type type = paramTypes[i].getInferredType();
+                        switch (type) {
+                            case Type.FixedType fixedType -> {
+                                data.parameterData.add(new PrepData.Data.ParameterData(param, fixedType, (byte) 0,
+                                        bytecodeGenerator.getVarIndex(param)));
+                            }
+                            case Type.VarType varType -> {
+                                byte b;
+                                for (b = 0; b < data.params.length; b++) {
+                                    if (data.params[b].equals(varType.getName())) {
+                                        break;
+                                    }
+                                }
+                                data.parameterData.add(new PrepData.Data.ParameterData(param, Type.FixedType.VAR, b,
+                                        bytecodeGenerator.getVarIndex(param)));
+                            }
+                        }
+                    }
+
+                    data.varCount = bytecodeGenerator.getVarCount();
+
+                    prepData.savePrepData(data);
+                    prepData.removeTempData(data);
+                    return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                            .addEmbed(EmbedCreateSpec.builder()
+                                    .title("Data saved for %s".formatted(data.name)).build()
+                            ).components(Collections.emptyList()).build());
+                } catch (SQLException e) {
+                    Rengetsu.getLOGGER().error("SQL Error", e);
+                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                }
+            }
+            case "delete" -> {
+                try {
+                    prepData.deletePrepData(data.userId, data.key);
+                    prepData.removeTempData(data);
+                    return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                            .addEmbed(EmbedCreateSpec.builder()
+                                    .title("Deleted %s".formatted(data.name)).build()
+                            ).components(Collections.emptyList()).build());
+                } catch (SQLException e) {
+                    Rengetsu.getLOGGER().error("SQL Error", e);
+                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                }
+            }
+        }
+
+        return event.edit(PrepData.buildMenu(data));
     }
 }

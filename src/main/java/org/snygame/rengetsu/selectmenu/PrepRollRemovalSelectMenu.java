@@ -26,21 +26,20 @@ public class PrepRollRemovalSelectMenu extends SelectMenuInteraction {
     public Mono<Void> handle(SelectMenuInteractionEvent event) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
-        return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(userId -> {
-            String[] args = event.getCustomId().split(":");
 
-            PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
-            if (data == null) {
-                return event.edit("**[Error]** Cached data is missing, run the command again")
-                        .withComponents().withEmbeds().withEphemeral(true);
-            }
+        String[] args = event.getCustomId().split(":");
 
-            int[] remove = event.getValues().stream().mapToInt(Integer::parseInt).sorted().toArray();
-            for (int i = remove.length - 1; i >= 0; i--) {
-                data.dicerolls.remove(remove[i]);
-            }
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
+        if (data == null) {
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
+        }
 
-            return event.edit(PrepData.buildMenu(data));
-        });
+        int[] remove = event.getValues().stream().mapToInt(Integer::parseInt).sorted().toArray();
+        for (int i = remove.length - 1; i >= 0; i--) {
+            data.dicerolls.remove(remove[i]);
+        }
+
+        return event.edit(PrepData.buildMenu(data));
     }
 }
