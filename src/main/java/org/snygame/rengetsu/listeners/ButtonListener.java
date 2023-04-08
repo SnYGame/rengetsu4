@@ -21,6 +21,7 @@ public class ButtonListener extends Listener {
         commands.add(new RequestRoleAgreementButton(rengetsu));
         commands.add(new PrepEditButton(rengetsu));
         commands.add(new ManualPageButton(rengetsu));
+        commands.add(new SettingsClearLogButton(rengetsu));
     }
 
     public Mono<Void> handle(ButtonInteractionEvent event) {

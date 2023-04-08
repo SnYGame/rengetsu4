@@ -4,7 +4,11 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
+import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
@@ -73,10 +77,10 @@ public class SettingsCommand extends SlashCommand {
                     try {
                         serverData.setInactiveDays(id, Math.toIntExact(days));
                         if (days > 0) {
-                            return event.reply("Inactivity time set to %d days.".formatted(days));
+                            return event.reply("Inactivity time set to %d days.".formatted(days)).withEphemeral(true);
                         }
 
-                        return event.reply("Inactivity disabled.");
+                        return event.reply("Inactivity disabled.").withEphemeral(true);
                     } catch (SQLException e) {
                         Rengetsu.getLOGGER().error("SQL Error", e);
                     }
@@ -86,52 +90,24 @@ public class SettingsCommand extends SlashCommand {
     }
 
     private Mono<Void> subUserlog(ChatInputInteractionEvent event) {
-        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
-        ServerData serverData = databaseManager.getServerData();
-        return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
-            List<Long> ids = IntStream.range(1, 4).mapToObj("channel%d"::formatted)
-                    .flatMap(name -> event.getOptions().get(0).getOption(name).stream())
-                    .flatMap(option -> option.getValue().stream()).map(ApplicationCommandInteractionOptionValue::asSnowflake)
-                    .map(Snowflake::asLong)
-                    .toList();
-
-            try {
-                serverData.setUserLogs(serverId, ids);
-                if (ids.isEmpty()) {
-                    return event.reply("Cleared user logging channels.");
-                }
-
-                return event.reply("User logging channels set to %s.".formatted(ids.stream().map(
-                        "<#%d>"::formatted).collect(Collectors.joining(", "))));
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
-        });
+        return event.reply().withComponents(List.of(
+                ActionRow.of(
+                        SelectMenu.ofChannel("settings:usrlog", Channel.Type.GUILD_TEXT).withMaxValues(25)
+                ),
+                ActionRow.of(
+                        Button.danger("settings:usrlog:clear", "Clear")
+                )
+        )).withEphemeral(true);
     }
 
     private Mono<Void> subMsglog(ChatInputInteractionEvent event) {
-        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
-        ServerData serverData = databaseManager.getServerData();
-        return Mono.justOrEmpty(event.getInteraction().getGuildId()).map(Snowflake::asLong).flatMap(serverId -> {
-            List<Long> ids = IntStream.range(1, 4).mapToObj("channel%d"::formatted)
-                    .flatMap(name -> event.getOptions().get(0).getOption(name).stream())
-                    .flatMap(option -> option.getValue().stream()).map(ApplicationCommandInteractionOptionValue::asSnowflake)
-                    .map(Snowflake::asLong)
-                    .toList();
-
-            try {
-                serverData.setMessageLogs(serverId, ids);
-                if (ids.isEmpty()) {
-                    return event.reply("Cleared message logging channels.");
-                }
-
-                return event.reply("Message logging channels set to %s.".formatted(ids.stream().map(
-                        "<#%d>"::formatted).collect(Collectors.joining(", "))));
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
-        });
+        return event.reply().withComponents(List.of(
+                ActionRow.of(
+                        SelectMenu.ofChannel("settings:msglog", Channel.Type.GUILD_TEXT).withMaxValues(25)
+                ),
+                ActionRow.of(
+                        Button.danger("settings:msglog:clear", "Clear")
+                )
+        )).withEphemeral(true);
     }
 }

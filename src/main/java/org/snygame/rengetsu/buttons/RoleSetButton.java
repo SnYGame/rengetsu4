@@ -70,11 +70,11 @@ public class RoleSetButton extends ButtonInteraction {
                                     .embeds(Collections.emptyList())
                                     .addComponent(ActionRow.of(
                                             SelectMenu.ofRole("role:%d:%d:%s".formatted(data.roleId, data.serverId, args[3]))
-                                                    .withMinValues(0).withMaxValues(25)
+                                                    .withMaxValues(25)
                                                     .withPlaceholder("Select roles to %s".formatted(args[3].equals("on_remove") ? "add" : "remove"))
                                     )).addComponent(ActionRow.of(
-                                            Button.primary("role:%d:%d:%s_none".formatted(data.roleId, data.serverId, args[3]),
-                                                    "Select none"),
+                                            Button.danger("role:%d:%d:%s_none".formatted(data.roleId, data.serverId, args[3]),
+                                                    "Clear"),
                                             Button.danger("role:%d:%d:cancel_menu".formatted(data.roleId, data.serverId), "Cancel")))
                                     .build());
                         }
