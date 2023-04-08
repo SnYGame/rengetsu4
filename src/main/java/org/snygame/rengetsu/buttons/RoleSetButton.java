@@ -64,24 +64,25 @@ public class RoleSetButton extends ButtonInteraction {
                                     );
                         }
                         case "on_remove", "on_add" -> {
-                            return event.getClient().getGuildRoles(Snowflake.of(data.serverId))
-                                    .filter(role -> role.getId().asLong() != data.roleId && !role.isEveryone())
-                                    .map(role -> SelectMenu.Option.of("@%s".formatted(role.getName()), role.getId().asString())
-                                            .withDefault((args[3].equals("on_remove") ? data.addWhenRemoved : data.removeWhenAdded)
-                                                    .contains(role.getId().asLong())))
-                                    .collectList().flatMap(options ->
-                                                    event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                                    .content(args[3].equals("on_remove") ? "Select roles to add when this role is removed." :
-                                                            "Select roles to remove when this role is added.")
-                                                    .embeds(Collections.emptyList())
-                                                    .addComponent(ActionRow.of(
-                                                            SelectMenu.of("role:%d:%d:%s".formatted(data.roleId, data.serverId, args[3]), options)
-                                                                    .withMaxValues(options.size()).withMinValues(0)
-                                                                    .withPlaceholder("Select roles to %s".formatted(args[3].equals("on_remove") ? "add" : "remove"))
-                                                    )).addComponent(ActionRow.of(Button.danger("role:%d:%d:cancel_menu"
-                                                                    .formatted(data.roleId, data.serverId), "Cancel")))
-                                                    .build())
-                                            );
+                            return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                                    .content(args[3].equals("on_remove") ? "Select roles to add when this role is removed." :
+                                            "Select roles to remove when this role is added.")
+                                    .embeds(Collections.emptyList())
+                                    .addComponent(ActionRow.of(
+                                            SelectMenu.ofRole("role:%d:%d:%s".formatted(data.roleId, data.serverId, args[3]))
+                                                    .withMinValues(0).withMaxValues(25)
+                                                    .withPlaceholder("Select roles to %s".formatted(args[3].equals("on_remove") ? "add" : "remove"))
+                                    )).addComponent(ActionRow.of(
+                                            Button.primary("role:%d:%d:%s_none".formatted(data.roleId, data.serverId, args[3]),
+                                                    "Select none"),
+                                            Button.danger("role:%d:%d:cancel_menu".formatted(data.roleId, data.serverId), "Cancel")))
+                                    .build());
+                        }
+                        case "on_remove_none" -> {
+                            data.addWhenRemoved.clear();
+                        }
+                        case "on_add_none" -> {
+                            data.removeWhenAdded.clear();
                         }
                         case "cancel_menu" -> {}
                         case "save" -> {
