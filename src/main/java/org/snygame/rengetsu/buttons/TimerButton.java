@@ -44,7 +44,7 @@ public class TimerButton extends ButtonInteraction {
                             .addComponent(
                                     ActionRow.of(
                                             Button.primary("disabled", "Subscribe").disabled(),
-                                            Button.danger("disabled2", "Canceled").disabled()
+                                            Button.secondary("disabled2", "Cancel").disabled()
                                     )
                             ).build()).then();
                 }

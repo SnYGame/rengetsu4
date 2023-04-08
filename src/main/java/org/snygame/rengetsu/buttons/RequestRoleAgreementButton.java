@@ -42,7 +42,7 @@ public class RequestRoleAgreementButton extends ButtonInteraction {
             return Mono.justOrEmpty(event.getMessage()).flatMap(message -> message.edit(MessageEditSpec.builder()
                     .addComponent(ActionRow.of(
                             Button.success("disabled","Accept").disabled(),
-                            Button.danger("disabled2", "Declined").disabled()
+                            Button.secondary("disabled2", "Decline").disabled()
                     )).build())).then(event.reply("You have declined the agreement."));
         }
 
@@ -59,7 +59,7 @@ public class RequestRoleAgreementButton extends ButtonInteraction {
 
         return Mono.justOrEmpty(event.getMessage()).flatMap(message -> message.edit(MessageEditSpec.builder()
                 .addComponent(ActionRow.of(
-                        Button.success("disabled","Accepted").disabled(),
+                        Button.secondary("disabled","Accept").disabled(),
                         Button.danger("disabled2", "Decline").disabled()
                 )).build())).then(event.getInteraction().getUser().asMember(Snowflake.of(args[2])).flatMap(member ->
                 member.addRole(Snowflake.of(args[1])).then(Flux.fromIterable(toRemoveIds).map(Snowflake::of).flatMap(id ->

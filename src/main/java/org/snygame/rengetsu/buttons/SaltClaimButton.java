@@ -36,7 +36,7 @@ public class SaltClaimButton extends ButtonInteraction {
                     .content("This button has expired.")
                     .addComponent(
                             ActionRow.of(
-                                    Button.danger("disabled", "Expired").disabled()
+                                    Button.secondary("disabled", "Claim").disabled()
                             )
                     ).build()).then();
         }
@@ -59,7 +59,7 @@ public class SaltClaimButton extends ButtonInteraction {
                                 .content(sb.append(".").toString())
                                 .addComponent(
                                         ActionRow.of(
-                                                Button.danger("disabled", "Already claimed").disabled()
+                                                Button.secondary("disabled", "Claim").disabled()
                                         )
                                 ).build()).then();
                     }
@@ -68,7 +68,7 @@ public class SaltClaimButton extends ButtonInteraction {
                             .content("You now have %d salt.".formatted(result))
                             .addComponent(
                                     ActionRow.of(
-                                            Button.success("disabled", "Claim success").disabled()
+                                            Button.secondary("disabled", "Claim").disabled()
                                     )
                             ).build()).then();
                 }).then();
