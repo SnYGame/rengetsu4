@@ -25,24 +25,18 @@ public class RoleRemovalSelectMenu extends SelectMenuInteraction {
     public Mono<Void> handle(SelectMenuInteractionEvent event) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         RoleData roleData = databaseManager.getRoleData();
-        return Mono.justOrEmpty(event.getInteraction().getMember()).flatMap(PartialMember::getBasePermissions)
-                .map(permissions -> permissions.and(PermissionSet.of(Permission.MANAGE_ROLES))).flatMap(permissions -> {
-                    if (permissions.isEmpty()) {
-                        return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
-                    }
 
-                    String[] args = event.getCustomId().split(":");
+        String[] args = event.getCustomId().split(":");
 
-                    RoleData.Data data = roleData.getTempData(Integer.parseInt(args[2]));
-                    if (data == null) {
-                        return event.edit("**[Error]** Cached data is missing, run the command again")
-                                .withComponents().withEmbeds().withEphemeral(true);
-                    }
+        RoleData.Data data = roleData.getTempData(Integer.parseInt(args[2]));
+        if (data == null) {
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
+        }
 
-                    List<Long> list = (args[1].equals("on_remove") ? data.addWhenRemoved : data.removeWhenAdded);
-                    list.clear();
-                    event.getValues().forEach(id -> list.add(Long.parseLong(id)));
-                    return event.edit(RoleData.buildMenu(data));
-                });
+        List<Long> list = (args[1].equals("on_remove") ? data.addWhenRemoved : data.removeWhenAdded);
+        list.clear();
+        event.getValues().forEach(id -> list.add(Long.parseLong(id)));
+        return event.edit(RoleData.buildMenu(data));
     }
 }
