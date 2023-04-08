@@ -75,7 +75,87 @@
       "name": "list",
       "description": "Lists your prepared effects",
       "type": 1,
-      "required": false
+      "required": false,
+      "options": [
+        {
+          "name": "user",
+          "description": "Whose prepared effects to list out",
+          "type": 6,
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "show",
+      "description": "Displays the prepared effect data",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "key",
+          "description": "Effect key",
+          "type": 3,
+          "required": true,
+          "max_length": 50,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "name": "borrow",
+      "description": "Use someone else's prepared effects",
+      "type": 2,
+      "required": false,
+      "options": [
+        {
+          "name": "cast",
+          "description": "Cast someone else's prepared effect",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "user",
+              "description": "Whose prepared effects to cast",
+              "type": 6,
+              "required": true
+            },
+            {
+              "name": "key",
+              "description": "Effect key",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            },
+            {
+              "name": "arguments",
+              "description": "Argument list (comma separated)",
+              "type": 3,
+              "required": false
+            }
+          ]
+        },
+        {
+          "name": "show",
+          "description": "Displays someone else's prepared effect data",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "user",
+              "description": "Whose prepared effects to show",
+              "type": 6,
+              "required": true
+            },
+            {
+              "name": "key",
+              "description": "Effect key",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        }
+      ]
     }
   ]
 }

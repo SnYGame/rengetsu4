@@ -1,5 +1,6 @@
 package org.snygame.rengetsu.commands;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -9,6 +10,7 @@ import discord4j.core.object.component.TextInput;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
@@ -36,272 +38,155 @@ public class PrepareCommand extends SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        return event.getOption("create").map(__ -> subCreate(event))
-                .or(() -> event.getOption("edit").map(__ -> subEdit(event)))
-                .or(() -> event.getOption("cast").map(__ -> subCast(event)))
-                .or(() -> event.getOption("delete").map(__ -> subDelete(event)))
-                .or(() -> event.getOption("list").map(__ -> subList(event)))
+        return event.getOption("create").map(option -> subCreate(event, option))
+                .or(() -> event.getOption("edit").map(option -> subEdit(event, option)))
+                .or(() -> event.getOption("cast").map(option -> subCast(event, option)))
+                .or(() -> event.getOption("delete").map(option -> subDelete(event, option)))
+                .or(() -> event.getOption("list").map(option -> subList(event, option)))
+                .or(() -> event.getOption("show").map(option -> subShow(event, option)))
+                .or(() -> event.getOption("borrow").map(option -> subBorrow(event, option)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
-    private Mono<Void> subCreate(ChatInputInteractionEvent event) {
+    private Mono<Void> subCreate(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+        String key = option.getOption("key")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
-            long userId = event.getInteraction().getUser().getId().asLong();
-            boolean hasData;
-            try {
-                hasData = prepData.hasPrepData(userId, key);
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
-            if (hasData) {
-                return event.reply("Prepared effect with key `%s` already exists.".formatted(key))
-                            .withComponents(ActionRow.of(
-                                    Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
-                            )).withEphemeral(true);
-            }
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
-            return event.presentModal("Preparing", "prep:init:%s".formatted(key), List.of(
-                    ActionRow.of(
-                            TextInput.small("name", "Name", 0, 100)
-                                    .required(true)
-                    ),
-                    ActionRow.of(
-                            TextInput.paragraph("description", "Effect description",
-                                    0, 2000).required(false)
-                    )
-            ));
-        });
+        long userId = event.getInteraction().getUser().getId().asLong();
+        boolean hasData;
+        try {
+            hasData = prepData.hasPrepData(userId, key);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+        if (hasData) {
+            return event.reply("Prepared effect with key `%s` already exists.".formatted(key))
+                    .withComponents(ActionRow.of(
+                            Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
+                    )).withEphemeral(true);
+        }
+
+        return event.presentModal("Preparing", "prep:init:%s".formatted(key), List.of(
+                ActionRow.of(
+                        TextInput.small("name", "Name", 0, 100)
+                                .required(true)
+                ),
+                ActionRow.of(
+                        TextInput.paragraph("description", "Effect description",
+                                0, 2000).required(false)
+                )
+        ));
     }
 
-    private Mono<Void> subEdit(ChatInputInteractionEvent event) {
+    private Mono<Void> subEdit(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+        String key = option.getOption("key")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
-            long userId = event.getInteraction().getUser().getId().asLong();
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
-            PrepData.Data data;
-            try {
-                data = prepData.getPrepData(userId, key);
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
+        long userId = event.getInteraction().getUser().getId().asLong();
 
-            if (data == null) {
-                return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
-                        .withComponents(ActionRow.of(
-                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
-                        )).withEphemeral(true);
-            }
+        PrepData.Data data;
+        try {
+            data = prepData.getPrepData(userId, key);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
 
-            prepData.putTempData(data);
-            return event.reply(PrepData.buildMenu(data));
-        });
+        if (data == null) {
+            return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
+                    .withComponents(ActionRow.of(
+                            Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                    )).withEphemeral(true);
+        }
+
+        prepData.putTempData(data);
+        return event.reply(PrepData.buildMenu(data));
     }
 
-    private Mono<Void> subCast(ChatInputInteractionEvent event) {
+    private Mono<Void> subCast(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+        String key = option.getOption("key")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
-            long userId = event.getInteraction().getUser().getId().asLong();
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
-            PrepData.Data data;
-            try {
-                data = prepData.getPrepData(userId, key);
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
+        long userId = event.getInteraction().getUser().getId().asLong();
 
-            if (data == null) {
-                return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
-                        .withComponents(ActionRow.of(
-                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
-                        )).withEphemeral(true);
-            }
+        PrepData.Data data;
+        try {
+            data = prepData.getPrepData(userId, key);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
 
-            String arguments = event.getOptions().get(0).getOption("arguments")
-                    .flatMap(ApplicationCommandInteractionOption::getValue)
-                    .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+        if (data == null) {
+            return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
+                    .withComponents(ActionRow.of(
+                            Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                    )).withEphemeral(true);
+        }
 
-            String[] args;
-            if (arguments.isBlank()) {
-                args = new String[0];
-            } else {
-                args = arguments.split(",");
-            }
+        String arguments = event.getOptions().get(0).getOption("arguments")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
-            if (data.params.length != args.length) {
-                return event.reply("**[Error]** Expected %d arguments but received %d instead".formatted(data.params.length, args.length))
-                        .withEphemeral(true);
-            }
+        String[] args;
+        if (arguments.isBlank()) {
+            args = new String[0];
+        } else {
+            args = arguments.split(",");
+        }
 
-            Object[] variables = new Object[data.varCount];
-            Type.FixedType[] paramTypes = new Type.FixedType[args.length];
-
-            for (int i = 0; i < args.length; i++) {
-                PrepData.Data.ParameterData paramData = data.parameterData.get(i);
-                String arg = args[i].strip();
-                switch (paramData.type()) {
-                    case VAR, ANY -> {
-                        if (arg.equalsIgnoreCase("true")) {
-                            variables[paramData.result()] = Boolean.TRUE;
-                            paramTypes[i] = Type.FixedType.BOOL;
-                        } else if (arg.equalsIgnoreCase("false")) {
-                            variables[paramData.result()] = Boolean.FALSE;
-                            paramTypes[i] = Type.FixedType.BOOL;
-                        } else {
-                            try {
-                                variables[paramData.result()] = new BigDecimal(arg);
-                                paramTypes[i] = Type.FixedType.NUM;
-                            } catch (NumberFormatException e) {
-                                return event.reply("**[Error]** Argument %d (%s) expected to be of type NUM or BOOL but received %s instead"
-                                                .formatted(i, paramData.name(), arg))
-                                        .withEphemeral(true);
-                            }
-                        }
-                    }
-                    case BOOL -> {
-                        paramTypes[i] = Type.FixedType.BOOL;
-                        if (arg.equalsIgnoreCase("true")) {
-                            variables[paramData.result()] = Boolean.TRUE;
-                        } else if (arg.equalsIgnoreCase("false")) {
-                            variables[paramData.result()] = Boolean.FALSE;
-                        } else {
-                            return event.reply("**[Error]** Argument %d (%s) expected to be of type BOOL but received %s instead"
-                                            .formatted(i, paramData.name(), arg))
-                                    .withEphemeral(true);
-                        }
-                    }
-                    case NUM -> {
-                        try {
-                            paramTypes[i] = Type.FixedType.NUM;
-                            variables[paramData.result()] = new BigDecimal(arg);
-                        } catch (NumberFormatException e) {
-                            return event.reply("**[Error]** Argument %d (%s) expected to be of type NUM but received %s instead"
-                                            .formatted(i, paramData.name(), arg))
-                                    .withEphemeral(true);
-                        }
-                    }
-                }
-            }
-
-            for (int i = 0; i < args.length; i++) {
-                PrepData.Data.ParameterData paramData = data.parameterData.get(i);
-                if (paramData.type() == Type.FixedType.VAR && paramTypes[i] != paramTypes[paramData.ofVarType()]) {
-                    byte otherIndex = paramData.ofVarType();
-                    String otherName = data.parameterData.get(otherIndex).name();
-                    return event.reply("**[Error]** Argument %d (%s) expected to be of the same type as argument %d (%s), but %s = %s and %s = %s"
-                                    .formatted(i, paramData.name(), otherIndex, otherName, paramData.name(), paramTypes[i], otherName, paramTypes[otherIndex]))
-                            .withEphemeral(true);
-                }
-            }
-
-            InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
-            EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
-            embed.title(data.name);
-            embed.description(data.description);
-
-            if (args.length > 0) {
-                embed.addField("Arguments", data.parameterData.stream().map(paramData -> "%s = %s"
-                        .formatted(paramData.name(), variables[paramData.result()]))
-                        .collect(Collectors.joining(", ")),false);
-            }
-
-            embed.addAllFields(data.dicerolls.stream().map(rollData -> {
-                switch (rollData) {
-                    case PrepData.Data.DicerollData dicerollData -> {
-                        Diceroll diceroll = Diceroll.parse(dicerollData.query);
-                        if (diceroll.getRepeat() == 1) {
-                            Diceroll.Result result = diceroll.roll();
-                            if (dicerollData.variable != null) {
-                                variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
-                                return EmbedCreateFields.Field.of(dicerollData.description,
-                                        "`%s = %s` %s".formatted(dicerollData.variable, dicerollData.query, result.toString())
-                                        , false);
-                            }
-
-                            return EmbedCreateFields.Field.of(dicerollData.description,
-                                    "`%s` %s".formatted(dicerollData.query, result.toString())
-                                    , false);
-                        } else {
-                            return EmbedCreateFields.Field.of(dicerollData.description,
-                                    "`%s`\n%s".formatted(dicerollData.variable == null ? dicerollData.query : "%s = %s"
-                                                    .formatted(dicerollData.variable, dicerollData.query),
-                                            IntStream.range(0, diceroll.getRepeat())
-                                            .mapToObj(__ -> {
-                                                Diceroll.Result result = diceroll.roll();
-                                                if (dicerollData.variable != null) {
-                                                    variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
-                                                }
-                                                return result.toString();
-                                            }).collect(Collectors.joining("\n")))
-                                    , false);
-                        }
-                    }
-                    case PrepData.Data.CalculationData calculationData -> {
-                        try {
-                            return EmbedCreateFields.Field.of(calculationData.description,
-                                    "`%s` %s".formatted(calculationData.query,
-                                            Interpreter.interpret(calculationData.bytecode, variables)), false);
-                        } catch (Exception e) {
-                            return EmbedCreateFields.Field.of(calculationData.description,
-                                    "`%s` Error: %s".formatted(calculationData.query,
-                                            e.getMessage()), false);
-                        }
-                    }
-                }
-                throw new RuntimeException();
-            }).toList());
-
-            return event.reply(builder.addEmbed(embed.build()).build());
-        });
+        return castEffect(event, data, args);
     }
 
-    private Mono<Void> subDelete(ChatInputInteractionEvent event) {
+    private Mono<Void> subDelete(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+        String key = option.getOption("key")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
-            long userId = event.getInteraction().getUser().getId().asLong();
-            boolean deleted;
-            try {
-                deleted = prepData.deletePrepData(userId, key);
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
-            if (!deleted) {
-                return event.reply("**[Error]** Prepared effect with key `%s` does not exists".formatted(key)).withEphemeral(true);
-            }
+        long userId = event.getInteraction().getUser().getId().asLong();
+        boolean deleted;
+        try {
+            deleted = prepData.deletePrepData(userId, key);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
 
-            return event.reply("Deleted prepared effect with key `%s`.".formatted(key));
-        });
+        if (!deleted) {
+            return event.reply("**[Error]** Prepared effect with key `%s` does not exists".formatted(key)).withEphemeral(true);
+        }
+
+        return event.reply("Deleted prepared effect with key `%s`.".formatted(key)).withEphemeral(true);
     }
 
-    private Mono<Void> subList(ChatInputInteractionEvent event) {
+    private Mono<Void> subList(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(id -> {
+        Long userId = option.getOption("user")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asSnowflake).map(Snowflake::asLong).orElse(null);
+
+        if (userId == null) {
             List<PrepData.NameData> datas;
             try {
-                datas = prepData.listPrepNames(id);
+                datas = prepData.listPrepNames(event.getInteraction().getUser().getId().asLong());
             } catch (SQLException e) {
                 Rengetsu.getLOGGER().error("SQL Error", e);
                 return event.reply("**[Error]** Database error").withEphemeral(true);
@@ -311,7 +196,254 @@ public class PrepareCommand extends SlashCommand {
                 return event.reply("You do not have any prepared effects.");
             }
 
-            return event.reply("Your prepared effects:\n" + datas.stream().map(data -> "`%s`: %s".formatted(data.key(), data.name())).collect(Collectors.joining("\n")));
+            return event.reply("Your prepared effects:\n" +
+                    datas.stream().map(data -> "`%s`: %s".formatted(data.key(), data.name())).collect(Collectors.joining("\n")));
+        } else {
+            List<PrepData.NameData> datas;
+            try {
+                datas = prepData.listPrepNames(userId);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (datas.isEmpty()) {
+                return event.reply("<@%d> does not have any prepared effects.".formatted(userId))
+                        .withAllowedMentions(AllowedMentions.suppressAll());
+            }
+
+            return event.reply("<@%d>'s prepared effects:\n".formatted(userId) +
+                            datas.stream().map(data -> "`%s`: %s".formatted(data.key(), data.name())).collect(Collectors.joining("\n")))
+                    .withAllowedMentions(AllowedMentions.suppressAll());
+        }
+    }
+
+    private Mono<Void> subShow(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        return Mono.justOrEmpty(event.getOptions().get(0).getOption("key")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
+            long userId = event.getInteraction().getUser().getId().asLong();
+
+            PrepData.Data data;
+            try {
+                data = prepData.getPrepData(userId, key);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (data == null) {
+                return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
+                        .withComponents(ActionRow.of(
+                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                        )).withEphemeral(true);
+            }
+
+            return event.reply(PrepData.buildMenu(data).withComponents().withEphemeral(false));
         });
+    }
+
+    private Mono<Void> subBorrow(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        return option.getOption("cast").map(option2 -> subBorrowCast(event, option2))
+                .or(() -> option.getOption("show").map(option2 -> subBorrowShow(event, option2)))
+                .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
+    }
+
+    private Mono<Void> subBorrowCast(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        long userId = option.getOption("user")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asSnowflake).map(Snowflake::asLong).orElse(0L);
+
+        String key = option.getOption("key")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        PrepData.Data data;
+        try {
+            data = prepData.getPrepData(userId, key);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+
+        if (data == null) {
+            return event.reply("<@%d> does not have a prepared effect with key `%s`.".formatted(userId, key))
+                    .withEphemeral(true).withAllowedMentions(AllowedMentions.suppressAll());
+        }
+
+        String arguments = option.getOption("arguments")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        String[] args;
+        if (arguments.isBlank()) {
+            args = new String[0];
+        } else {
+            args = arguments.split(",");
+        }
+
+        return castEffect(event, data, args);
+    }
+
+    private Mono<Void> subBorrowShow(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        long userId = option.getOption("user")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asSnowflake).map(Snowflake::asLong).orElse(0L);
+
+        String key = option.getOption("key")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        PrepData.Data data;
+        try {
+            data = prepData.getPrepData(userId, key);
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+
+        if (data == null) {
+            return event.reply("<@%d> does not have a prepared effect with key `%s`.".formatted(userId, key))
+                    .withEphemeral(true).withAllowedMentions(AllowedMentions.suppressAll());
+        }
+
+        return event.reply(PrepData.buildMenu(data).withContent("Owner: <@%d>, Key: %s".formatted(userId, key))
+                .withAllowedMentions(AllowedMentions.suppressAll()).withComponents().withEphemeral(false));
+    }
+
+    private Mono<Void> castEffect(ChatInputInteractionEvent event, PrepData.Data data, String[] args) {
+        if (data.params.length != args.length) {
+            return event.reply("**[Error]** Expected %d arguments but received %d instead".formatted(data.params.length, args.length))
+                    .withEphemeral(true);
+        }
+
+        Object[] variables = new Object[data.varCount];
+        Type.FixedType[] paramTypes = new Type.FixedType[args.length];
+
+        for (int i = 0; i < args.length; i++) {
+            PrepData.Data.ParameterData paramData = data.parameterData.get(i);
+            String arg = args[i].strip();
+            switch (paramData.type()) {
+                case VAR, ANY -> {
+                    if (arg.equalsIgnoreCase("true")) {
+                        variables[paramData.result()] = Boolean.TRUE;
+                        paramTypes[i] = Type.FixedType.BOOL;
+                    } else if (arg.equalsIgnoreCase("false")) {
+                        variables[paramData.result()] = Boolean.FALSE;
+                        paramTypes[i] = Type.FixedType.BOOL;
+                    } else {
+                        try {
+                            variables[paramData.result()] = new BigDecimal(arg);
+                            paramTypes[i] = Type.FixedType.NUM;
+                        } catch (NumberFormatException e) {
+                            return event.reply("**[Error]** Argument %d (%s) expected to be of type NUM or BOOL but received %s instead"
+                                            .formatted(i, paramData.name(), arg))
+                                    .withEphemeral(true);
+                        }
+                    }
+                }
+                case BOOL -> {
+                    paramTypes[i] = Type.FixedType.BOOL;
+                    if (arg.equalsIgnoreCase("true")) {
+                        variables[paramData.result()] = Boolean.TRUE;
+                    } else if (arg.equalsIgnoreCase("false")) {
+                        variables[paramData.result()] = Boolean.FALSE;
+                    } else {
+                        return event.reply("**[Error]** Argument %d (%s) expected to be of type BOOL but received %s instead"
+                                        .formatted(i, paramData.name(), arg))
+                                .withEphemeral(true);
+                    }
+                }
+                case NUM -> {
+                    try {
+                        paramTypes[i] = Type.FixedType.NUM;
+                        variables[paramData.result()] = new BigDecimal(arg);
+                    } catch (NumberFormatException e) {
+                        return event.reply("**[Error]** Argument %d (%s) expected to be of type NUM but received %s instead"
+                                        .formatted(i, paramData.name(), arg))
+                                .withEphemeral(true);
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < args.length; i++) {
+            PrepData.Data.ParameterData paramData = data.parameterData.get(i);
+            if (paramData.type() == Type.FixedType.VAR && paramTypes[i] != paramTypes[paramData.ofVarType()]) {
+                byte otherIndex = paramData.ofVarType();
+                String otherName = data.parameterData.get(otherIndex).name();
+                return event.reply("**[Error]** Argument %d (%s) expected to be of the same type as argument %d (%s), but %s = %s and %s = %s"
+                                .formatted(i, paramData.name(), otherIndex, otherName, paramData.name(), paramTypes[i], otherName, paramTypes[otherIndex]))
+                        .withEphemeral(true);
+            }
+        }
+
+        InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
+        EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
+        embed.title(data.name);
+        embed.description(data.description);
+
+        if (args.length > 0) {
+            embed.addField("Arguments", data.parameterData.stream().map(paramData -> "%s = %s"
+                            .formatted(paramData.name(), variables[paramData.result()]))
+                    .collect(Collectors.joining(", ")),false);
+        }
+
+        embed.addAllFields(data.dicerolls.stream().map(rollData -> {
+            switch (rollData) {
+                case PrepData.Data.DicerollData dicerollData -> {
+                    Diceroll diceroll = Diceroll.parse(dicerollData.query);
+                    if (diceroll.getRepeat() == 1) {
+                        Diceroll.Result result = diceroll.roll();
+                        if (dicerollData.variable != null) {
+                            variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
+                            return EmbedCreateFields.Field.of(dicerollData.description,
+                                    "`%s = %s` %s".formatted(dicerollData.variable, dicerollData.query, result.toString())
+                                    , false);
+                        }
+
+                        return EmbedCreateFields.Field.of(dicerollData.description,
+                                "`%s` %s".formatted(dicerollData.query, result.toString())
+                                , false);
+                    } else {
+                        return EmbedCreateFields.Field.of(dicerollData.description,
+                                "`%s`\n%s".formatted(dicerollData.variable == null ? dicerollData.query : "%s = %s"
+                                                .formatted(dicerollData.variable, dicerollData.query),
+                                        IntStream.range(0, diceroll.getRepeat())
+                                                .mapToObj(__ -> {
+                                                    Diceroll.Result result = diceroll.roll();
+                                                    if (dicerollData.variable != null) {
+                                                        variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
+                                                    }
+                                                    return result.toString();
+                                                }).collect(Collectors.joining("\n")))
+                                , false);
+                    }
+                }
+                case PrepData.Data.CalculationData calculationData -> {
+                    try {
+                        return EmbedCreateFields.Field.of(calculationData.description,
+                                "`%s` %s".formatted(calculationData.query,
+                                        Interpreter.interpret(calculationData.bytecode, variables)), false);
+                    } catch (Exception e) {
+                        return EmbedCreateFields.Field.of(calculationData.description,
+                                "`%s` Error: %s".formatted(calculationData.query,
+                                        e.getMessage()), false);
+                    }
+                }
+            }
+            throw new RuntimeException();
+        }).toList());
+
+        return event.reply(builder.addEmbed(embed.build()).build());
     }
 }
