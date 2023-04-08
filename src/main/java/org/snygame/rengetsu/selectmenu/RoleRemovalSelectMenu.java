@@ -33,12 +33,13 @@ public class RoleRemovalSelectMenu extends SelectMenuInteraction {
 
                     String[] args = event.getCustomId().split(":");
 
-                    RoleData.Data data = roleData.getTempData(Long.parseLong(args[1]), Long.parseLong(args[2]));
+                    RoleData.Data data = roleData.getTempData(Integer.parseInt(args[2]));
                     if (data == null) {
-                        return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+                        return event.edit("**[Error]** Cached data is missing, run the command again")
+                                .withComponents().withEmbeds().withEphemeral(true);
                     }
 
-                    List<Long> list = (args[3].equals("on_remove") ? data.addWhenRemoved : data.removeWhenAdded);
+                    List<Long> list = (args[1].equals("on_remove") ? data.addWhenRemoved : data.removeWhenAdded);
                     list.clear();
                     event.getValues().forEach(id -> list.add(Long.parseLong(id)));
                     return event.edit(RoleData.buildMenu(data));

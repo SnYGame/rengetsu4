@@ -60,15 +60,13 @@ public class PrepareCommand extends SlashCommand {
                 return event.reply("**[Error]** Database error").withEphemeral(true);
             }
             if (hasData) {
-                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                        .content("Prepared effect with key `%s` already exists.".formatted(key))
-                                .addComponent(ActionRow.of(
-                                        Button.primary("prep:%d:%s:edit_instead".formatted(userId, key), "Edit instead")
-                                ))
-                        .build());
+                return event.reply("Prepared effect with key `%s` already exists.".formatted(key))
+                            .withComponents(ActionRow.of(
+                                    Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
+                            )).withEphemeral(true);
             }
 
-            return event.presentModal("Preparing", "prep:%d:%s:init".formatted(userId, key), List.of(
+            return event.presentModal("Preparing", "prep:init:%s".formatted(key), List.of(
                     ActionRow.of(
                             TextInput.small("name", "Name", 0, 100)
                                     .required(true)
@@ -99,17 +97,13 @@ public class PrepareCommand extends SlashCommand {
             }
 
             if (data == null) {
-                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                        .content("Prepared effect with key `%s` does not exists.".formatted(key))
-                        .addComponent(ActionRow.of(
-                                Button.primary("prep:%d:%s:create_instead".formatted(userId, key), "Create instead")
-                        ))
-                        .build());
+                return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
+                        .withComponents(ActionRow.of(
+                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                        )).withEphemeral(true);
             }
 
-            if (!prepData.putTempData(data)) {
-                return event.reply("**[Error]** A prepared effect with that key is currently being edited").withEphemeral(true);
-            }
+            prepData.putTempData(data);
             return event.reply(PrepData.buildMenu(data));
         });
     }
@@ -132,12 +126,10 @@ public class PrepareCommand extends SlashCommand {
             }
 
             if (data == null) {
-                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                        .content("Prepared effect with key `%s` does not exists.".formatted(key))
-                        .addComponent(ActionRow.of(
-                                Button.primary("prep:%d:%s:create_instead".formatted(userId, key), "Create instead")
-                        ))
-                        .build());
+                return event.reply("Prepared effect with key `%s` does not exists.".formatted(key))
+                        .withComponents(ActionRow.of(
+                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                        )).withEphemeral(true);
             }
 
             String arguments = event.getOptions().get(0).getOption("arguments")

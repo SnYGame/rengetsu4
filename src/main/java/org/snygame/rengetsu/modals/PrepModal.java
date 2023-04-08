@@ -39,9 +39,12 @@ public class PrepModal extends ModalInteraction {
     public Mono<Void> handle(ModalSubmitInteractionEvent event) {
         String[] args = event.getCustomId().split(":");
 
-        switch (args[3]) {
+        switch (args[1]) {
             case "init" -> {
-                return handleInit(event);
+                return handleInit(event, false);
+            }
+            case "init_instead" -> {
+                return handleInit(event, true);
             }
             case "edit" -> {
                 return handleEdit(event);
@@ -61,20 +64,18 @@ public class PrepModal extends ModalInteraction {
         }
     }
 
-    private Mono<Void> handleInit(ModalSubmitInteractionEvent event) {
+    private Mono<Void> handleInit(ModalSubmitInteractionEvent event, boolean edit) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = new PrepData.Data(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = new PrepData.Data(event.getInteraction().getUser().getId().asLong(), args[2]);
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
         data.editing = false;
 
-        if (!prepData.putTempData(data)) {
-            return event.reply("**[Error]** A prepared effect with that key is currently being edited").withEphemeral(true);
-        }
-        return event.reply(PrepData.buildMenu(data));
+        prepData.putTempData(data);
+        return edit ? event.edit(PrepData.buildMenu(data)) : event.reply(PrepData.buildMenu(data));
     }
 
     private Mono<Void> handleEdit(ModalSubmitInteractionEvent event) {
@@ -82,9 +83,10 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
@@ -98,9 +100,10 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
@@ -131,9 +134,10 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
@@ -171,9 +175,10 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         String paramsRaw = event.getComponents().get(0).getData().components().get().get(0).value().toOptional()

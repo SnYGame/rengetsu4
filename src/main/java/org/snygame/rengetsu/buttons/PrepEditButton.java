@@ -39,13 +39,24 @@ public class PrepEditButton extends ButtonInteraction {
         return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(userId -> {
                     String[] args = event.getCustomId().split(":");
 
-                    if (userId != Long.parseLong(args[1])) {
-                        return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
-                    }
-
-                    switch (args[3]) {
+                    switch (args[1]) {
                         case "create_instead" -> {
-                            return event.presentModal("Preparing", "prep:%d:%s:init".formatted(userId, args[2]), List.of(
+                            boolean hasData;
+                            String key = args[2];
+                            try {
+                                hasData = prepData.hasPrepData(userId, key);
+                            } catch (SQLException e) {
+                                Rengetsu.getLOGGER().error("SQL Error", e);
+                                return event.reply("**[Error]** Database error").withEphemeral(true);
+                            }
+                            if (hasData) {
+                                return event.edit("Prepared effect with key `%s` already exists.".formatted(key))
+                                        .withComponents(ActionRow.of(
+                                                Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
+                                        )).withEphemeral(true);
+                            }
+
+                            return event.presentModal("Preparing", "prep:init_instead:%s".formatted(args[2]), List.of(
                                     ActionRow.of(
                                             TextInput.small("name", "Name", 0, 100)
                                                     .required(true)
@@ -67,31 +78,26 @@ public class PrepEditButton extends ButtonInteraction {
                             }
 
                             if (data == null) {
-                                return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                                        .content("Prepared effect with key `%s` does not exists.".formatted(key))
-                                        .addComponent(ActionRow.of(
-                                                Button.primary("prep:%d:%s:create_instead".formatted(userId, key), "Create instead")
-                                        ))
-                                        .build());
+                                return event.edit("Prepared effect with key `%s` does not exists.".formatted(key))
+                                        .withComponents(ActionRow.of(
+                                                Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
+                                        )).withEphemeral(true);
                             }
 
-                            if (!prepData.putTempData(data)) {
-                                return event.reply("**[Error]** A prepared effect with that key is currently being edited").withEphemeral(true);
-                            }
-
-                            return event.reply(PrepData.buildMenu(data));
+                            prepData.putTempData(data);
+                            return event.edit(PrepData.buildMenu(data));
                         }
                     }
 
-                    PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+                    PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
                     if (data == null) {
-                        return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+                        return event.edit("**[Error]** Cached data is missing, run the command again")
+                                .withComponents().withEmbeds().withEphemeral(true);
                     }
 
-                    switch (args[3]) {
+                    switch (args[1]) {
                         case "edit" -> {
-                            return event.presentModal("Edit descriptions", "prep:%d:%s:edit".formatted(data.userId,
-                                    data.key), List.of(
+                            return event.presentModal("Edit descriptions", "prep:edit:%d".formatted(data.uid), List.of(
                                     ActionRow.of(
                                             TextInput.small("name", "Name", 0, 100)
                                                     .required(true).prefilled(data.name)
@@ -104,8 +110,7 @@ public class PrepEditButton extends ButtonInteraction {
                             ));
                         }
                         case "params" -> {
-                            return event.presentModal("Edit parameters", "prep:%d:%s:params".formatted(data.userId,
-                                    data.key), List.of(
+                            return event.presentModal("Edit parameters", "prep:params:%d".formatted(data.uid), List.of(
                                     ActionRow.of(
                                             TextInput.small("params", "Parameters (comma separated)", 0, 1000)
                                                     .required(false).prefilled(String.join(", ", data.params))
@@ -113,8 +118,7 @@ public class PrepEditButton extends ButtonInteraction {
                             ));
                         }
                         case "add_roll" -> {
-                            return event.presentModal("Add diceroll", "prep:%d:%s:add_roll".formatted(data.userId,
-                                    data.key), List.of(
+                            return event.presentModal("Add diceroll", "prep:add_roll:%d".formatted(data.uid), List.of(
                                     ActionRow.of(
                                             TextInput.small("description", "Description", 0, 100)
                                                     .required(true)
@@ -130,8 +134,7 @@ public class PrepEditButton extends ButtonInteraction {
                             ));
                         }
                         case "add_calc" -> {
-                            return event.presentModal("Add calculation", "prep:%d:%s:add_calc".formatted(data.userId,
-                                    data.key), List.of(
+                            return event.presentModal("Add calculation", "prep:add_calc:%d".formatted(data.uid), List.of(
                                     ActionRow.of(
                                             TextInput.small("description", "Description", 0, 100)
                                                     .required(true)
@@ -151,8 +154,7 @@ public class PrepEditButton extends ButtonInteraction {
                                                                     rollData.query, false)).toList())
                                                     .build())
                                             .addComponent(ActionRow.of(
-                                                    SelectMenu.of("prep:%d:%s:del_roll".formatted(data.userId,
-                                                                    data.key),
+                                                    SelectMenu.of("prep:del_roll:%d".formatted(data.uid),
                                                             IntStream.range(0, data.dicerolls.size()).mapToObj(i ->
                                                                     SelectMenu.Option.of(data.dicerolls.get(i).description,
                                                                     String.valueOf(i))).toList()
@@ -160,8 +162,8 @@ public class PrepEditButton extends ButtonInteraction {
                                                             .withPlaceholder("Select dicerolls or calculations to remove")
                                             ))
                                             .addComponent(ActionRow.of(
-                                                            Button.danger("prep:%d:%s:cancel_menu".formatted(
-                                                                    data.userId, data.key), "Cancel")))
+                                                            Button.danger("prep:cancel_menu:%d".formatted(data.uid),
+                                                                    "Cancel")))
                                     .build());
                         }
                         case "cancel_menu" -> {}
@@ -236,14 +238,6 @@ public class PrepEditButton extends ButtonInteraction {
                                 Rengetsu.getLOGGER().error("SQL Error", e);
                                 return event.reply("**[Error]** Database error").withEphemeral(true);
                             }
-                        }
-                        case "no_save" -> {
-                            prepData.removeTempData(data);
-                            return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                    .addEmbed(EmbedCreateSpec.builder()
-                                            .title("Canceled %s %s".formatted(data.editing ? "changes to" : "creation of"
-                                                    , data.name)).build()
-                                    ).components(Collections.emptyList()).build());
                         }
                         case "delete" -> {
                             try {

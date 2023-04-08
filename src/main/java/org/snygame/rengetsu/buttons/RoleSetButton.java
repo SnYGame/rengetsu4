@@ -41,22 +41,23 @@ public class RoleSetButton extends ButtonInteraction {
 
                     String[] args = event.getCustomId().split(":");
 
-                    RoleData.Data data = roleData.getTempData(Long.parseLong(args[1]), Long.parseLong(args[2]));
+                    RoleData.Data data = roleData.getTempData(Integer.parseInt(args[2]));
                     if (data == null) {
-                        return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+                        return event.edit("**[Error]** Cached data is missing, run the command again")
+                                .withComponents().withEmbeds().withEphemeral(true);
                     }
 
-                    switch (args[3]) {
-                        case "add_join" -> data.addJoin = Boolean.parseBoolean(args[4]);
-                        case "add_inactive" -> data.addInactive = Boolean.parseBoolean(args[4]);
-                        case "requestable" -> data.requestable = Boolean.parseBoolean(args[4]) ? new RoleData.Data.Requestable(false, null) : null;
+                    switch (args[1]) {
+                        case "add_join" -> data.addJoin = Boolean.parseBoolean(args[3]);
+                        case "add_inactive" -> data.addInactive = Boolean.parseBoolean(args[3]);
+                        case "requestable" -> data.requestable = Boolean.parseBoolean(args[3]) ? new RoleData.Data.Requestable(false, null) : null;
                         case "temp" -> {
                             if (data.requestable != null) {
-                                data.requestable.temp = Boolean.parseBoolean(args[4]);
+                                data.requestable.temp = Boolean.parseBoolean(args[3]);
                             }
                         }
                         case "agreement" -> {
-                            return event.presentModal().withCustomId("role:%d:%d:agreement".formatted(data.roleId, data.serverId))
+                            return event.presentModal().withCustomId("role:agreement:%d".formatted(data.uid))
                                     .withTitle("Request agreement").withComponents(
                                             ActionRow.of(TextInput.paragraph("agreement", "Agreement (leave blank to remove)", 0, 1500)
                                                     .prefilled(data.requestable != null && data.requestable.agreement != null ?
@@ -65,17 +66,17 @@ public class RoleSetButton extends ButtonInteraction {
                         }
                         case "on_remove", "on_add" -> {
                             return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                    .content(args[3].equals("on_remove") ? "Select roles to add when this role is removed." :
+                                    .content(args[1].equals("on_remove") ? "Select roles to add when this role is removed." :
                                             "Select roles to remove when this role is added.")
                                     .embeds(Collections.emptyList())
                                     .addComponent(ActionRow.of(
-                                            SelectMenu.ofRole("role:%d:%d:%s".formatted(data.roleId, data.serverId, args[3]))
+                                            SelectMenu.ofRole("role:%s:%d".formatted(args[1], data.uid))
                                                     .withMaxValues(25)
-                                                    .withPlaceholder("Select roles to %s".formatted(args[3].equals("on_remove") ? "add" : "remove"))
+                                                    .withPlaceholder("Select roles to %s".formatted(args[1].equals("on_remove") ? "add" : "remove"))
                                     )).addComponent(ActionRow.of(
-                                            Button.danger("role:%d:%d:%s_none".formatted(data.roleId, data.serverId, args[3]),
+                                            Button.danger("role:%s_none:%d".formatted(args[1], data.uid),
                                                     "Clear"),
-                                            Button.danger("role:%d:%d:cancel_menu".formatted(data.roleId, data.serverId), "Cancel")))
+                                            Button.danger("role:cancel_menu:%d".formatted(data.uid), "Cancel")))
                                     .build());
                         }
                         case "on_remove_none" -> {
@@ -98,14 +99,6 @@ public class RoleSetButton extends ButtonInteraction {
                                 Rengetsu.getLOGGER().error("SQL Error", e);
                                 return event.reply("**[Error]** Database error").withEphemeral(true);
                             }
-                        }
-                        case "no_save" -> {
-                            roleData.removeTempData(data);
-                            return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                                    .addEmbed(EmbedCreateSpec.builder()
-                                            .title("Canceled changes to")
-                                            .description("<@&%d>".formatted(data.roleId)).build()
-                                    ).components(Collections.emptyList()).build());
                         }
                         case "clear" -> {
                             try {

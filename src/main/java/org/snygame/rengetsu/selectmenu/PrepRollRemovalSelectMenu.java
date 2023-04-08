@@ -29,13 +29,10 @@ public class PrepRollRemovalSelectMenu extends SelectMenuInteraction {
         return Mono.just(event.getInteraction().getUser().getId().asLong()).flatMap(userId -> {
             String[] args = event.getCustomId().split(":");
 
-            if (userId != Long.parseLong(args[1])) {
-                return event.reply("**[Error]** You do not have permission to do that").withEphemeral(true);
-            }
-
-            PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+            PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
             if (data == null) {
-                return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+                return event.edit("**[Error]** Cached data is missing, run the command again")
+                        .withComponents().withEmbeds().withEphemeral(true);
             }
 
             int[] remove = event.getValues().stream().mapToInt(Integer::parseInt).sorted().toArray();

@@ -267,16 +267,16 @@ public class PrepData extends TableData {
         }
     }
 
-    public static InteractionApplicationCommandCallbackSpec buildMenu(Data prepData) {
+    public static InteractionApplicationCommandCallbackSpec buildMenu(Data data) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
-        builder.content("Key: %s".formatted(prepData.key));
+        builder.content("Key: %s".formatted(data.key)).ephemeral(true);
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
-        embed.title(prepData.name);
-        embed.description(prepData.description);
-        if (prepData.params.length > 0) {
-            embed.addField("Parameters", String.join(", ", prepData.params), false);
+        embed.title(data.name);
+        embed.description(data.description);
+        if (data.params.length > 0) {
+            embed.addField("Parameters", String.join(", ", data.params), false);
         }
-        for (Data.RollData rollData: prepData.dicerolls) {
+        for (Data.RollData rollData: data.dicerolls) {
             if (rollData instanceof Data.DicerollData diceroll && diceroll.variable != null) {
                 embed.addField(rollData.description, "%s = %s".formatted(diceroll.variable, rollData.query), false);
             } else {
@@ -284,61 +284,67 @@ public class PrepData extends TableData {
             }
         }
 
-        String key = "%d:%s".formatted(prepData.userId, prepData.key);
-
         builder.addComponent(ActionRow.of(
-                Button.primary("prep:%s:edit".formatted(key), "Edit description"),
-                Button.primary("prep:%s:params".formatted(key), "Edit parameters")
+                Button.primary("prep:edit:%d".formatted(data.uid), "Edit description"),
+                Button.primary("prep:params:%d".formatted(data.uid), "Edit parameters")
         ));
 
         builder.addComponent(ActionRow.of(
-                Button.primary("prep:%s:add_roll".formatted(key), "Add diceroll"),
-                Button.primary("prep:%s:add_calc".formatted(key), "Add calculation"),
-                Button.primary("prep:%s:del_roll".formatted(key), "Remove dicerolls/calculations")
-                        .disabled(prepData.dicerolls.isEmpty())
+                Button.primary("prep:add_roll:%d".formatted(data.uid), "Add diceroll"),
+                Button.primary("prep:add_calc:%d".formatted(data.uid), "Add calculation"),
+                Button.primary("prep:del_roll:%d".formatted(data.uid), "Remove dicerolls/calculations")
+                        .disabled(data.dicerolls.isEmpty())
         ));
 
-        if (prepData.editing) {
+        if (data.editing) {
             builder.addComponent(ActionRow.of(
-                    Button.success("prep:%s:save".formatted(key), "Save"),
-                    Button.danger("prep:%s:no_save".formatted(key), "Cancel"),
-                    Button.danger("prep:%s:delete".formatted(key), "Delete")
+                    Button.success("prep:save:%d".formatted(data.uid), "Save"),
+                    Button.danger("prep:delete:%d".formatted(data.uid), "Delete")
             ));
         } else {
             builder.addComponent(ActionRow.of(
-                    Button.success("prep:%s:save".formatted(key), "Save"),
-                    Button.danger("prep:%s:no_save".formatted(key), "Cancel")
+                    Button.success("prep:save:%d".formatted(data.uid), "Save")
             ));
         }
 
         return builder.addEmbed(embed.build()).build();
     }
 
-    private final HashMap<Key, Data> tempData = new HashMap<>();
+    private final HashMap<Integer, Data> tempData = new HashMap<>();
+    private final HashMap<Key, Integer> tempKeys = new HashMap<>();
 
-    public Data getTempData(long userId, String key) {
+    public Data getTempData(int uid) {
         synchronized (tempData) {
-            return tempData.get(new Key(userId, key));
+            return tempData.get(uid);
         }
     }
 
     public void removeTempData(Data data) {
         synchronized (tempData) {
-            tempData.remove(new Key(data.userId, data.key));
+            tempKeys.remove(new Key(data.userId, data.key));
+            tempData.remove(data.uid);
             data.removalTask.cancel(false);
         }
     }
 
-    public boolean putTempData(Data data) {
+    public void putTempData(Data data) {
         synchronized (tempData) {
             Key key = new Key(data.userId, data.key);
-            if (tempData.containsKey(key)) {
-                return false;
+            if (tempKeys.containsKey(key)) {
+                int uid = tempKeys.remove(key);
+                Data temp = tempData.remove(uid);
+                if (temp != null) {
+                    temp.removalTask.cancel(false);
+                }
             }
 
-            data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 15, TimeUnit.MINUTES);
-            tempData.put(key, data);
-            return true;
+            data.removalTask = TaskManager.service.schedule(() -> {
+                tempData.remove(data.uid);
+                tempKeys.remove(key);
+            }, 15, TimeUnit.MINUTES);
+
+            tempKeys.put(key, data.uid);
+            tempData.put(data.uid, data);
         }
     }
 
@@ -347,6 +353,9 @@ public class PrepData extends TableData {
     private record Key(long userId, String key) {}
 
     public static class Data {
+        private static int nextUid;
+
+        public final int uid;
         public long userId;
         public String key;
         public String name;
@@ -362,6 +371,8 @@ public class PrepData extends TableData {
         public Data(long userId, String key) {
             this.userId = userId;
             this.key = key;
+
+            uid = nextUid++;
         }
 
         public static sealed abstract class RollData permits DicerollData, CalculationData {
