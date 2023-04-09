@@ -1,0 +1,14 @@
+{
+  "name": "/here",
+  "pages": [
+    {
+      "title": "Here Command",
+      "fields": [
+        {
+          "name": "Usage: /here <role>",
+          "value": "Using this command will ping every online user who has this role."
+        }
+      ]
+    }
+  ]
+}

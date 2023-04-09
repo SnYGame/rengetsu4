@@ -19,10 +19,15 @@ public class Manual {
     private final ArrayList<Jump> jumps = new ArrayList<>();
 
     public Manual(String index) throws IOException {
-        String[] files = Resources.getResourceFileAsString("manual/%s".formatted(index)).split(",");
+        String[] files = Resources.getResourceFileAsString("manual/%s".formatted(index)).split("\\s");
         JacksonResources d4jMapper = JacksonResources.create();
         ObjectMapper objectMapper = d4jMapper.getObjectMapper();
+
         for (String filename: files) {
+            if (filename.isBlank()) {
+                continue;
+            }
+
             String json = Resources.getResourceFileAsString("manual/%s".formatted(filename));
             Section section = objectMapper.readValue(json, Section.class);
             jumps.add(new Jump(section.name, pages.size()));
