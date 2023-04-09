@@ -32,14 +32,14 @@ public class DiceCommand extends SlashCommand {
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asBoolean).orElse(false);
 
-        List<Diceroll> dicerolls = event.getOption("queries").flatMap(ApplicationCommandInteractionOption::getValue)
+        List<Diceroll> dicerolls = event.getOption("input").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .map(str -> str.split(";")).stream().flatMap(Arrays::stream)
                 .filter(str -> !str.isBlank()).map(String::strip).map(Diceroll::parse)
                 .toList();
 
         if (dicerolls.isEmpty()) {
-            return event.reply("**[Error]** No queries").withEphemeral(true);
+            return event.reply("**[Error]** No input").withEphemeral(true);
         }
 
         List<String> errors = dicerolls.stream().filter(Diceroll::hasError)

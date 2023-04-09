@@ -63,7 +63,7 @@ public class Diceroll {
             match = DICE_RE.matcher(query);
 
             if (!match.matches()) {
-                diceroll.error = "Invalid query: %s".formatted(query);
+                diceroll.error = "Invalid input: %s".formatted(query);
                 return diceroll;
             }
 
