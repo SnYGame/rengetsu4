@@ -4,13 +4,13 @@
   "options": [
     {
       "name": "role",
-      "description": "Role to add",
+      "description": "Role to add or remove",
       "type": 8,
       "required": true
     },
     {
       "name": "duration",
-      "description": "Amount of time to set the timer for",
+      "description": "Amount of time to keep the role for",
       "type": 3,
       "required": false
     }

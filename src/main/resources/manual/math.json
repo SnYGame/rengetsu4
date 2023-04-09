@@ -1,0 +1,182 @@
+{
+  "name": "/math",
+  "pages": [
+    {
+      "title": "Math Command",
+      "fields": [
+        {
+          "name": "Usage: /math <inputs>",
+          "value": "This will calculate the values specified by **inputs** and show the results."
+        },
+        {
+          "name": "Usage: /math <inputs> [hide]",
+          "value": "Setting the **hide** option to true will cause the result to be only visible to you."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 1",
+      "subtitle": "Basic numerical operations",
+      "fields": [
+        {
+          "name": "X + Y",
+          "value": "Adds two numbers."
+        },
+        {
+          "name": "X - Y",
+          "value": "Subtracts two numbers."
+        },
+        {
+          "name": "X * Y",
+          "value": "Multiplies two numbers."
+        },
+        {
+          "name": "X / Y",
+          "value": "Divides two numbers."
+        },
+        {
+          "name": "X // Y",
+          "value": "Divides two numbers and rounds down the result."
+        },
+        {
+          "name": "X % Y",
+          "value": "Returns the division remainder of two numbers."
+        },
+        {
+          "name": "X ^ Y",
+          "value": "Takes the power of one number to another."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 2",
+      "subtitle": "Comparison operations",
+      "fields": [
+        {
+          "name": "X == Y",
+          "value": "Returns if the two values are equal."
+        },
+        {
+          "name": "X != Y",
+          "value": "Returns if the two values are not equal."
+        },
+        {
+          "name": "X < Y",
+          "value": "Returns if the left number is less than the right number."
+        },
+        {
+          "name": "X > Y",
+          "value": "Returns if the left number is greater than the right number."
+        },
+        {
+          "name": "X <= Y",
+          "value": "Returns if the left number is less than or equal to the right number."
+        },
+        {
+          "name": "X <= Y",
+          "value": "Returns if the left number is greater than or equal to the right number."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 3",
+      "subtitle": "Boolean operations",
+      "fields": [
+        {
+          "name": "X && Y",
+          "value": "Returns if both booleans are true."
+        },
+        {
+          "name": "X || Y",
+          "value": "Returns if either booleans are true."
+        },
+        {
+          "name": "!X",
+          "value": "Returns if the boolean is false."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 4",
+      "subtitle": "Other operations",
+      "fields": [
+        {
+          "name": "(X)",
+          "value": "Evaluates the values in parentheses first."
+        },
+        {
+          "name": "X ? Y : Z",
+          "value": "If **X** is true, returns **Y**. Otherwise, return **Z**."
+        },
+        {
+          "name": "X = Y",
+          "value": "Stores the value of the right side to the variable on the left."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 5",
+      "subtitle": "Other values",
+      "fields": [
+        {
+          "name": "true",
+          "value": "Evaluates to true."
+        },
+        {
+          "name": "false",
+          "value": "Evaluates to false."
+        },
+        {
+          "name": "XdY[dlN][dhM][u]",
+          "value": "Rolls **X** dice with **Y** faces. The drop lowest, drop highest, and unique modifiers are available."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 6",
+      "subtitle": "Built-in functions",
+      "fields": [
+        {
+          "name": "sqrt(X)",
+          "value": "Returns the square root of a number."
+        },
+        {
+          "name": "ln(X)",
+          "value": "Returns the natural log of a number."
+        },
+        {
+          "name": "sin(X)",
+          "value": "Returns the sine of a number."
+        },
+        {
+          "name": "cos(X)",
+          "value": "Returns the cosine of a number."
+        },
+        {
+          "name": "tan(X)",
+          "value": "Returns the tangent of a number."
+        },
+        {
+          "name": "floor(X)",
+          "value": "Rounds down a number."
+        },
+        {
+          "name": "ceil(X)",
+          "value": "Rounds up a number."
+        },
+        {
+          "name": "trunc(X)",
+          "value": "Rounds a number towards zero."
+        },
+        {
+          "name": "abs(X)",
+          "value": "Returns the absolute value of a number."
+        },
+        {
+          "name": "fact(X)",
+          "value": "Returns the factorial of a number."
+        }
+      ]
+    }
+  ]
+}
