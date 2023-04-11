@@ -119,13 +119,13 @@ public class PrepEditButton extends ButtonInteraction {
                 ));
             }
             case "add_roll" -> {
-                return event.presentModal("Add diceroll", "prep:add_roll:%d".formatted(data.uid), List.of(
+                return event.presentModal("Add dice roll", "prep:add_roll:%d".formatted(data.uid), List.of(
                         ActionRow.of(
                                 TextInput.small("description", "Description", 0, 100)
                                         .required(true)
                         ),
                         ActionRow.of(
-                                TextInput.small("roll", "Diceroll",
+                                TextInput.small("roll", "Dice roll",
                                         0, 500).required(true)
                         ),
                         ActionRow.of(
@@ -160,7 +160,7 @@ public class PrepEditButton extends ButtonInteraction {
                                                         SelectMenu.Option.of(data.dicerolls.get(i).description,
                                                                 String.valueOf(i))).toList()
                                         ).withMaxValues(data.dicerolls.size())
-                                        .withPlaceholder("Select dicerolls or calculations to remove")
+                                        .withPlaceholder("Select dice rolls or calculations to remove")
                         ))
                         .addComponent(ActionRow.of(
                                 Button.danger("prep:cancel_menu:%d".formatted(data.uid),

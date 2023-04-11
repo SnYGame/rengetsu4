@@ -15,7 +15,7 @@
       ]
     },
     {
-      "title": "Diceroll Syntax 1",
+      "title": "Dice Roll Syntax 1",
       "subtitle": "Basic dice roll parameters",
       "fields": [
         {
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "title": "Diceroll Syntax 2",
+      "title": "Dice Roll Syntax 2",
       "subtitle": "Advanced dice parameters",
       "fields": [
         {
@@ -59,7 +59,7 @@
       ]
     },
     {
-      "title": "Diceroll Syntax 3",
+      "title": "Dice Roll Syntax 3",
       "subtitle": "Options introduction",
       "fields": [
         {
@@ -69,7 +69,7 @@
       ]
     },
     {
-      "title": "Diceroll Syntax 4",
+      "title": "Dice Roll Syntax 4",
       "subtitle": "Options that affect the result",
       "fields": [
         {
@@ -95,7 +95,7 @@
       ]
     },
     {
-      "title": "Diceroll Syntax 5",
+      "title": "Dice Roll Syntax 5",
       "subtitle": "Options that affect how results are displayed",
       "fields": [
         {

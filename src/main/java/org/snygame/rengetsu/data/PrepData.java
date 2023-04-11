@@ -290,9 +290,9 @@ public class PrepData extends TableData {
         ));
 
         builder.addComponent(ActionRow.of(
-                Button.primary("prep:add_roll:%d".formatted(data.uid), "Add diceroll"),
+                Button.primary("prep:add_roll:%d".formatted(data.uid), "Add dice roll"),
                 Button.primary("prep:add_calc:%d".formatted(data.uid), "Add calculation"),
-                Button.primary("prep:del_roll:%d".formatted(data.uid), "Remove dicerolls/calculations")
+                Button.primary("prep:del_roll:%d".formatted(data.uid), "Remove dice rolls/calculations")
                         .disabled(data.dicerolls.isEmpty())
         ));
 

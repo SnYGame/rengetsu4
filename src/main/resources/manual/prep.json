@@ -1,0 +1,156 @@
+{
+  "name": "/prepare",
+  "pages": [
+    {
+      "title": "Prepared Effects Command 1",
+      "subtitle": "Prepared effects are used to preload a description of your effects along with any required dice rolls and calculations for use in incidents for efficiency.\n\nThe following commands detail creation and editing of effects.",
+      "fields": [
+        {
+          "name": "Usage: /prepare create <key>",
+          "value": "This command sets up an effect. The **key** is an identifier for your effect that you can use to reference it with other commands. This opens the description editor."
+        },
+        {
+          "name": "Usage: /prepare edit <key>",
+          "value": "This command opens up the edit menu for the effect corresponding to the **key**."
+        },
+        {
+          "name": "Usage: /prepare delete <key>",
+          "value": "This command deletes the effect with the given **key**."
+        }
+      ]
+    },
+    {
+      "title": "Prepared Effects Command 2",
+      "subtitle": "The following commands detail usage of effects.",
+      "fields": [
+        {
+          "name": "Usage: /prepare cast <key>",
+          "value": "This command displays the name and description for the effect corresponding to the **key**, along with the result of executing its dice rolls and calculations."
+        },
+        {
+          "name": "Usage: /prepare cast <key> [arguments]",
+          "value": "If the effect has any parameters, its **arguments** may be passed in as a comma separated list of values."
+        },
+        {
+          "name": "Usage: /prepare list",
+          "value": "This command lists out your prepared effects."
+        },
+        {
+          "name": "Usage: /prepare list [user]",
+          "value": "If a **user** is specified, that **user**'s prepared effects are listed instead."
+        },
+        {
+          "name": "Usage: /prepare show <key>",
+          "value": "This command displays the information of your effect corresponding to the **key** specified."
+        }
+      ]
+    },
+    {
+      "title": "Prepared Effects Command 3",
+      "subtitle": "The following commands detail the borrow subcommand.",
+      "fields": [
+        {
+          "name": "Usage: /prepare borrow cast <user> <key>",
+          "value": "This command is identical to the regular **/prepare cast** command using **user**'s effect instead."
+        },
+        {
+          "name": "Usage: /prepare borrow cast <user> <key> [arguments]",
+          "value": "Similarly, **arguments** may be provided as a comma separated list of values."
+        },
+        {
+          "name": "Usage: /prepare borrow show <user> <key>",
+          "value": "This command is identical to the regular **/prepare show** command using **user**'s effects instead."
+        }
+      ]
+    },
+    {
+      "title": "Effect Edit Menu",
+      "fields": [
+        {
+          "name": "Edit description",
+          "value": "This opens the description editor, allowing you to change the name or description of your effect."
+        },
+        {
+          "name": "Edit parameters",
+          "value": "This opens the parameter editor, allowing you to set what parameters your effect uses."
+        },
+        {
+          "name": "Add dice roll",
+          "value": "This opens the dice roll editor, allowing you to preload a dice command that is executed when the effect is cast."
+        },
+        {
+          "name": "Add calculation",
+          "value": "This opens the calculation editor, allowing you to preload a math command that is executed when the effect is cast."
+        },
+        {
+          "name": "Remove dice rolls/calculations",
+          "value": "This opens a selection menu to specify which dice rolls or calculations to remove."
+        },
+        {
+          "name": "Save",
+          "value": "This saves any edits to the effect."
+        },
+        {
+          "name": "Cancel",
+          "value": "This discards any edits to the effect."
+        }
+      ]
+    },
+    {
+      "title": "Effect Description Editor",
+      "subtitle": "Changes the name and description of your effect",
+      "fields": [
+        {
+          "name": "Name",
+          "value": "Specify the name of the effect."
+        },
+        {
+          "name": "Description (optional)",
+          "value": "The description of the effect goes here. Discord markdown formatting is supported."
+        }
+      ]
+    },
+    {
+      "title": "Effect Parameter Editor",
+      "subtitle": "Set the parameters of the effect",
+      "fields": [
+        {
+          "name": "Parameters (optional)",
+          "value": "List out the names of the parameters that the effect uses. Leave blank if no arguments are required. Parameter names may only contain letters, numbers, or underscore, and cannot begin with a number."
+        }
+      ]
+    },
+    {
+      "title": "Effect Dice Roll Editor",
+      "subtitle": "Prepares a dice command",
+      "fields": [
+        {
+          "name": "Description",
+          "value": "The description of what this roll is for."
+        },
+        {
+          "name": "Dice roll",
+          "value": "The dice command input to execute."
+        },
+        {
+          "name": "Result variable (optional)",
+          "value": "If specified, the result of the dice roll will be stored in this variable. Variable names may only contain letters, numbers, or underscore, and cannot begin with a number."
+        }
+      ]
+    },
+    {
+      "title": "Effect Calculation Editor",
+      "subtitle": "Prepares a math command",
+      "fields": [
+        {
+          "name": "Description",
+          "value": "The description of what this calculation is for."
+        },
+        {
+          "name": "Calculation",
+          "value": "The math command input to execute."
+        }
+      ]
+    }
+  ]
+}
