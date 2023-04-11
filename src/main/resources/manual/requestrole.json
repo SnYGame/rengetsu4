@@ -1,0 +1,18 @@
+{
+  "name": "/requestrole",
+  "pages": [
+    {
+      "title": "Request Role Command",
+      "fields": [
+        {
+          "name": "Usage: /requestrole <role>",
+          "value": "If the **role** is requestable, this command will give you that **role**. If you already have that **role**, it will be removed instead. Some **roles** may require you to make an agreement before you may receive it."
+        },
+        {
+          "name": "Usage: /requestrole <role> [duration]",
+          "value": "Some **roles** may only be allowed to be given for a temporary amount of time. For those, the **duration** must be specified."
+        }
+      ]
+    }
+  ]
+}
