@@ -4,7 +4,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import org.snygame.rengetsu.Rengetsu;
-import org.snygame.rengetsu.util.Diceroll;
+import org.snygame.rengetsu.util.DiceRoll;
 import org.snygame.rengetsu.util.functions.MapFirstElse;
 import org.snygame.rengetsu.util.functions.StringSplitPredicate;
 import reactor.core.publisher.Flux;
@@ -32,18 +32,18 @@ public class DiceCommand extends SlashCommand {
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asBoolean).orElse(false);
 
-        List<Diceroll> dicerolls = event.getOption("input").flatMap(ApplicationCommandInteractionOption::getValue)
+        List<DiceRoll> diceRolls = event.getOption("input").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .map(str -> str.split(";")).stream().flatMap(Arrays::stream)
-                .filter(str -> !str.isBlank()).map(String::strip).map(Diceroll::parse)
+                .filter(str -> !str.isBlank()).map(String::strip).map(DiceRoll::parse)
                 .toList();
 
-        if (dicerolls.isEmpty()) {
+        if (diceRolls.isEmpty()) {
             return event.reply("**[Error]** No input").withEphemeral(true);
         }
 
-        List<String> errors = dicerolls.stream().filter(Diceroll::hasError)
-                .map(diceroll -> "`%s` **[Error]** %s\n".formatted(diceroll.shortRepr(), diceroll.getError()))
+        List<String> errors = diceRolls.stream().filter(DiceRoll::hasError)
+                .map(diceRoll -> "`%s` **[Error]** %s\n".formatted(diceRoll.shortRepr(), diceRoll.getError()))
                 .toList();
 
         if (!errors.isEmpty()) {
@@ -53,19 +53,19 @@ public class DiceCommand extends SlashCommand {
                             msg -> event.createFollowup(msg).withEphemeral(true))).then();
         }
 
-        if (dicerolls.stream().mapToInt(Diceroll::getRepeat).sum() > Diceroll.MAX_ROLLS) {
-            return event.reply("**[Error]** Max rolls is %d".formatted(Diceroll.MAX_ROLLS)).withEphemeral(true);
+        if (diceRolls.stream().mapToInt(DiceRoll::getRepeat).sum() > DiceRoll.MAX_ROLLS) {
+            return event.reply("**[Error]** Max rolls is %d".formatted(DiceRoll.MAX_ROLLS)).withEphemeral(true);
         } else {
             return event.deferReply().withEphemeral(ephemeral)
-                    .then(delayedHandle(event, ephemeral, dicerolls));
+                    .then(delayedHandle(event, ephemeral, diceRolls));
         }
     }
 
-    private Mono<Void> delayedHandle(ChatInputInteractionEvent event, boolean ephemeral, List<Diceroll> dicerolls) {
-        return Flux.fromStream(dicerolls.stream().flatMap(diceroll -> IntStream.range(0, diceroll.getRepeat()).mapToObj(
-                        i -> "`%s%s` %s\n".formatted(diceroll.shortRepr(),
-                                diceroll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
-                                diceroll.roll())
+    private Mono<Void> delayedHandle(ChatInputInteractionEvent event, boolean ephemeral, List<DiceRoll> diceRolls) {
+        return Flux.fromStream(diceRolls.stream().flatMap(diceRoll -> IntStream.range(0, diceRoll.getRepeat()).mapToObj(
+                        i -> "`%s%s` %s\n".formatted(diceRoll.shortRepr(),
+                                diceRoll.getRepeat() > 1 ? "(%d)".formatted(i + 1) : "",
+                                diceRoll.roll())
                 ))).subscribeOn(Schedulers.boundedElastic())
                 .windowUntil(StringSplitPredicate.get(2000), true)
                 .flatMap(stringFlux -> stringFlux.collect(Collectors.joining()))

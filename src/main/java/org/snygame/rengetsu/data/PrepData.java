@@ -116,7 +116,7 @@ public class PrepData extends TableData {
                 setPrepDataStmt.setString(2, data.key);
                 setPrepDataStmt.setString(3, data.name);
                 setPrepDataStmt.setString(4, data.description);
-                setPrepDataStmt.setInt(5, data.dicerolls.size());
+                setPrepDataStmt.setInt(5, data.rolls.size());
                 setPrepDataStmt.setInt(6, data.varCount);
                 setPrepDataStmt.setInt(7, data.params.length);
                 setPrepDataStmt.executeUpdate();
@@ -135,14 +135,14 @@ public class PrepData extends TableData {
                 addPrepCalculationStmt.setLong(1, data.userId);
                 addPrepCalculationStmt.setString(2, data.key);
 
-                for (int i = 0; i < data.dicerolls.size(); i++) {
-                    switch (data.dicerolls.get(i)) {
-                        case Data.DicerollData dicerollData -> {
+                for (int i = 0; i < data.rolls.size(); i++) {
+                    switch (data.rolls.get(i)) {
+                        case Data.DiceRollData diceRollData -> {
                             addPrepDicerollsStmt.setInt(3, i);
-                            addPrepDicerollsStmt.setString(4, dicerollData.description);
-                            addPrepDicerollsStmt.setString(5, dicerollData.query);
-                            addPrepDicerollsStmt.setString(6, dicerollData.variable);
-                            addPrepDicerollsStmt.setByte(7, dicerollData.result);
+                            addPrepDicerollsStmt.setString(4, diceRollData.description);
+                            addPrepDicerollsStmt.setString(5, diceRollData.query);
+                            addPrepDicerollsStmt.setString(6, diceRollData.variable);
+                            addPrepDicerollsStmt.setByte(7, diceRollData.result);
                             addPrepDicerollsStmt.executeUpdate();
                         }
                         case Data.CalculationData calculationData -> {
@@ -226,11 +226,11 @@ public class PrepData extends TableData {
                 byte[] bytecode = rs.getBytes("bytecode");
 
                 if (bytecode == null) {
-                    prepData.dicerolls.add(new Data.DicerollData(rs.getString("descr"),
+                    prepData.rolls.add(new Data.DiceRollData(rs.getString("descr"),
                             rs.getString("query"), rs.getString("variable"),
                             rs.getByte("result")));
                 } else {
-                    prepData.dicerolls.add(new Data.CalculationData(rs.getString("descr"),
+                    prepData.rolls.add(new Data.CalculationData(rs.getString("descr"),
                             rs.getString("query"), bytecode));
                 }
             }
@@ -276,8 +276,8 @@ public class PrepData extends TableData {
         if (data.params.length > 0) {
             embed.addField("Parameters", String.join(", ", data.params), false);
         }
-        for (Data.RollData rollData: data.dicerolls) {
-            if (rollData instanceof Data.DicerollData diceroll && diceroll.variable != null) {
+        for (Data.RollData rollData: data.rolls) {
+            if (rollData instanceof Data.DiceRollData diceroll && diceroll.variable != null) {
                 embed.addField(rollData.description, "%s = %s".formatted(diceroll.variable, rollData.query.replace("*", "\\*")), false);
             } else {
                 embed.addField(rollData.description, rollData.query.replace("*", "\\*"), false);
@@ -293,7 +293,7 @@ public class PrepData extends TableData {
                 Button.primary("prep:add_roll:%d".formatted(data.uid), "Add dice roll"),
                 Button.primary("prep:add_calc:%d".formatted(data.uid), "Add calculation"),
                 Button.primary("prep:del_roll:%d".formatted(data.uid), "Remove dice rolls/calculations")
-                        .disabled(data.dicerolls.isEmpty())
+                        .disabled(data.rolls.isEmpty())
         ));
 
         if (data.editing) {
@@ -362,7 +362,7 @@ public class PrepData extends TableData {
         public String description;
         public String[] params = new String[0];
         public boolean editing = true;
-        public final ArrayList<RollData> dicerolls = new ArrayList<>();
+        public final ArrayList<RollData> rolls = new ArrayList<>();
         public final ArrayList<ParameterData> parameterData = new ArrayList<>();
         public int varCount;
 
@@ -375,7 +375,7 @@ public class PrepData extends TableData {
             uid = nextUid++;
         }
 
-        public static sealed abstract class RollData permits DicerollData, CalculationData {
+        public static sealed abstract class RollData permits DiceRollData, CalculationData {
             public String description;
             public String query;
 
@@ -385,16 +385,16 @@ public class PrepData extends TableData {
             }
         }
 
-        public static final class DicerollData extends RollData {
+        public static final class DiceRollData extends RollData {
             public String variable;
             public byte result;
 
-            public DicerollData(String description, String query, String variable) {
+            public DiceRollData(String description, String query, String variable) {
                 super(description, query);
                 this.variable = variable;
             }
 
-            public DicerollData(String description, String query, String variable, byte result) {
+            public DiceRollData(String description, String query, String variable, byte result) {
                 super(description, query);
                 this.variable = variable;
                 this.result = result;

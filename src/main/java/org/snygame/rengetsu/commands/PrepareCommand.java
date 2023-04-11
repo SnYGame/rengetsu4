@@ -14,7 +14,7 @@ import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
-import org.snygame.rengetsu.util.Diceroll;
+import org.snygame.rengetsu.util.DiceRoll;
 import org.snygame.rengetsu.util.math.Interpreter;
 import org.snygame.rengetsu.util.math.Type;
 import reactor.core.publisher.Mono;
@@ -398,45 +398,45 @@ public class PrepareCommand extends SlashCommand {
                     .collect(Collectors.joining(", ")),false);
         }
 
-        embed.addAllFields(data.dicerolls.stream().map(rollData -> {
+        embed.addAllFields(data.rolls.stream().map(rollData -> {
             switch (rollData) {
-                case PrepData.Data.DicerollData dicerollData -> {
-                    Diceroll diceroll = Diceroll.parse(dicerollData.query);
+                case PrepData.Data.DiceRollData diceRoll -> {
+                    DiceRoll diceroll = DiceRoll.parse(diceRoll.query);
                     if (diceroll.getRepeat() == 1) {
-                        Diceroll.Result result = diceroll.roll();
-                        if (dicerollData.variable != null) {
-                            variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
-                            return EmbedCreateFields.Field.of(dicerollData.description,
-                                    "`%s = %s` %s".formatted(dicerollData.variable, dicerollData.query, result.toString())
+                        DiceRoll.Result result = diceroll.roll();
+                        if (diceRoll.variable != null) {
+                            variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
+                            return EmbedCreateFields.Field.of(diceRoll.description,
+                                    "`%s = %s` %s".formatted(diceRoll.variable, diceRoll.query, result.toString())
                                     , false);
                         }
 
-                        return EmbedCreateFields.Field.of(dicerollData.description,
-                                "`%s` %s".formatted(dicerollData.query, result.toString())
+                        return EmbedCreateFields.Field.of(diceRoll.description,
+                                "`%s` %s".formatted(diceRoll.query, result.toString())
                                 , false);
                     } else {
-                        return EmbedCreateFields.Field.of(dicerollData.description,
-                                "`%s`\n%s".formatted(dicerollData.variable == null ? dicerollData.query : "%s = %s"
-                                                .formatted(dicerollData.variable, dicerollData.query),
+                        return EmbedCreateFields.Field.of(diceRoll.description,
+                                "`%s`\n%s".formatted(diceRoll.variable == null ? diceRoll.query : "%s = %s"
+                                                .formatted(diceRoll.variable, diceRoll.query),
                                         IntStream.range(0, diceroll.getRepeat())
                                                 .mapToObj(__ -> {
-                                                    Diceroll.Result result = diceroll.roll();
-                                                    if (dicerollData.variable != null) {
-                                                        variables[dicerollData.result] = BigInteger.valueOf(result.actualSum());
+                                                    DiceRoll.Result result = diceroll.roll();
+                                                    if (diceRoll.variable != null) {
+                                                        variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
                                                     }
                                                     return result.toString();
                                                 }).collect(Collectors.joining("\n")))
                                 , false);
                     }
                 }
-                case PrepData.Data.CalculationData calculationData -> {
+                case PrepData.Data.CalculationData calculation -> {
                     try {
-                        return EmbedCreateFields.Field.of(calculationData.description,
-                                "`%s` %s".formatted(calculationData.query,
-                                        Interpreter.interpret(calculationData.bytecode, variables)), false);
+                        return EmbedCreateFields.Field.of(calculation.description,
+                                "`%s` %s".formatted(calculation.query,
+                                        Interpreter.interpret(calculation.bytecode, variables)), false);
                     } catch (Exception e) {
-                        return EmbedCreateFields.Field.of(calculationData.description,
-                                "`%s` Error: %s".formatted(calculationData.query,
+                        return EmbedCreateFields.Field.of(calculation.description,
+                                "`%s` Error: %s".formatted(calculation.query,
                                         e.getMessage()), false);
                     }
                 }

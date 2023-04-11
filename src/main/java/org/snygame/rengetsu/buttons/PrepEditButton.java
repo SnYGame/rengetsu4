@@ -150,16 +150,16 @@ public class PrepEditButton extends ButtonInteraction {
                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                         .content("")
                         .addEmbed(EmbedCreateSpec.builder()
-                                .fields(data.dicerolls.stream().map(rollData ->
+                                .fields(data.rolls.stream().map(rollData ->
                                         EmbedCreateFields.Field.of(rollData.description,
                                                 rollData.query, false)).toList())
                                 .build())
                         .addComponent(ActionRow.of(
                                 SelectMenu.of("prep:del_roll:%d".formatted(data.uid),
-                                                IntStream.range(0, data.dicerolls.size()).mapToObj(i ->
-                                                        SelectMenu.Option.of(data.dicerolls.get(i).description,
+                                                IntStream.range(0, data.rolls.size()).mapToObj(i ->
+                                                        SelectMenu.Option.of(data.rolls.get(i).description,
                                                                 String.valueOf(i))).toList()
-                                        ).withMaxValues(data.dicerolls.size())
+                                        ).withMaxValues(data.rolls.size())
                                         .withPlaceholder("Select dice rolls or calculations to remove")
                         ))
                         .addComponent(ActionRow.of(
@@ -173,11 +173,11 @@ public class PrepEditButton extends ButtonInteraction {
                     TypeChecker typeChecker = new TypeChecker();
                     Type.VarType[] paramTypes = typeChecker.addVariables(data.params);
 
-                    for (PrepData.Data.RollData rollData: data.dicerolls) {
+                    for (PrepData.Data.RollData rollData: data.rolls) {
                         switch (rollData) {
-                            case PrepData.Data.DicerollData diceroll -> {
-                                if (diceroll.variable != null) {
-                                    typeChecker.addVariable(diceroll.variable, Type.FixedType.NUM);
+                            case PrepData.Data.DiceRollData diceRoll -> {
+                                if (diceRoll.variable != null) {
+                                    typeChecker.addVariable(diceRoll.variable, Type.FixedType.NUM);
                                 }
                             }
                             case PrepData.Data.CalculationData calculation -> {
@@ -192,11 +192,11 @@ public class PrepEditButton extends ButtonInteraction {
                     }
 
                     BytecodeGenerator bytecodeGenerator = new BytecodeGenerator(data.params);
-                    for (PrepData.Data.RollData rollData: data.dicerolls) {
+                    for (PrepData.Data.RollData rollData: data.rolls) {
                         switch (rollData) {
-                            case PrepData.Data.DicerollData diceroll -> {
-                                if (diceroll.variable != null) {
-                                    diceroll.result = bytecodeGenerator.getVarIndex(diceroll.variable);
+                            case PrepData.Data.DiceRollData diceRoll -> {
+                                if (diceRoll.variable != null) {
+                                    diceRoll.result = bytecodeGenerator.getVarIndex(diceRoll.variable);
                                 }
                             }
                             case PrepData.Data.CalculationData calculation -> {

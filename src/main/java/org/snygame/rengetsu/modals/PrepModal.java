@@ -1,27 +1,21 @@
 package org.snygame.rengetsu.modals;
 
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.TextInput;
-import discord4j.discordjson.possible.Possible;
 import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
-import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.parser.RengCalcLexer;
 import org.snygame.rengetsu.parser.RengCalcParser;
-import org.snygame.rengetsu.util.Diceroll;
+import org.snygame.rengetsu.util.DiceRoll;
 import org.snygame.rengetsu.util.math.ASTGenerator;
 import org.snygame.rengetsu.util.math.ASTNode;
-import org.snygame.rengetsu.util.math.BytecodeGenerator;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class PrepModal extends ModalInteraction {
     private static final Pattern VAR_RE = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
@@ -114,7 +108,7 @@ public class PrepModal extends ModalInteraction {
             variable = null;
         }
 
-        Diceroll diceroll = Diceroll.parse(query);
+        DiceRoll diceroll = DiceRoll.parse(query);
         if (diceroll.hasError()) {
             return event.reply("**[Error]** %s".formatted(diceroll.getError())).withEphemeral(true);
         }
@@ -125,7 +119,7 @@ public class PrepModal extends ModalInteraction {
                     .withEphemeral(true);
         }
 
-        data.dicerolls.add(new PrepData.Data.DicerollData(description, diceroll.toString(), variable));
+        data.rolls.add(new PrepData.Data.DiceRollData(description, diceroll.toString(), variable));
         return event.edit(PrepData.buildMenu(data));
     }
 
@@ -165,7 +159,7 @@ public class PrepModal extends ModalInteraction {
         }
 
         ASTNode ast = new ASTGenerator().visit(pt);
-        data.dicerolls.add(new PrepData.Data.CalculationData(description,
+        data.rolls.add(new PrepData.Data.CalculationData(description,
                 pt.getText().substring(0, pt.getText().length() - 5), ast));
         return event.edit(PrepData.buildMenu(data));
     }

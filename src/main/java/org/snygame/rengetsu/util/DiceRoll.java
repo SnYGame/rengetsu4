@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Diceroll {
+public class DiceRoll {
     private static final Pattern RANGE_DICE_RE = Pattern.compile("^(-?\\d+)\\s+(-?\\d+)(.*)$");
     private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\]|(%))(.*)$");
     private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+)|([+-])");
@@ -39,10 +39,10 @@ public class Diceroll {
     private String input;
     private String error;
 
-    private Diceroll() {}
+    private DiceRoll() {}
 
-    public static Diceroll parse(String query) {
-        Diceroll diceroll = new Diceroll();
+    public static DiceRoll parse(String query) {
+        DiceRoll diceroll = new DiceRoll();
         diceroll.input = query;
 
         Matcher match = RANGE_DICE_RE.matcher(query);
