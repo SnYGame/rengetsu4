@@ -278,9 +278,9 @@ public class PrepData extends TableData {
         }
         for (Data.RollData rollData: data.dicerolls) {
             if (rollData instanceof Data.DicerollData diceroll && diceroll.variable != null) {
-                embed.addField(rollData.description, "%s = %s".formatted(diceroll.variable, rollData.query), false);
+                embed.addField(rollData.description, "%s = %s".formatted(diceroll.variable, rollData.query.replace("*", "\\*")), false);
             } else {
-                embed.addField(rollData.description, rollData.query, false);
+                embed.addField(rollData.description, rollData.query.replace("*", "\\*"), false);
             }
         }
 
