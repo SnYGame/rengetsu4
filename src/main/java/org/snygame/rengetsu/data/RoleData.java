@@ -284,12 +284,12 @@ public class RoleData extends TableData {
         embed.addField("Requestable", requestable != null ? "Enabled" : "Disabled", true);
 
         builder.addComponent(ActionRow.of(
-                data.addJoin ? Button.danger("role:add_join:%s:false".formatted(data.uid), "Disable adding to new members") :
-                        Button.success("role:add_join:%s:true".formatted(data.uid), "Enable adding to new members"),
-                data.addInactive ? Button.danger("role:add_inactive:%s:false".formatted(data.uid), "Disable adding to inactive members") :
-                        Button.success("role:add_inactive:%s:true".formatted(data.uid), "Enable adding to inactive members"),
-                data.requestable != null ? Button.danger("role:requestable:%s:false".formatted(data.uid), "Disable requesting") :
-                        Button.success("role:requestable:%s:true".formatted(data.uid), "Enable requesting")
+                data.addJoin ? Button.secondary("role:add_join:%s:false".formatted(data.uid), "Toggle adding to new members") :
+                        Button.primary("role:add_join:%s:true".formatted(data.uid), "Toggle adding to new members"),
+                data.addInactive ? Button.secondary("role:add_inactive:%s:false".formatted(data.uid), "Toggle adding to inactive members") :
+                        Button.primary("role:add_inactive:%s:true".formatted(data.uid), "Toggle adding to inactive members"),
+                data.requestable != null ? Button.secondary("role:requestable:%s:false".formatted(data.uid), "Toggle requesting") :
+                        Button.primary("role:requestable:%s:true".formatted(data.uid), "Toggle requesting")
         ));
 
         if (requestable != null) {
@@ -297,8 +297,8 @@ public class RoleData extends TableData {
             embed.addField("Agreement", Objects.requireNonNullElse(requestable.agreement, "N/A"), true);
 
             builder.addComponent(ActionRow.of(
-                    requestable.temp ? Button.danger("role:temp:%s:false".formatted(data.uid), "Disable time parameter") :
-                            Button.success("role:temp:%s:true".formatted(data.uid), "Enable time parameter"),
+                    requestable.temp ? Button.secondary("role:temp:%s:false".formatted(data.uid), "Toggle time parameter") :
+                            Button.primary("role:temp:%s:true".formatted(data.uid), "Toggle time parameter"),
                     Button.primary("role:agreement:%s".formatted(data.uid), "Set agreement")
             ));
         }

@@ -1,0 +1,56 @@
+{
+  "name": "/role",
+  "pages": [
+    {
+      "title": "Role Edit Command",
+      "subtitle": "Requires the **Manage Roles** permission",
+      "fields": [
+        {
+          "name": "Usage: /role <role>",
+          "value": "Opens the role edit menu to modify the automated attributes of this **role**."
+        }
+      ]
+    },
+    {
+      "title": "Role Edit Menu",
+      "fields": [
+        {
+          "name": "Toggle adding to new members",
+          "value": "Enabling this causes the role to be added to users when they join the server."
+        },
+        {
+          "name": "Toggle adding to inactive members",
+          "value": "Enabling this causes the role to be added to users when they become inactive for the duration specified in the server settings."
+        },
+        {
+          "name": "Toggle requesting",
+          "value": "Enabling this allows users to add and remove this role from themselves using the **/requestrole** command."
+        },
+        {
+          "name": "Toggle time parameter",
+          "value": "If requesting is enabled, enabling this only allows users to temporarily add this role."
+        },
+        {
+          "name": "Set agreement",
+          "value": "Setting an agreement will require users to agree to it before receiving this role. Leave blank to disable."
+        },
+        {
+          "name": "Set roles to add if removed",
+          "value": "Pressing this opens a select menu that allows you to select a list of roles that gets added to the user if this role gets removed through **/requestrole** or from a temporary role getting removed."
+        },
+        {
+          "name": "Set roles to remove if added",
+          "value": "Pressing this opens a select menu that allows you to select a list of roles that gets removed from the user if this role gets added through **/requestrole** or if this it gets added through inactivity."
+        },
+        {
+          "name": "Save",
+          "value": "This saves any edits to the role."
+        },
+        {
+          "name": "Clear data",
+          "value": "This removes all attributes from the role."
+        }
+      ]
+    }
+  ]
+}

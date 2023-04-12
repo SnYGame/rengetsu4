@@ -91,8 +91,8 @@
           "value": "This saves any edits to the effect."
         },
         {
-          "name": "Cancel",
-          "value": "This discards any edits to the effect."
+          "name": "Delete",
+          "value": "This deletes the effect."
         }
       ]
     },
