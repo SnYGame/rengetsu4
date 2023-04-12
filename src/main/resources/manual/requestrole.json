@@ -10,7 +10,7 @@
         },
         {
           "name": "Usage: /requestrole <role> [duration]",
-          "value": "Some **roles** may only be allowed to be given for a temporary amount of time. For those, the **duration** must be specified."
+          "value": "Some **roles** may only be allowed to be given for a temporary amount of time. For those, the **duration** must be specified. The maximum duration is 30 days."
         }
       ]
     }

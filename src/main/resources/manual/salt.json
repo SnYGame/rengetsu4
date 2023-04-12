@@ -1,0 +1,31 @@
+{
+  "name": "/salt",
+  "pages": [
+    {
+      "title": "Salt Command",
+      "subtitle": "Salt is the currency that Rengetsu uses.",
+      "fields": [
+        {
+          "name": "Usage: /salt balance",
+          "value": "This will show you how much salt you have."
+        },
+        {
+          "name": "Usage: /salt balance [user]",
+          "value": "Specifying a **user** will show how much salt they have instead."
+        },
+        {
+          "name": "Usage: /salt claim",
+          "value": "This command lets you gain 2000 salt once per day."
+        },
+        {
+          "name": "Usage: /salt remind",
+          "value": "Enabling reminders will remind you at 0:00 UTC that your daily salt is available to be claimed."
+        },
+        {
+          "name": "Usage: /salt give <user> <amount>",
+          "value": "You can give **user** salt as specified by the **amount** with this command. You cannot give a bot salt."
+        }
+      ]
+    }
+  ]
+}
