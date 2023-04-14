@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -176,7 +177,7 @@ public class Interpreter {
 
                     if (dice.count > 16 || dice.count == 1) {
                         if (dice.dl + dice.dh > 0) {
-                            int sum = dice.roll().skip(dice.dl).limit(dice.count - dice.dl - dice.dh).sum();
+                            int sum = dice.roll().sorted().skip(dice.dl).limit(dice.count - dice.dl - dice.dh).sum();
                             if (!diceResults.isEmpty()) {
                                 diceResults.add(" |");
                                 diceResults.add(" %s = %d".formatted(dice, sum));
@@ -200,7 +201,7 @@ public class Interpreter {
 
                             Set<Integer> kept = IntStream.range(0, dice.count).boxed().sorted(Comparator.comparingInt(in -> results[in]))
                                     .skip(dice.dl).limit(dice.count - dice.dl - dice.dh).collect(Collectors.toSet());
-                            int sum = IntStream.range(0, dice.count).filter(kept::contains).map(in -> results[in]).sum();
+                            int sum = IntStream.range(0, results.length).filter(kept::contains).map(in -> results[in]).sum();
 
                             if (!diceResults.isEmpty()) {
                                 diceResults.add(" |");
@@ -219,14 +220,14 @@ public class Interpreter {
                             diceResults.add(")");
                             stack.push(BigInteger.valueOf(sum));
                         } else {
-                            int[] results = dice.roll().toArray();
-                            int sum = IntStream.of(results).sum();
+                            AtomicInteger sum = new AtomicInteger();
+                            int[] results = dice.roll().peek(sum::addAndGet).toArray();
 
                             if (!diceResults.isEmpty()) {
                                 diceResults.add(" |");
-                                diceResults.add(" %s = %d".formatted(dice, sum));
+                                diceResults.add(" %s = %d".formatted(dice, sum.get()));
                             } else {
-                                diceResults.add("%s = %d".formatted(dice, sum));
+                                diceResults.add("%s = %d".formatted(dice, sum.get()));
                             }
                             diceResults.add(" (");
                             for (int in = 0; in < dice.count; in++) {
@@ -238,7 +239,7 @@ public class Interpreter {
                             }
                             diceResults.add(")");
 
-                            stack.push(BigInteger.valueOf(sum));
+                            stack.push(BigInteger.valueOf(sum.get()));
                         }
                     }
                 }
@@ -447,9 +448,9 @@ public class Interpreter {
         private IntStream roll() {
             if (unique) {
                 UniqueRandom random = new UniqueRandom(Rengetsu.RNG, faces);
-                return IntStream.range(0, count).map(i -> random.nextInt() + 1);
+                return IntStream.generate(() -> random.nextInt() + 1).limit(count);
             } else {
-                return IntStream.range(0, count).map(i -> Rengetsu.RNG.nextInt(faces) + 1);
+                return Rengetsu.RNG.ints(count, 1, faces + 1);
             }
         }
 

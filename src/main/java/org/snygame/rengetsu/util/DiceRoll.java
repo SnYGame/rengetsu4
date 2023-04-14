@@ -283,7 +283,7 @@ public class DiceRoll {
 
                 return new Result(rolls,
                         IntStream.range(dropLowest, diceCount - dropHighest).mapToLong(i -> 1L << i).sum(),
-                        offset,noSum);
+                        offset, noSum);
             } else {
                 return new Result(rolls, offset, noSum);
             }

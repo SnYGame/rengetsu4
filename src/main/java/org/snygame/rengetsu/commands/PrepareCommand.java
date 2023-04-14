@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class PrepareCommand extends SlashCommand {
     public PrepareCommand(Rengetsu rengetsu) {
@@ -418,14 +419,13 @@ public class PrepareCommand extends SlashCommand {
                         return EmbedCreateFields.Field.of(diceRoll.description,
                                 "`%s`\n%s".formatted(diceRoll.variable == null ? diceRoll.query : "%s = %s"
                                                 .formatted(diceRoll.variable, diceRoll.query),
-                                        IntStream.range(0, diceroll.getRepeat())
-                                                .mapToObj(__ -> {
-                                                    DiceRoll.Result result = diceroll.roll();
-                                                    if (diceRoll.variable != null) {
-                                                        variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
-                                                    }
-                                                    return result.toString();
-                                                }).collect(Collectors.joining("\n")))
+                                        Stream.generate(() -> {
+                                            DiceRoll.Result result = diceroll.roll();
+                                            if (diceRoll.variable != null) {
+                                                variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
+                                            }
+                                            return result.toString();
+                                        }).limit(diceroll.getRepeat()).collect(Collectors.joining("\n")))
                                 , false);
                     }
                 }
