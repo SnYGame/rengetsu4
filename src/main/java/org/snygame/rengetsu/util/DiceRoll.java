@@ -34,7 +34,7 @@ public class DiceRoll {
     private boolean hideDrop;
 
     private int repeat = 1;
-    private int offset;
+    private final List<Integer> offsets = new ArrayList<>();
 
     private String input;
     private String error;
@@ -154,8 +154,8 @@ public class DiceRoll {
                         case "droplow", "dl", "dhdl" -> diceroll.dropLowest = i;
                         case "drophigh", "dh", "dldh" -> diceroll.dropHighest = i;
                         case "rep" -> diceroll.repeat = i;
-                        case "+" -> diceroll.offset = i;
-                        case "-" -> diceroll.offset = -i;
+                        case "+" -> diceroll.offsets.add(i);
+                        case "-" -> diceroll.offsets.add(-i);
                         default -> {
                             diceroll.error = "Option %s takes no parameters".formatted(prevOp);
                             return diceroll;
@@ -237,8 +237,8 @@ public class DiceRoll {
         }
 
         int displayedDiceCount = diceCount - (hideDrop ? dropLowest + dropHighest : 0);
-        boolean sumOnly = this.sumOnly && (displayedDiceCount != 1 || offset != 0) || displayedDiceCount > MAX_DICE_DISPLAY;
-        boolean noSum = this.noSum || displayedDiceCount == 1 && offset == 0;
+        boolean sumOnly = this.sumOnly && (displayedDiceCount != 1 || !offsets.isEmpty()) || displayedDiceCount > MAX_DICE_DISPLAY;
+        boolean noSum = this.noSum || displayedDiceCount == 1 && offsets.isEmpty();
 
         int[] rolls = new int[diceCount];
         Random rng = Rengetsu.RNG;
@@ -270,14 +270,14 @@ public class DiceRoll {
             if (drops > 0) {
                 if (hideDrop) {
                     return new Result(Arrays.stream(rolls, dropLowest, diceCount - dropHighest).toArray(),
-                            offset, noSum);
+                            offsets.stream().reduce(0, Integer::sum), noSum);
                 }
 
                 return new Result(rolls,
                         IntStream.range(dropLowest, diceCount - dropHighest).mapToLong(i -> 1L << i).sum(),
-                        offset, noSum);
+                        offsets.stream().reduce(0, Integer::sum), noSum);
             } else {
-                return new Result(rolls, offset, noSum);
+                return new Result(rolls, offsets.stream().reduce(0, Integer::sum), noSum);
             }
 
         } else if (sumOnly) {
@@ -296,16 +296,16 @@ public class DiceRoll {
                         .skip(dropLowest).limit(diceCount - drops).collect(Collectors.toSet());
 
                 return new Result(IntStream.range(0, diceCount).filter(kept::contains).map(i -> rolls[i]).toArray(),
-                        offset, noSum);
+                        offsets.stream().reduce(0, Integer::sum), noSum);
             }
 
             long dropped = IntStream.range(0, diceCount).boxed().sorted(Comparator.comparingInt(i -> rolls[i]))
                     .skip(dropLowest).limit(diceCount - drops).mapToLong(i -> 1L << i).sum();
 
-            return new Result(rolls, dropped,  offset, noSum);
+            return new Result(rolls, dropped,  offsets.stream().reduce(0, Integer::sum), noSum);
         }
 
-        return new Result(rolls, offset, noSum);
+        return new Result(rolls, offsets.stream().reduce(0, Integer::sum), noSum);
     }
 
     @Override
@@ -318,7 +318,7 @@ public class DiceRoll {
                 dropLowest == 0 ? "" : "dl%d".formatted(dropLowest),
                 dropHighest == 0 ? "" : "dh%d".formatted(dropHighest),
                 unique ? "u" : "",
-                offset > 0 ? "+%d".formatted(offset) : offset < 0 ? "-%d".formatted(-offset) : "",
+                offsets.stream().map(i -> i < 0 ? "%d".formatted(i) : "+%d".formatted(i)).collect(Collectors.joining()),
                 sumOnly ? " sumonly" : "",
                 noSum ? " nosum" : "",
                 sorted ? " sorted" : "",
@@ -348,11 +348,13 @@ public class DiceRoll {
 
         private Result(int[] rolls, long dropped, int offset, boolean noSum) {
             this(null, rolls, dropped, offset,
-                    noSum ? null : IntStream.range(0, rolls.length).mapToLong(i -> (dropped >> i & 1) * rolls[i]).sum() + offset);
+                    noSum ? null : IntStream.range(0, rolls.length).mapToLong(i -> (dropped >> i & 1) * rolls[i]).sum()
+                            + offset);
         }
 
         private Result(int[] rolls, int offset, boolean noSum) {
-            this(null, rolls, NO_DROP, offset, noSum ? null : IntStream.of(rolls).mapToLong(i -> i).sum() + offset);
+            this(null, rolls, NO_DROP, offset, noSum ? null : IntStream.of(rolls).mapToLong(i -> i).sum()
+                    + offset);
         }
 
         public int count() {
@@ -427,7 +429,7 @@ public class DiceRoll {
         }
         @Override
         public String toString() {
-            return "[%s]".formatted(IntStream.of(scale).boxed().map(ranges::get).map(Object::toString).collect(Collectors.joining(", ")));
+            return IntStream.of(scale).boxed().map(ranges::get).map(String::valueOf).collect(Collectors.joining(", ", "[", "]"));
         }
 
         public int size() {
