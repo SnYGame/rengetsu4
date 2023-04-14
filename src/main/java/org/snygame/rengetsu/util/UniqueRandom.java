@@ -1,9 +1,7 @@
 package org.snygame.rengetsu.util;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class UniqueRandom implements Iterable<Integer>, PrimitiveIterator.OfInt {
     private final Random rand;
@@ -28,9 +26,20 @@ public class UniqueRandom implements Iterable<Integer>, PrimitiveIterator.OfInt 
 
     @Override
     public int nextInt() {
+        if (bound <= 0) {
+            throw new NoSuchElementException("Out of random numbers");
+        }
         int i = rand.nextInt(bound--);
         int result = swapped.getOrDefault(i, i);
         swapped.put(i, swapped.getOrDefault(bound, bound));
         return result;
+    }
+
+    public static IntStream asStream(Random rand, int bound) {
+        return new UniqueRandom(rand, bound).toStream();
+    }
+
+    public IntStream toStream() {
+        return IntStream.generate(this::nextInt).limit(bound);
     }
 }

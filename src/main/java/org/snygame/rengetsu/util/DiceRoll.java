@@ -244,28 +244,20 @@ public class DiceRoll {
         Random rng = Rengetsu.RNG;
 
         switch (faces) {
-            case Fixed f -> {
+            case Fixed fixed -> {
                 if (unique) {
-                    UniqueRandom uniqueRand = new UniqueRandom(rng, f.faces());
-                    for (int i = 0; i < diceCount; i++) {
-                        rolls[i] = uniqueRand.nextInt() + 1;
-                    }
+                    UniqueRandom uniqueRand = new UniqueRandom(rng, fixed.faces());
+                    Arrays.setAll(rolls, i -> uniqueRand.nextInt());
                 } else {
-                    for (int i = 0; i < diceCount; i++) {
-                        rolls[i] = rng.nextInt(f.faces()) + 1;
-                    }
+                    Arrays.setAll(rolls, i -> rng.nextInt(fixed.faces()) + 1);
                 }
             }
-            case Ranges r -> {
+            case Ranges ranges -> {
                 if (unique) {
-                    UniqueRandom uniqueRand = new UniqueRandom(rng, r.size());
-                    for (int i = 0; i < diceCount; i++) {
-                        rolls[i] = r.get(uniqueRand.nextInt());
-                    }
+                    UniqueRandom uniqueRand = new UniqueRandom(rng, ranges.size());
+                    Arrays.setAll(rolls, i -> ranges.get(uniqueRand.nextInt()));
                 } else {
-                    for (int i = 0; i < diceCount; i++) {
-                        rolls[i] = r.get(rng.nextInt(r.size()));
-                    }
+                    Arrays.setAll(rolls, i -> ranges.get(rng.nextInt(ranges.size())));
                 }
             }
         }

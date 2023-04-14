@@ -447,8 +447,7 @@ public class Interpreter {
     private record Dice(short count, short faces, short dl, short dh, boolean unique) {
         private IntStream roll() {
             if (unique) {
-                UniqueRandom random = new UniqueRandom(Rengetsu.RNG, faces);
-                return IntStream.generate(() -> random.nextInt() + 1).limit(count);
+                return UniqueRandom.asStream(Rengetsu.RNG, faces).limit(count);
             } else {
                 return Rengetsu.RNG.ints(count, 1, faces + 1);
             }
