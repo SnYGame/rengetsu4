@@ -356,7 +356,7 @@ public abstract class ASTNode {
     }
 
     public static class Dice extends ASTNode {
-        private static final Pattern DICE_RE = Pattern.compile("^(\\d+)d(\\d+)(dl\\d*)?(dh\\d*)?(u)?$");
+        private static final Pattern DICE_RE = Pattern.compile("^(\\d+)d(\\d+)(dl\\d*)?(dh\\d*)?(dl\\d*)?(u)?$");
         private static final int MAX_DICE = Short.MAX_VALUE;
         private final int count;
         private final int faces;
@@ -373,9 +373,13 @@ public abstract class ASTNode {
 
             count = Integer.parseInt(match.group(1));
             faces = Integer.parseInt(match.group(2));
-            dropLowest = match.group(3) == null ? 0 : Integer.parseInt(match.group(3).substring(2));
-            dropHighest = match.group(4) == null ? 0 : Integer.parseInt(match.group(4).substring(2));
-            unique = match.group(5) != null;
+
+            String dlGroup = match.group(3) == null ? match.group(5) : match.group(3);
+            String dhGroup = match.group(4);
+
+            dropLowest = dlGroup == null ? 0 : (dlGroup.length() == 2 ? 1 : Integer.parseInt(dlGroup.substring(2)));
+            dropHighest = dhGroup == null ? 0 : (dhGroup.length() == 2 ? 1 : Integer.parseInt(dhGroup.substring(2)));
+            unique = match.group(6) != null;
 
             if (count > MAX_DICE) {
                 throw new IllegalArgumentException("Max dice count is %d".formatted(MAX_DICE));
