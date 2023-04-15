@@ -4,9 +4,10 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
-public class PrepRollRemovalSelectMenu extends SelectMenuInteraction {
+public class PrepRollRemovalSelectMenu extends InteractionListener.CommandDelegate<SelectMenuInteractionEvent> {
     public PrepRollRemovalSelectMenu(Rengetsu rengetsu) {
         super(rengetsu);
     }

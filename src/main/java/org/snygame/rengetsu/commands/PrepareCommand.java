@@ -14,6 +14,7 @@ import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.util.DiceRoll;
 import org.snygame.rengetsu.util.math.Interpreter;
 import org.snygame.rengetsu.util.math.Type;
@@ -24,10 +25,9 @@ import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class PrepareCommand extends SlashCommand {
+public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     public PrepareCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }

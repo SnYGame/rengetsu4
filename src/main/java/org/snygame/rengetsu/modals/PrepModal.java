@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.parser.RengCalcLexer;
 import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.util.DiceRoll;
@@ -17,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class PrepModal extends ModalInteraction {
+public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
     private static final Pattern VAR_RE = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     public PrepModal(Rengetsu rengetsu) {

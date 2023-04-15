@@ -13,13 +13,14 @@ import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SettingsCommand extends SlashCommand {
+public class SettingsCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     public SettingsCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }

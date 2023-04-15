@@ -11,6 +11,7 @@ import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.util.math.BytecodeGenerator;
 import org.snygame.rengetsu.util.math.Type;
 import org.snygame.rengetsu.util.math.TypeChecker;
@@ -21,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
-public class PrepEditButton extends ButtonInteraction {
+public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public PrepEditButton(Rengetsu rengetsu) {
         super(rengetsu);
     }

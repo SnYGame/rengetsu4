@@ -1,21 +1,20 @@
 package org.snygame.rengetsu.buttons;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
-import discord4j.core.object.entity.User;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.UserData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
 
-public class SaltClaimButton extends ButtonInteraction {
+public class SaltClaimButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public SaltClaimButton(Rengetsu rengetsu) {
         super(rengetsu);
     }

@@ -1,21 +1,20 @@
 package org.snygame.rengetsu.commands;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.entity.User;
 import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.UserData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
 
-public class SaltCommand extends SlashCommand {
+public class SaltCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     public SaltCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }

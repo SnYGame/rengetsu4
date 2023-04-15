@@ -10,7 +10,7 @@ import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
-import org.snygame.rengetsu.tasks.RoleTimerTask;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Flux;
@@ -20,7 +20,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 
-public class RequestRoleAgreementButton extends ButtonInteraction {
+public class RequestRoleAgreementButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public RequestRoleAgreementButton(Rengetsu rengetsu) {
         super(rengetsu);
     }

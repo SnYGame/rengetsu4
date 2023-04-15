@@ -5,13 +5,13 @@ import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.stream.Collectors;
 
-public class SettingsLogSelectMenu extends SelectMenuInteraction {
+public class SettingsLogSelectMenu extends InteractionListener.CommandDelegate<SelectMenuInteractionEvent> {
     public SettingsLogSelectMenu(Rengetsu rengetsu) {
         super(rengetsu);
     }

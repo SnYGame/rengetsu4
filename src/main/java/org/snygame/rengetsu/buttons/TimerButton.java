@@ -7,12 +7,13 @@ import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.TimerData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.tasks.TaskManager;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 
-public class TimerButton extends ButtonInteraction {
+public class TimerButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public TimerButton(Rengetsu rengetsu) {
         super(rengetsu);
     }

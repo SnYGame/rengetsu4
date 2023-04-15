@@ -5,6 +5,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.parser.RengCalcLexer;
 import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.util.functions.StringSplitPredicate;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class MathCommand extends SlashCommand {
+public class MathCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     public MathCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }
@@ -118,7 +119,8 @@ public class MathCommand extends SlashCommand {
             })).subscribeOn(Schedulers.boundedElastic()).windowUntil(StringSplitPredicate.get(2000), true)
                     .flatMap(stringFlux -> stringFlux.collect(Collectors.joining()))
                     .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral)).then();
-        }).then();
+        }).then().onErrorResume(Exception.class, e ->
+                        event.createFollowup("**[Error]** An uncaught exception has occurred. Please notify the bot manager.\n%s".formatted(e)).withEphemeral(true).then());
     }
 
     private String shorten(String text, int limit) {

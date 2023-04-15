@@ -2,16 +2,16 @@ package org.snygame.rengetsu.buttons;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.object.entity.Message;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.ServerData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.util.Collections;
 
-public class SettingsClearLogButton extends ButtonInteraction {
+public class SettingsClearLogButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public SettingsClearLogButton(Rengetsu rengetsu) {
         super(rengetsu);
     }

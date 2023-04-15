@@ -8,7 +8,6 @@ import discord4j.core.event.domain.guild.MemberUpdateEvent;
 import discord4j.core.object.entity.channel.MessageChannel;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.*;
-import org.snygame.rengetsu.tasks.RoleTimerTask;
 import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Flux;

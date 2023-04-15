@@ -1,25 +1,22 @@
 package org.snygame.rengetsu.buttons;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.SelectMenu;
 import discord4j.core.object.component.TextInput;
-import discord4j.core.object.entity.PartialMember;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.rest.util.Permission;
-import discord4j.rest.util.PermissionSet;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
 import java.util.Collections;
 
-public class RoleSetButton extends ButtonInteraction {
+public class RoleSetButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public RoleSetButton(Rengetsu rengetsu) {
         super(rengetsu);
     }

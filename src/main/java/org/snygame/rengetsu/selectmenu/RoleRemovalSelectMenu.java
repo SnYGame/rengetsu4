@@ -1,17 +1,15 @@
 package org.snygame.rengetsu.selectmenu;
 
 import discord4j.core.event.domain.interaction.SelectMenuInteractionEvent;
-import discord4j.core.object.entity.PartialMember;
-import discord4j.rest.util.Permission;
-import discord4j.rest.util.PermissionSet;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-public class RoleRemovalSelectMenu extends SelectMenuInteraction {
+public class RoleRemovalSelectMenu extends InteractionListener.CommandDelegate<SelectMenuInteractionEvent> {
     public RoleRemovalSelectMenu(Rengetsu rengetsu) {
         super(rengetsu);
     }

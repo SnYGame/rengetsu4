@@ -12,7 +12,7 @@ import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
 import org.snygame.rengetsu.data.RoleTimerData;
-import org.snygame.rengetsu.tasks.RoleTimerTask;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Flux;
@@ -22,7 +22,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-public class RequestRoleCommand extends SlashCommand {
+public class RequestRoleCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     private static final int MAX_DURATION = 60 * 60 * 24 * 30;
 
     public RequestRoleCommand(Rengetsu rengetsu) {

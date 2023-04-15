@@ -5,9 +5,10 @@ import discord4j.discordjson.possible.Possible;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
-public class RoleAgreementModal extends ModalInteraction {
+public class RoleAgreementModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
     public RoleAgreementModal(Rengetsu rengetsu) {
         super(rengetsu);
     }

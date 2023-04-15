@@ -11,6 +11,7 @@ import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.TimerData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.TimeStrings;
 import reactor.core.publisher.Mono;
@@ -19,7 +20,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 
-public class TimerCommand extends SlashCommand {
+public class TimerCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     private static final int MAX_DURATION = 60 * 60 * 24 * 30;
 
     public TimerCommand(Rengetsu rengetsu) {

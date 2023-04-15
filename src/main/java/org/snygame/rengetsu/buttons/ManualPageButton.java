@@ -2,9 +2,10 @@ package org.snygame.rengetsu.buttons;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import org.snygame.rengetsu.Rengetsu;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
-public class ManualPageButton extends ButtonInteraction {
+public class ManualPageButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
     public ManualPageButton(Rengetsu rengetsu) {
         super(rengetsu);
     }
