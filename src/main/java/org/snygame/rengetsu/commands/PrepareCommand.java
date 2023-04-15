@@ -322,13 +322,13 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
     }
 
     private Mono<Void> castEffect(ChatInputInteractionEvent event, PrepData.Data data, String[] args) {
-        if (data.params.length != args.length) {
+        if (data.params.length < args.length) {
             return event.reply("**[Error]** Expected %d arguments but received %d instead".formatted(data.params.length, args.length))
                     .withEphemeral(true);
         }
 
         Object[] variables = new Object[data.varCount];
-        Type.FixedType[] paramTypes = new Type.FixedType[args.length];
+        Type.FixedType[] paramTypes = new Type.FixedType[data.params.length];
 
         for (int i = 0; i < args.length; i++) {
             PrepData.Data.ParameterData paramData = data.parameterData.get(i);
@@ -350,6 +350,10 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                                             .formatted(i, paramData.name(), arg))
                                     .withEphemeral(true);
                         }
+                    }
+
+                    if (paramData.type() == Type.FixedType.VAR && paramData.ofVarType() > i) {
+                        paramTypes[paramData.ofVarType()] = paramTypes[i];
                     }
                 }
                 case BOOL -> {
@@ -388,12 +392,55 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
             }
         }
 
+        // Insert default arguments
+        for (int i = args.length; i < data.params.length; i++) {
+            PrepData.Data.ParameterData paramData = data.parameterData.get(i);
+
+            switch (paramData.type()) {
+                case VAR -> {
+                    byte other = paramData.ofVarType();
+                    // If the matching argument has already been defined, copy its type
+                    if (paramTypes[other] == Type.FixedType.NUM) {
+                        variables[paramData.result()] = BigDecimal.ZERO;
+                        paramTypes[i] = Type.FixedType.NUM;
+                    } else if (paramTypes[other] == Type.FixedType.BOOL) {
+                        variables[paramData.result()] = Boolean.FALSE;
+                        paramTypes[i] = Type.FixedType.BOOL;
+                    } else {
+                        // Otherwise, default to number and propagate the type
+                        variables[paramData.result()] = BigDecimal.ZERO;
+                        paramTypes[other] = paramTypes[i] = Type.FixedType.NUM;
+                    }
+                }
+                case ANY -> {
+                    // If type has been predetermined due to a prior matching type, use it
+                    if (paramTypes[i] == Type.FixedType.NUM) {
+                        variables[paramData.result()] = BigDecimal.ZERO;
+                    } else if (paramTypes[i] == Type.FixedType.BOOL) {
+                        variables[paramData.result()] = Boolean.FALSE;
+                    } else {
+                        // Otherwise, default to number
+                        variables[paramData.result()] = BigDecimal.ZERO;
+                        paramTypes[i] = Type.FixedType.NUM;
+                    }
+                }
+                case NUM -> {
+                    variables[paramData.result()] = BigDecimal.ZERO;
+                    paramTypes[i] = Type.FixedType.NUM;
+                }
+                case BOOL -> {
+                    variables[paramData.result()] = Boolean.FALSE;
+                    paramTypes[i] = Type.FixedType.BOOL;
+                }
+            }
+        }
+
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
         embed.title(data.name);
         embed.description(data.description);
 
-        if (args.length > 0) {
+        if (data.params.length > 0) {
             embed.addField("Arguments", data.parameterData.stream().map(paramData -> "%s = %s"
                             .formatted(paramData.name(), variables[paramData.result()]))
                     .collect(Collectors.joining(", ")),false);
