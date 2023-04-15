@@ -127,8 +127,12 @@
           "value": "Evaluates to false."
         },
         {
-          "name": "XdY[dlN][dhM][u]",
+          "name": "XdY",
           "value": "Rolls **X** dice with **Y** faces. The drop lowest, drop highest, and unique modifiers are available."
+        },
+        {
+          "name": "XdY[dlN][dhM][u]",
+          "value": "You are also able to specify the drop lowest, drop highest, or unique modifier to dice rolls. The unique modifier must come last if used."
         }
       ]
     },
