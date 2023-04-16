@@ -90,5 +90,10 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.41.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.luaj</groupId>
+            <artifactId>luaj-jse</artifactId>
+            <version>3.0.1</version>
+        </dependency>
     </dependencies>
 </project>
