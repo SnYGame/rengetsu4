@@ -1,0 +1,12 @@
+{
+  "name": "agm",
+  "description": "Auto Game Master",
+  "options": [
+    {
+      "name": "command",
+      "description": "Insert the agm command",
+      "type": 3,
+      "required": true
+    }
+  ]
+}
