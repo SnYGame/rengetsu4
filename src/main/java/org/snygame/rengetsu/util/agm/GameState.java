@@ -14,7 +14,6 @@ public class GameState {
 
     private static final ZeroArgFunction DEFAULT_COMMAND;
     private static final ZeroArgFunction DEFAULT_STAT_SHEET;
-    private static final OneArgFunction DEBUG_PRINT; // TODO Remove when done
 
     static {
         DEFAULT_COMMAND = new ZeroArgFunction() {
@@ -28,14 +27,6 @@ public class GameState {
             @Override
             public LuaValue call() {
                 return LuaValue.valueOf("No stat sheet set.");
-            }
-        };
-
-        DEBUG_PRINT = new OneArgFunction() {
-            @Override
-            public LuaValue call(LuaValue arg) {
-                System.out.println(arg);
-                return null;
             }
         };
     }
@@ -53,7 +44,6 @@ public class GameState {
         globals.set("dm", String.valueOf(userId));
         globals.set("runcommand", DEFAULT_COMMAND);
         globals.set("displaysheet", DEFAULT_STAT_SHEET);
-        globals.set("debugprint", DEBUG_PRINT);
         globals.set("requiredm", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
@@ -69,6 +59,7 @@ public class GameState {
                 return LuaValue.valueOf(globals.get("dm").equals(globals.get("user")));
             }
         });
+        // globals.set("print", LuaValue.NIL); TODO uncomment when done
 
         globals.loadfile("./agm_modules/snygame.lua").call();
     }
