@@ -1,0 +1,26 @@
+{
+  "name": "agm-manage",
+  "description": "Manage Auto Game Master session",
+  "options": [
+    {
+      "name": "reset",
+      "description": "Reset the state",
+      "type": 1,
+      "required": false
+    },
+    {
+      "name": "load",
+      "description": "Load a module",
+      "type": 1,
+      "required": false,
+      "options": [
+        {
+          "name": "module",
+          "description": "Lua file",
+          "type": 11,
+          "required": true
+        }
+      ]
+    }
+  ]
+}

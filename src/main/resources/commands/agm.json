@@ -1,6 +1,6 @@
 {
   "name": "agm",
-  "description": "Auto Game Master",
+  "description": "Send Auto Game Master commands",
   "options": [
     {
       "name": "command",

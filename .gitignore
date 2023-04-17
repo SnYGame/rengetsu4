@@ -30,3 +30,5 @@ hs_err_pid*
 reng.db
 reng.db-journal
 /logs/
+
+/agm_modules/

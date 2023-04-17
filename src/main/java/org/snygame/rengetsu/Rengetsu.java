@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.listeners.*;
 import org.snygame.rengetsu.tasks.TaskManager;
+import org.snygame.rengetsu.util.agm.AgmManager;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -29,6 +30,7 @@ public class Rengetsu {
     private final GatewayDiscordClient client;
     private final DatabaseManager databaseManager;
     private final TaskManager taskManager;
+    private final AgmManager agmManager;
     private final Manual manual;
 
     private Rengetsu(String token, String dbPath) throws SQLException, IOException {
@@ -45,6 +47,7 @@ public class Rengetsu {
                 .login().block();
 
         taskManager = new TaskManager(this);
+        agmManager = new AgmManager(this);
         manual = new Manual("index");
 
         /* Call our code to handle creating/deleting/editing our global slash commands.
@@ -53,7 +56,7 @@ public class Rengetsu {
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
          */
         List<String> commands = List.of("dice.json", "here.json", "math.json", "salt.json", "timer.json", "role.json",
-                "requestrole.json", "settings.json", "prep.json", "help.json", "agm.json");
+                "requestrole.json", "settings.json", "prep.json", "help.json", "agm.json", "agm-manage.json", "agm-sheet.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient()).registerCommands(commands);
         } catch (Exception e) {
@@ -103,6 +106,10 @@ public class Rengetsu {
 
     public TaskManager getTaskManager() {
         return taskManager;
+    }
+
+    public AgmManager getAgmManager() {
+        return agmManager;
     }
 
     public Manual getManual() {

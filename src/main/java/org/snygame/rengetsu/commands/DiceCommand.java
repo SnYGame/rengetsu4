@@ -71,7 +71,9 @@ public class DiceCommand extends InteractionListener.CommandDelegate<ChatInputIn
                 .windowUntil(StringSplitPredicate.get(2000), true)
                 .flatMap(stringFlux -> stringFlux.collect(Collectors.joining()))
                 .map(event::createFollowup).flatMap(mono -> mono.withEphemeral(ephemeral)).then()
-                .onErrorResume(Exception.class, e ->
-                        event.createFollowup("**[Error]** An uncaught exception has occurred. Please notify the bot manager.\n%s".formatted(e)).withEphemeral(true).then());
+                .onErrorResume(Exception.class, e -> {
+                    Rengetsu.getLOGGER().error("Uncaught exception in command", e);
+                    return event.createFollowup("**[Error]** An uncaught exception has occurred. Please notify the bot manager.\n%s".formatted(e)).withEphemeral(true).then();
+                });
     }
 }
