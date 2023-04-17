@@ -61,7 +61,7 @@ public class GameState {
         });
         // globals.set("print", LuaValue.NIL); TODO uncomment when done
 
-        globals.loadfile("./agm_modules/snygame.lua").call();
+        globals.loadfile("./agm_modules/testing.lua").call(); // TODO remove when done
     }
 
     public GameState(long userId) {
