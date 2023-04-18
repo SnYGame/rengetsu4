@@ -10,7 +10,7 @@
         },
         {
           "name": "Usage: /dice <input> [hide]",
-          "value": "Setting the **hide** option to true will cause the result of the command to be visible to you only."
+          "value": "Setting the **hide** option to true will cause the result of the command to be visible to only you."
         }
       ]
     },
@@ -20,15 +20,15 @@
       "fields": [
         {
           "name": "XdY",
-          "value": "This input rolls **X** dice with **Y** faces. It provides each of the individual die results along with the sum of all results. **X** and **Y** can’t be more than 134217728."
+          "value": "Rolls **X** dice with **Y** faces. Returns each of the individual die results along with the sum of all dice rolled. **X** and **Y** can’t be more than 134217728."
         },
         {
           "name": "X or dX",
-          "value": "This input is equivalent to **1dX**."
+          "value": "Equivalent to **1dX**."
         },
         {
           "name": "X Y",
-          "value": "This input will generate a random number between **X** and **Y** (including those numbers). This is also equivalent to **1d[X:Y]** (see next page)."
+          "value": "Generates a random number between **X** and **Y** (including **X** and **Y**). This is equivalent to **1d[X:Y]** (see next page)."
         }
       ]
     },
@@ -38,15 +38,15 @@
       "fields": [
         {
           "name": "Xd[A, B, C]",
-          "value": "This input will generate random numbers using dice that have the faces **A**, **B**, **C**. For example, **1d[1, 3, 3, 7]** can result in either a 1, 3, or a 7, and 3 is twice as likely as the other results."
+          "value": "Generates random numbers using dice that have the faces **A**, **B**, **C**. For example, **1d[1, 3, 3, 7]** can result in either a 1, 3, or a 7, and 3 is twice as likely as the other results."
         },
         {
           "name": "Xd[A:B]",
-          "value": "This input will generate random numbers using dice that have the faces ranging from **A** to **B** (inclusive). For example, **1d[2:5]** will limit results to 2, 3, 4, and 5."
+          "value": "Generates random numbers using dice that have the faces ranging from **A** to **B** (inclusive). For example, **1d[2:5]** will limit results to 2, 3, 4, and 5."
         },
         {
           "name": "Xd[A:B, C, D:E]",
-          "value": "The previous two inputs can be combined.  In this example, the dice rolled can results in values ranging from **A** to **B** (inclusive), **C**, and the values ranging from **D** to **E** (inclusive)."
+          "value": "The previous two methods can be combined. In this example, the dice rolled can result in values ranging from **A** to **B** (inclusive), **C**, and the values ranging from **D** to **E** (inclusive)."
         },
         {
           "name": "[...]",
@@ -54,7 +54,7 @@
         },
         {
           "name": "dX;dY;dZ",
-          "value": "Multiple queries of the above types can be input at the same time. They must be separated by a semicolon."
+          "value": "Multiple queries can be input at the same time. They must be separated by a semicolon."
         }
       ]
     },
@@ -64,7 +64,7 @@
       "fields": [
         {
           "name": "XdY [options]",
-          "value": "Options can be specified after the dice parameters. Options with parameters can be specified like **option N** or **option(N)**."
+          "value": "Options can be specified after the dice parameters (see next page). Options with numerical parameters can be specified with **option N** or **option(N)**."
         }
       ]
     },
@@ -74,23 +74,23 @@
       "fields": [
         {
           "name": "droplow or dl [N]",
-          "value": "The dice with the lowest **N** values will be ignored in the sum calculation. N defaults to 1. You cannot drop more dice than you rolled."
+          "value": "When summing dice rolled, the lowest **N** values will be ignored. N defaults to 1. You cannot drop more dice than you rolled."
         },
         {
           "name": "drophigh or dh [N]",
-          "value": "The dice with the highest **N** values will be ignored in the sum calculation. N defaults to 1. You cannot drop more dice than you rolled."
+          "value": "When summing dice rolled, the lowest **N** values will be ignored. N defaults to 1. You cannot drop more dice than you rolled."
         },
         {
           "name": "unique or u",
-          "value": "This option will force each dice to land on a unique face. You cannot use this option if there are less faces than there are dice. If this option is used, the number of dice that can be rolled is 33554432."
+          "value": "Forces unique dice results to occur. For example, if you roll 6d6 unique, all numbers from 1 to 6 WILL be rolled. You cannot use this option if there are less faces than there are dice. If this option is used, the maximum number of dice that can be rolled is 33554432."
         },
         {
           "name": "+ or - N",
-          "value": "This will add or subtract **N** from the result."
+          "value": "Adds or subtracts **N** from the result."
         },
         {
           "name": "rep N",
-          "value": "The query will be executed **N** times instead of only 1. **N** cannot be greater than 20."
+          "value": "Repeats the query **N** times instead of only once. **N** cannot be greater than 20."
         }
       ]
     },
