@@ -6,43 +6,43 @@
       "fields": [
         {
           "name": "/dice",
-          "value": "Rolls dice"
+          "value": "Performs dice rolls."
         },
         {
           "name": "/help",
-          "value": "Opens the help menu"
+          "value": "Opens the help menu."
         },
         {
           "name": "/here",
-          "value": "Pings online users of a specified role"
+          "value": "Pings currently online users of a specified role."
         },
         {
           "name": "/math",
-          "value": "Performs calculations"
+          "value": "Performs calculations."
         },
         {
           "name": "/prepare",
-          "value": "Manages prepared effects"
+          "value": "Manages your prepared effects."
         },
         {
           "name": "/requestrole",
-          "value": "Adds or removes a role"
+          "value": "Adds or removes a role from yourself."
         },
         {
           "name": "/role",
-          "value": "Manages roles"
+          "value": "Manages this server's roles."
         },
         {
           "name": "/salt",
-          "value": "Manages salt"
+          "value": "Manages your salt."
         },
         {
           "name": "/settings",
-          "value": "Manages server settings"
+          "value": "Manages this server settings."
         },
         {
           "name": "/timer",
-          "value": "Manages timers"
+          "value": "Manages your timers."
         }
       ]
     }
