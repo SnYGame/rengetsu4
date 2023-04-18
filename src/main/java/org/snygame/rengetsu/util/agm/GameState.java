@@ -7,10 +7,12 @@ import org.luaj.vm2.lib.jse.JseBaseLib;
 import org.luaj.vm2.lib.jse.JseMathLib;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 public class GameState {
     private final Globals globals;
     private final long userId;
+    private final HashSet<String> modules = new HashSet<>();
 
     private static final ZeroArgFunction DEFAULT_COMMAND;
     private static final ZeroArgFunction DEFAULT_STAT_SHEET;
@@ -59,7 +61,21 @@ public class GameState {
                 return LuaValue.valueOf(globals.get("dm").equals(globals.get("user")));
             }
         });
+        globals.set("import", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg) {
+                // TODO verify name
+                String module = arg.tojstring();
+                if (!modules.contains(module)) {
+                    globals.loadfile("./agm_modules/%s.lua".formatted(module)).call();
+                    modules.add(module);
+                }
+                return null;
+            }
+        });
         // globals.set("print", LuaValue.NIL); TODO uncomment when done
+        globals.set("dofile", LuaValue.NIL);
+        globals.set("loadfile", LuaValue.NIL);
 
         globals.loadfile("./agm_modules/testing.lua").call(); // TODO remove when done
     }
@@ -73,9 +89,11 @@ public class GameState {
     public void runCommand(long userId, String[] args) {
         globals.set("user", String.valueOf(userId));
         globals.get("runcommand").call(LuaValue.listOf(Arrays.stream(args).map(LuaValue::valueOf).toArray(LuaValue[]::new)));
+        // TODO handle infinite loops
     }
 
     public String showSheet() {
         return globals.get("displaysheet").call().tojstring();
+        // TODO handle infinite loops
     }
 }

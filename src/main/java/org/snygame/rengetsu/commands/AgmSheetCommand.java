@@ -1,6 +1,7 @@
 package org.snygame.rengetsu.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.util.agm.GameState;
@@ -20,6 +21,6 @@ public class AgmSheetCommand extends InteractionListener.CommandDelegate<ChatInp
     public Mono<Void> handle(ChatInputInteractionEvent event) {
         long userId = event.getInteraction().getUser().getId().asLong();
         GameState gameState = rengetsu.getAgmManager().getGameState(userId);
-        return event.reply(gameState.showSheet());
+        return event.reply(gameState.showSheet()).withAllowedMentions(AllowedMentions.suppressAll());
     }
 }
