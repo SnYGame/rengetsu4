@@ -41,12 +41,13 @@ public class GameStateSetup {
                 DiceRoll.Result result = dice.roll();
                 LuaTable luaResult = LuaValue.listOf(Arrays.stream(result.rolls()).mapToObj(LuaValue::valueOf).toArray(LuaValue[]::new));
                 luaResult.set("sum", result.sum());
+                luaResult.set("msg", result.toString());
                 return luaResult;
             }
         };
     }
 
-    static LuaTable setupAgm(Globals globals, long userId) {
+    static LuaTable setupAgm(Globals globals, EffectStack effectStack, long userId) {
         HashSet<String> modules = new HashSet<>();
 
         globals.load(new JseBaseLib());
@@ -65,6 +66,7 @@ public class GameStateSetup {
         agm.set("runcommand", DEFAULT_COMMAND);
         agm.set("displaysheet", DEFAULT_STAT_SHEET);
         agm.set("rolldice", FUNCTION_ROLL_DICE);
+        agm.set("stack", effectStack.getTable());
         agm.set("requiredm", new ZeroArgFunction() {
             @Override
             public LuaValue call() {

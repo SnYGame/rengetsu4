@@ -8,16 +8,19 @@ import java.util.Arrays;
 
 public class GameState {
     private final LuaTable agm;
+    private final EffectStack effectStack;
 
     public GameState(long userId) {
         Globals globals = new Globals();
-        agm = GameStateSetup.setupAgm(globals, userId);
+        effectStack = new EffectStack();
+        agm = GameStateSetup.setupAgm(globals, effectStack, userId);
     }
 
-    public void runCommand(long userId, String[] args) {
+    public String runCommand(long userId, String[] args) {
         agm.set("user", String.valueOf(userId));
-        agm.get("runcommand").invoke(Arrays.stream(args).map(LuaValue::valueOf).toArray(LuaValue[]::new));
+        String output = agm.get("runcommand").invoke(Arrays.stream(args).map(LuaValue::valueOf).toArray(LuaValue[]::new)).tojstring();
         // TODO handle infinite loops
+        return output;
     }
 
     public String showSheet() {
