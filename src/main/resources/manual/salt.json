@@ -11,11 +11,11 @@
         },
         {
           "name": "Usage: /salt balance [user]",
-          "value": "Specifying a **user** will show how much salt they have instead."
+          "value": "Specifying a **user** will show how much salt they have."
         },
         {
           "name": "Usage: /salt claim",
-          "value": "This command lets you gain 2000 salt once per day."
+          "value": "Use this command to gain 2000 salt. This can only happen once per day (resets at 0:00 UTC)."
         },
         {
           "name": "Usage: /salt remind",
@@ -23,7 +23,7 @@
         },
         {
           "name": "Usage: /salt give <user> <amount>",
-          "value": "You can give **user** salt as specified by the **amount** with this command. You cannot give a bot salt."
+          "value": "You can give **user** **amount** of your salt. Bots cannot be given salt. You can't give more salt than you have."
         }
       ]
     }
