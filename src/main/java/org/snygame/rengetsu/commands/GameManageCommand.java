@@ -6,14 +6,14 @@ import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
-public class AgmManageCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
-    public AgmManageCommand(Rengetsu rengetsu) {
+public class GameManageCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
+    public GameManageCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }
 
     @Override
     public String getName() {
-        return "agm-manage";
+        return "gamemanage";
     }
 
     @Override

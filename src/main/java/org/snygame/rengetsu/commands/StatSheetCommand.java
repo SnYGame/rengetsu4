@@ -7,14 +7,14 @@ import org.snygame.rengetsu.listeners.InteractionListener;
 import org.snygame.rengetsu.util.agm.GameState;
 import reactor.core.publisher.Mono;
 
-public class AgmSheetCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
-    public AgmSheetCommand(Rengetsu rengetsu) {
+public class StatSheetCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
+    public StatSheetCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }
 
     @Override
     public String getName() {
-        return "agm-sheet";
+        return "statsheet";
     }
 
     @Override

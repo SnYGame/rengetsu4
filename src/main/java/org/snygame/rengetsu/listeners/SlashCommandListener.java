@@ -27,8 +27,8 @@ public class SlashCommandListener extends Listener {
                 new PrepareCommand(rengetsu),
                 new HelpCommand(rengetsu),
                 new AgmCommand(rengetsu),
-                new AgmManageCommand(rengetsu),
-                new AgmSheetCommand(rengetsu)
+                new GameManageCommand(rengetsu),
+                new StatSheetCommand(rengetsu)
         );
     }
 
