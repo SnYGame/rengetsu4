@@ -6,11 +6,11 @@
       "fields": [
         {
           "name": "Usage: /requestrole <role>",
-          "value": "If the **role** is requestable, this command will give you that **role**. If you already have that **role**, it will be removed instead. Some **roles** may require you to make an agreement before you may receive it."
+          "value": "If the **role** is requestable, this command will give it to you. If you already have that role, it will instead be removed. Some roles may require you to consent to an agreement before receiving them."
         },
         {
           "name": "Usage: /requestrole <role> [duration]",
-          "value": "Some **roles** may only be allowed to be given for a temporary amount of time. For those, the **duration** must be specified. The maximum duration is 30 days."
+          "value": "Some roles may only be temporarily obtainable. For these roles, the **duration** must be specified. The maximum duration is 30 days."
         }
       ]
     }
