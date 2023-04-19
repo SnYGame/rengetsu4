@@ -56,7 +56,8 @@ public class Rengetsu {
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
          */
         List<String> commands = List.of("dice.json", "here.json", "math.json", "salt.json", "timer.json", "role.json",
-                "requestrole.json", "settings.json", "prep.json", "help.json", "agm.json", "gamemanage.json", "statsheet.json");
+                "requestrole.json", "settings.json", "prep.json", "help.json", "agm.json", "gamemanage.json", "statsheet.json",
+                "stack.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient()).registerCommands(commands);
         } catch (Exception e) {

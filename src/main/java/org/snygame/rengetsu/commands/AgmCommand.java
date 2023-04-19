@@ -22,7 +22,9 @@ public class AgmCommand extends InteractionListener.CommandDelegate<ChatInputInt
         String[] args = event.getOption("command").flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("").split(" ");
         long userId = event.getInteraction().getUser().getId().asLong(); // TODO get joined ID as well
-        String output = rengetsu.getAgmManager().getGameState(userId).runCommand(userId, args);
-        return event.reply(output);
+        return event.getInteraction().getChannel().flatMap(channel -> {
+            String output = rengetsu.getAgmManager().getGameState(userId).runCommand(channel, userId, args);
+            return event.reply(output);
+        });
     }
 }

@@ -14,13 +14,17 @@ public class Resources {
      * @return The contents of the file as a String, otherwise throws an exception
      */
     public static String getResourceFileAsString(String fileName) throws IOException {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream resourceAsStream = classLoader.getResourceAsStream(fileName)) {
+        try (InputStream resourceAsStream = getResourceFileAsStream(fileName)) {
             if (resourceAsStream == null) return null;
             try (InputStreamReader inputStreamReader = new InputStreamReader(resourceAsStream);
                  BufferedReader reader = new BufferedReader(inputStreamReader)) {
                 return reader.lines().collect(Collectors.joining(System.lineSeparator()));
             }
         }
+    }
+
+    public static InputStream getResourceFileAsStream(String fileName) {
+        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+        return classLoader.getResourceAsStream(fileName);
     }
 }

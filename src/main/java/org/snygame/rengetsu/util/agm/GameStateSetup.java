@@ -6,7 +6,11 @@ import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.JseBaseLib;
 import org.luaj.vm2.lib.jse.JseMathLib;
 import org.snygame.rengetsu.util.DiceRoll;
+import org.snygame.rengetsu.util.Resources;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -47,7 +51,7 @@ public class GameStateSetup {
         };
     }
 
-    static LuaTable setupAgm(Globals globals, EffectStack effectStack, long userId) {
+    static LuaTable setupAgm(Globals globals, long userId) {
         HashSet<String> modules = new HashSet<>();
 
         globals.load(new JseBaseLib());
@@ -66,7 +70,6 @@ public class GameStateSetup {
         agm.set("runcommand", DEFAULT_COMMAND);
         agm.set("displaysheet", DEFAULT_STAT_SHEET);
         agm.set("rolldice", FUNCTION_ROLL_DICE);
-        agm.set("stack", effectStack.getTable());
         agm.set("requiredm", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
@@ -79,7 +82,7 @@ public class GameStateSetup {
         agm.set("isdm", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
-                return LuaValue.valueOf(globals.get("dm").equals(globals.get("user")));
+                return LuaValue.valueOf(agm.get("dm").equals(agm.get("user")));
             }
         });
         agm.set("import", new OneArgFunction() {
@@ -98,6 +101,9 @@ public class GameStateSetup {
         globals.set("dofile", LuaValue.NIL);
         globals.set("loadfile", LuaValue.NIL);
         globals.set("debug", LuaValue.NIL);
+
+        InputStream stackLib = Resources.getResourceFileAsStream("agm/stack.lua");
+        globals.load(new InputStreamReader(stackLib), "stack.lua").call();
 
         globals.loadfile("./agm_modules/testing.lua").call(); // TODO remove when done
 

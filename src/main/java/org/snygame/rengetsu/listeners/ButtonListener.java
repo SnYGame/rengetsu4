@@ -15,7 +15,8 @@ public class ButtonListener extends InteractionListener<ButtonInteractionEvent> 
                 new RequestRoleAgreementButton(rengetsu),
                 new PrepEditButton(rengetsu),
                 new ManualPageButton(rengetsu),
-                new SettingsClearLogButton(rengetsu)
+                new SettingsClearLogButton(rengetsu),
+                new StackProcessButton(rengetsu)
         ));
     }
 }
