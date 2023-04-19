@@ -102,8 +102,11 @@ public class GameStateSetup {
         globals.set("loadfile", LuaValue.NIL);
         globals.set("debug", LuaValue.NIL);
 
-        InputStream stackLib = Resources.getResourceFileAsStream("agm/stack.lua");
-        globals.load(new InputStreamReader(stackLib), "stack.lua").call();
+        InputStream stackLib = Resources.getResourceFileAsStream("agm/Stack.lua");
+        globals.load(new InputStreamReader(stackLib), "Stack.lua").call();
+
+        InputStream outputLib = Resources.getResourceFileAsStream("agm/Output.lua");
+        globals.load(new InputStreamReader(outputLib), "Output.lua").call();
 
         globals.loadfile("./agm_modules/testing.lua").call(); // TODO remove when done
 

@@ -19,13 +19,18 @@ public class GameState {
     }
 
     public String runCommand(MessageChannel channel, long userId, String[] args) {
-        agm.set("user", String.valueOf(userId));
-        String output = agm.get("runcommand").invoke(Arrays.stream(args).map(LuaValue::valueOf).toArray(LuaValue[]::new)).tojstring();
-        // TODO handle infinite loops
-        if (effectStack.flushBuffer()) {
-            effectStack.updateMessage(channel);
+        try {
+            agm.set("user", String.valueOf(userId));
+            agm.get("runcommand").invoke(Arrays.stream(args).map(LuaValue::valueOf).toArray(LuaValue[]::new));
+            // TODO handle infinite loops
+            if (effectStack.flushBuffer()) {
+                effectStack.updateMessage(channel);
+            }
+            return flushOutput();
+        } catch (LuaError e) {
+            flushOutput();
+            throw e;
         }
-        return output;
     }
 
     public String showSheet() {
@@ -38,11 +43,30 @@ public class GameState {
     }
 
     public String processStack(MessageChannel channel) {
+        // TODO handle infinite loops
         try {
-            return effectStack.process(channel);
+            effectStack.process(channel);
+            return flushOutput();
         } catch (LuaError e) {
             effectStack.clearbuffer();
+            flushOutput();
             throw e;
         }
+    }
+
+    public String processStackAll(MessageChannel channel) {
+        // TODO handle infinite loops
+        try {
+            effectStack.processAll(channel);
+            return flushOutput();
+        } catch (LuaError e) {
+            effectStack.clearbuffer();
+            flushOutput();
+            throw e;
+        }
+    }
+
+    private String flushOutput() {
+        return agm.get("flushoutput").call().tojstring();
     }
 }

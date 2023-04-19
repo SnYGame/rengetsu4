@@ -24,7 +24,15 @@ public class StackProcessButton extends InteractionListener.CommandDelegate<Butt
         }
 
         return event.getInteraction().getChannel().flatMap(channel -> {
-            return event.reply(rengetsu.getAgmManager().getGameState(userId).processStack(channel));
+            switch (args[1]) {
+                case "pop" -> {
+                    return event.reply(rengetsu.getAgmManager().getGameState(userId).processStack(channel));
+                }
+                case "clear" -> {
+                    return event.reply(rengetsu.getAgmManager().getGameState(userId).processStackAll(channel));
+                }
+            }
+            return Mono.error(new IllegalStateException());
         });
     }
 }
