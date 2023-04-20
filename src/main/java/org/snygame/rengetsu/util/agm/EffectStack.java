@@ -52,6 +52,10 @@ public class EffectStack {
         } else {
             stackMessage.edit().withComponents(buttons).withEmbeds(builder.build()).block();
         }
+
+        if (length == 0) {
+            stackMessage = null;
+        }
     }
 
     public synchronized void resendMessage(MessageChannel channel) {
