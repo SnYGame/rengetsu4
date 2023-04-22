@@ -46,6 +46,7 @@ public class GameStateSetup {
                 LuaTable luaResult = LuaValue.listOf(Arrays.stream(result.rolls()).mapToObj(LuaValue::valueOf).toArray(LuaValue[]::new));
                 luaResult.set("sum", result.sum());
                 luaResult.set("msg", result.toString());
+                luaResult.set("flat", LuaValue.FALSE);
                 return luaResult;
             }
         };

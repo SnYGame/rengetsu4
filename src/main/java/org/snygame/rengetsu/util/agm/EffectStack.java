@@ -8,8 +8,6 @@ import discord4j.core.spec.EmbedCreateSpec;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
-import java.util.StringJoiner;
-
 public class EffectStack {
     private final LuaTable stack;
     private Message stackMessage;
