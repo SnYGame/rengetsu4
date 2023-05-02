@@ -26,8 +26,10 @@ public abstract class InteractionListener<T extends ComponentInteractionEvent> e
                 .next()
                 //have our command class handle all the logic related to its specific command.
                 .flatMap(command -> command.handle(event))
-                .onErrorResume(Exception.class, e ->
-                        event.reply("**[Error]** An uncaught exception has occurred. Please notify the bot manager.\n%s".formatted(e)).withEphemeral(true));
+                .onErrorResume(Exception.class, e -> {
+                    Rengetsu.getLOGGER().error("Uncaught exception in command", e);
+                    return event.reply("**[Error]** An uncaught exception has occurred. Please notify the bot manager.\n%s".formatted(e)).withEphemeral(true);
+                });
     }
 
     public abstract static class CommandDelegate<T extends DeferrableInteractionEvent> extends RengClass {
