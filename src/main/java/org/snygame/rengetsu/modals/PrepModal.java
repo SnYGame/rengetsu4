@@ -1,24 +1,20 @@
 package org.snygame.rengetsu.modals;
 
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
 import org.snygame.rengetsu.listeners.InteractionListener;
-import org.snygame.rengetsu.parser.RengCalcLexer;
-import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.util.DiceRoll;
 import org.snygame.rengetsu.util.math.ASTGenerator;
 import org.snygame.rengetsu.util.math.ASTNode;
+import org.snygame.rengetsu.util.math.Parser;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
     private static final Pattern VAR_RE = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
@@ -175,30 +171,15 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
                 continue;
             }
 
-            RengCalcLexer lexer = new RengCalcLexer(CharStreams.fromString(query));
-            StringJoiner errorJoiner = new StringJoiner("\n");
-            ANTLRErrorListener listener = new BaseErrorListener() {
-                @Override
-                public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-                    errorJoiner.add("%d: %s\n".formatted(charPositionInLine, msg));
-                }
-            };
-            lexer.removeErrorListeners();
-            lexer.addErrorListener(listener);
+            Parser.ParseTree pt = Parser.parseCalculation(query);
 
-            RengCalcParser parser = new RengCalcParser(new CommonTokenStream(lexer));
-            parser.removeErrorListeners();
-            parser.addErrorListener(listener);
-
-            RengCalcParser.CalculationContext pt = parser.calculation();
-
-            if (errorJoiner.length() > 0) {
-                errors.add("`%s`\n%s".formatted(pt.getText().substring(0, pt.getText().length() - 5), errorJoiner.toString()));
+            if (!pt.errors().isEmpty()) {
+                errors.add("`%s`\n%s".formatted(Parser.shortenText(pt.parseTree().getText()), String.join("\n", pt.errors())));
+                continue;
             }
 
-            ASTNode ast = new ASTGenerator().visit(pt);
-            calculationData.add(new PrepData.Data.CalculationData(description,
-                    pt.getText().substring(0, pt.getText().length() - 5), ast));
+            ASTNode ast = new ASTGenerator().visit(pt.parseTree());
+            calculationData.add(new PrepData.Data.CalculationData(description, Parser.shortenText(pt.parseTree().getText()), ast));
             description = null;
         }
 

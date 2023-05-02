@@ -4,20 +4,21 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
-import org.snygame.rengetsu.parser.RengCalcLexer;
-import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.math.ASTGenerator;
 import org.snygame.rengetsu.util.math.ASTNode;
+import org.snygame.rengetsu.util.math.Parser;
 import org.snygame.rengetsu.util.math.Type;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -431,28 +432,13 @@ public class PrepData extends TableData {
 
             public ASTNode getAst() {
                 if (ast == null) {
-                    RengCalcLexer lexer = new RengCalcLexer(CharStreams.fromString(query));
-                    List<String> errors = new ArrayList<>();
-                    ANTLRErrorListener listener = new BaseErrorListener() {
-                        @Override
-                        public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-                            errors.add("%d: %s\n".formatted(charPositionInLine, msg));
-                        }
-                    };
-                    lexer.removeErrorListeners();
-                    lexer.addErrorListener(listener);
+                    Parser.ParseTree pt = Parser.parseCalculation(query);
 
-                    RengCalcParser parser = new RengCalcParser(new CommonTokenStream(lexer));
-                    parser.removeErrorListeners();
-                    parser.addErrorListener(listener);
-
-                    RengCalcParser.CalculationContext pt = parser.calculation();
-
-                    if (!errors.isEmpty()) {
-                        throw new IllegalStateException("Syntax error(s) found in stored query\n" + String.join("\n", errors));
+                    if (!pt.errors().isEmpty()) {
+                        throw new IllegalStateException("Syntax error(s) found in stored query\n" + String.join("\n", pt.errors()));
                     }
 
-                    ast = new ASTGenerator().visit(pt);
+                    ast = new ASTGenerator().visit(pt.parseTree());
                 }
                 return ast;
             }
