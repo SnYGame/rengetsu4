@@ -276,12 +276,26 @@ public class PrepData extends TableData {
         if (data.params.length > 0) {
             embed.addField("Parameters", String.join(", ", data.params), false);
         }
+
+        String rollDesc = "";
+        StringJoiner joiner = new StringJoiner("\n");
         for (Data.RollData rollData: data.rolls) {
-            if (rollData instanceof Data.DiceRollData diceroll && diceroll.variable != null) {
-                embed.addField(rollData.description, "%s = %s".formatted(diceroll.variable, rollData.query.replace("*", "\\*")), false);
-            } else {
-                embed.addField(rollData.description, rollData.query.replace("*", "\\*"), false);
+            if (rollData.description != null) {
+                if (joiner.length() > 0) {
+                    embed.addField(rollDesc, joiner.toString(), false);
+                    joiner = new StringJoiner("\n");
+                }
+                rollDesc = rollData.description;
             }
+            if (rollData instanceof Data.DiceRollData diceroll && diceroll.variable != null) {
+                joiner.add("%s=%s".formatted(diceroll.variable, rollData.query.replace("*", "\\*")));
+            } else {
+                joiner.add(rollData.query.replace("*", "\\*"));
+            }
+        }
+
+        if (joiner.length() > 0) {
+            embed.addField(rollDesc, joiner.toString(), false);
         }
 
         builder.addComponent(ActionRow.of(

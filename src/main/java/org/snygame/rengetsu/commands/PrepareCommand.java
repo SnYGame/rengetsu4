@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -446,51 +447,58 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                     .collect(Collectors.joining(", ")),false);
         }
 
-        embed.addAllFields(data.rolls.stream().map(rollData -> {
-            switch (rollData) {
-                case PrepData.Data.DiceRollData diceRoll -> {
-                    DiceRoll diceroll = DiceRoll.parse(diceRoll.query);
-                    if (diceroll.getRepeat() == 1) {
-                        DiceRoll.Result result = diceroll.roll();
-                        if (diceRoll.variable != null) {
-                            variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
-                            return EmbedCreateFields.Field.of(diceRoll.description,
-                                    "`%s = %s` %s".formatted(diceRoll.variable, diceRoll.query, result.toString())
-                                    , false);
-                        }
-
-                        return EmbedCreateFields.Field.of(diceRoll.description,
-                                "`%s` %s".formatted(diceRoll.query, result.toString())
-                                , false);
-                    } else {
-                        return EmbedCreateFields.Field.of(diceRoll.description,
-                                "`%s`\n%s".formatted(diceRoll.variable == null ? diceRoll.query : "%s = %s"
-                                                .formatted(diceRoll.variable, diceRoll.query),
-                                        Stream.generate(() -> {
-                                            DiceRoll.Result result = diceroll.roll();
-                                            if (diceRoll.variable != null) {
-                                                variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
-                                            }
-                                            return result.toString();
-                                        }).limit(diceroll.getRepeat()).collect(Collectors.joining("\n")))
-                                , false);
-                    }
+        String rollDesc = "";
+        StringJoiner joiner = new StringJoiner("\n");
+        for (PrepData.Data.RollData rollData: data.rolls) {
+            if (rollData.description != null) {
+                if (joiner.length() > 0) {
+                    embed.addField(rollDesc, joiner.toString(), false);
+                    joiner = new StringJoiner("\n");
                 }
-                case PrepData.Data.CalculationData calculation -> {
-                    try {
-                        return EmbedCreateFields.Field.of(calculation.description,
-                                "`%s` %s".formatted(calculation.query,
-                                        Interpreter.interpret(calculation.bytecode, variables)), false);
-                    } catch (Exception e) {
-                        return EmbedCreateFields.Field.of(calculation.description,
-                                "`%s` Error: %s".formatted(calculation.query,
-                                        e.getMessage()), false);
-                    }
-                }
+                rollDesc = rollData.description;
             }
-            throw new RuntimeException();
-        }).toList());
+            joiner.add(rollValue(variables, rollData));
+        }
+
+        if (joiner.length() > 0) {
+            embed.addField(rollDesc, joiner.toString(), false);
+        }
 
         return event.reply(builder.addEmbed(embed.build()).build());
+    }
+
+    private String rollValue(Object[] variables, PrepData.Data.RollData rollData) {
+        switch (rollData) {
+            case PrepData.Data.DiceRollData diceRoll -> {
+                DiceRoll diceroll = DiceRoll.parse(diceRoll.query);
+                if (diceroll.getRepeat() == 1) {
+                    DiceRoll.Result result = diceroll.roll();
+                    if (diceRoll.variable != null) {
+                        variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
+                        return "`%s=%s` %s".formatted(diceRoll.variable, diceRoll.query, result.toString());
+                    }
+
+                    return "`%s` %s".formatted(diceRoll.query, result.toString());
+                } else {
+                    return "`%s`\n%s".formatted(diceRoll.variable == null ? diceRoll.query : "%s = %s"
+                                    .formatted(diceRoll.variable, diceRoll.query),
+                            Stream.generate(() -> {
+                                DiceRoll.Result result = diceroll.roll();
+                                if (diceRoll.variable != null) {
+                                    variables[diceRoll.result] = BigInteger.valueOf(result.actualSum());
+                                }
+                                return result.toString();
+                            }).limit(diceroll.getRepeat()).collect(Collectors.joining("\n")));
+                }
+            }
+            case PrepData.Data.CalculationData calculation -> {
+                try {
+                    return "`%s` %s".formatted(calculation.query, Interpreter.interpret(calculation.bytecode, variables));
+                } catch (Exception e) {
+                    return "`%s` Error: %s".formatted(calculation.query, e.getMessage());
+                }
+            }
+        }
+        throw new RuntimeException();
     }
 }

@@ -16,7 +16,9 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
     private static final Pattern VAR_RE = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
@@ -102,25 +104,48 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
         }
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
-        String query = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
-        String variable = event.getComponents().get(2).getData().components().get().get(0).value().toOptional().orElse(null);
+        String queries = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
 
-        if (variable != null && variable.isBlank()) {
-            variable = null;
+        if (description != null && description.isBlank()) {
+            description = null;
         }
 
-        DiceRoll diceroll = DiceRoll.parse(query);
-        if (diceroll.hasError()) {
-            return event.reply("**[Error]** %s".formatted(diceroll.getError())).withEphemeral(true);
+        List<PrepData.Data.DiceRollData> diceRollData = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (String query: queries.split(";|\n")) {
+            if (query.isBlank()) {
+                continue;
+            }
+
+            String variable = null;
+
+            if (query.contains("=")) {
+                String[] split = query.split("=", 2);
+                variable = split[0].strip();
+                query = split[1].strip();
+            }
+
+            DiceRoll diceroll = DiceRoll.parse(query);
+            if (diceroll.hasError()) {
+                errors.add("`%s` %s".formatted(diceroll.shortRepr(), diceroll.getError()));
+                continue;
+            }
+
+            if (variable != null && !VAR_RE.matcher(variable).matches()) {
+                errors.add("`%s` Variable name must start with a letter or underscore and only contain letters, numbers, or underscore".formatted(variable));
+                continue;
+            }
+
+            diceRollData.add(new PrepData.Data.DiceRollData(description, diceroll.toString(), variable));
+            description = null;
         }
 
-        if (variable != null && !VAR_RE.matcher(variable).matches()) {
-            return event.reply(
-                    "**[Error]** Variable name must start with a letter or underscore and only contain letters, numbers, or underscore")
-                    .withEphemeral(true);
+        if (!errors.isEmpty()) {
+            return event.reply("**[Error]** Syntax error(s)\n" + String.join("\n", errors)).withEphemeral(true);
         }
 
-        data.rolls.add(new PrepData.Data.DiceRollData(description, diceroll.toString(), variable));
+        data.rolls.addAll(diceRollData);
         return event.edit(PrepData.buildMenu(data));
     }
 
@@ -136,32 +161,52 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
         }
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
-        String query = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
+        String queries = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
 
-        RengCalcLexer lexer = new RengCalcLexer(CharStreams.fromString(query));
-        List<String> errors = new ArrayList<>();
-        ANTLRErrorListener listener = new BaseErrorListener() {
-            @Override
-            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-                errors.add("%d: %s\n".formatted(charPositionInLine, msg));
-            }
-        };
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(listener);
-
-        RengCalcParser parser = new RengCalcParser(new CommonTokenStream(lexer));
-        parser.removeErrorListeners();
-        parser.addErrorListener(listener);
-
-        RengCalcParser.CalculationContext pt = parser.calculation();
-
-        if (!errors.isEmpty()) {
-            return event.reply("**Syntax error(s)**\n" + String.join("\n", errors)).withEphemeral(true);
+        if (description != null && description.isBlank()) {
+            description = null;
         }
 
-        ASTNode ast = new ASTGenerator().visit(pt);
-        data.rolls.add(new PrepData.Data.CalculationData(description,
-                pt.getText().substring(0, pt.getText().length() - 5), ast));
+        List<PrepData.Data.CalculationData> calculationData = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (String query: queries.split(";|\n")) {
+            if (query.isBlank()) {
+                continue;
+            }
+
+            RengCalcLexer lexer = new RengCalcLexer(CharStreams.fromString(query));
+            StringJoiner errorJoiner = new StringJoiner("\n");
+            ANTLRErrorListener listener = new BaseErrorListener() {
+                @Override
+                public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+                    errorJoiner.add("%d: %s\n".formatted(charPositionInLine, msg));
+                }
+            };
+            lexer.removeErrorListeners();
+            lexer.addErrorListener(listener);
+
+            RengCalcParser parser = new RengCalcParser(new CommonTokenStream(lexer));
+            parser.removeErrorListeners();
+            parser.addErrorListener(listener);
+
+            RengCalcParser.CalculationContext pt = parser.calculation();
+
+            if (errorJoiner.length() > 0) {
+                errors.add("`%s`\n%s".formatted(pt.getText().substring(0, pt.getText().length() - 5), errorJoiner.toString()));
+            }
+
+            ASTNode ast = new ASTGenerator().visit(pt);
+            calculationData.add(new PrepData.Data.CalculationData(description,
+                    pt.getText().substring(0, pt.getText().length() - 5), ast));
+            description = null;
+        }
+
+        if (!errors.isEmpty()) {
+            return event.reply("**[Error]** Syntax error(s)\n" + String.join("\n", errors)).withEphemeral(true);
+        }
+
+        data.rolls.addAll(calculationData);
         return event.edit(PrepData.buildMenu(data));
     }
 

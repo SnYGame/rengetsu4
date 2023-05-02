@@ -123,15 +123,11 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
                 return event.presentModal("Add dice roll", "prep:add_roll:%d".formatted(data.uid), List.of(
                         ActionRow.of(
                                 TextInput.small("description", "Description", 0, 100)
-                                        .required(true)
+                                        .required(false)
                         ),
                         ActionRow.of(
-                                TextInput.small("roll", "Dice roll",
+                                TextInput.paragraph("roll", "Dice rolls",
                                         0, 500).required(true)
-                        ),
-                        ActionRow.of(
-                                TextInput.small("variable", "Result variable",
-                                        0, 50).required(false)
                         )
                 ));
             }
@@ -139,10 +135,10 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
                 return event.presentModal("Add calculation", "prep:add_calc:%d".formatted(data.uid), List.of(
                         ActionRow.of(
                                 TextInput.small("description", "Description", 0, 100)
-                                        .required(true)
+                                        .required(false)
                         ),
                         ActionRow.of(
-                                TextInput.small("calc", "Calculation",
+                                TextInput.paragraph("calc", "Calculations",
                                         0, 500).required(true)
                         )
                 ));
