@@ -113,7 +113,7 @@ public class DiceRoll {
             String prevOp = null;
             while (options.find()) {
                 if (options.group(2) != null) {
-                    if (prevOp != null && List.of("rep", "+", "-").contains(prevOp)) {
+                    if (prevOp != null && Set.of("rep", "+", "-").contains(prevOp)) {
                         diceroll.error = "Missing parameter after %s".formatted(prevOp);
                         return diceroll;
                     }
@@ -136,7 +136,7 @@ public class DiceRoll {
                         }
                     }
                 } else if (options.group(3) != null) {
-                    if (prevOp != null && List.of("rep", "+", "-").contains(prevOp)) {
+                    if (prevOp != null && Set.of("rep", "+", "-").contains(prevOp)) {
                         diceroll.error = "Missing parameter after %s".formatted(prevOp);
                         return diceroll;
                     }
@@ -166,8 +166,8 @@ public class DiceRoll {
                 }
             }
 
-            if ("rep".equals(prevOp)) {
-                diceroll.error = "Missing parameter after rep";
+            if (prevOp != null && Set.of("rep", "+", "-").contains(prevOp)) {
+                diceroll.error = "Missing parameter after %s".formatted(prevOp);
                 return diceroll;
             }
         } catch (NumberFormatException e) {
