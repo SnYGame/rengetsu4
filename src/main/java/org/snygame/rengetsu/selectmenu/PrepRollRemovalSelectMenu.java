@@ -32,7 +32,12 @@ public class PrepRollRemovalSelectMenu extends InteractionListener.CommandDelega
 
         int[] remove = event.getValues().stream().mapToInt(Integer::parseInt).sorted().toArray();
         for (int i = remove.length - 1; i >= 0; i--) {
-            data.rolls.remove(remove[i]);
+            int index = remove[i];
+            PrepData.Data.RollData rollData = data.rolls.remove(index);
+            PrepData.Data.RollData newDesc;
+            if (rollData.description != null && index < data.rolls.size() && (newDesc = data.rolls.get(index)).description == null) {
+                newDesc.description = rollData.description;
+            }
         }
 
         return event.edit(PrepData.buildMenu(data));

@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.stream.IntStream;
 
 public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonInteractionEvent> {
@@ -144,17 +145,36 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
                 ));
             }
             case "del_roll" -> {
+                EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
+
+                String rollDesc = "";
+                StringJoiner joiner = new StringJoiner("\n");
+                for (PrepData.Data.RollData rollData: data.rolls) {
+                    if (rollData.description != null) {
+                        if (joiner.length() > 0) {
+                            embed.addField(rollDesc, joiner.toString(), false);
+                            joiner = new StringJoiner("\n");
+                        }
+                        rollDesc = rollData.description;
+                    }
+                    if (rollData instanceof PrepData.Data.DiceRollData diceroll && diceroll.variable != null) {
+                        joiner.add("%s=%s".formatted(diceroll.variable, rollData.query.replace("*", "\\*")));
+                    } else {
+                        joiner.add(rollData.query.replace("*", "\\*"));
+                    }
+                }
+
+                if (joiner.length() > 0) {
+                    embed.addField(rollDesc, joiner.toString(), false);
+                }
+
                 return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                         .content("")
-                        .addEmbed(EmbedCreateSpec.builder()
-                                .fields(data.rolls.stream().map(rollData ->
-                                        EmbedCreateFields.Field.of(rollData.description,
-                                                rollData.query, false)).toList())
-                                .build())
+                        .addEmbed(embed.build())
                         .addComponent(ActionRow.of(
                                 SelectMenu.of("prep:del_roll:%d".formatted(data.uid),
                                                 IntStream.range(0, data.rolls.size()).mapToObj(i ->
-                                                        SelectMenu.Option.of(data.rolls.get(i).description,
+                                                        SelectMenu.Option.of(data.rolls.get(i).query,
                                                                 String.valueOf(i))).toList()
                                         ).withMaxValues(data.rolls.size())
                                         .withPlaceholder("Select dice rolls or calculations to remove")
