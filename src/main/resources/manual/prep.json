@@ -126,15 +126,11 @@
       "fields": [
         {
           "name": "Description",
-          "value": "The description of what this roll is for."
+          "value": "The description of what this roll is for. Leave blank to append this to the previous section's rolls or calculations."
         },
         {
-          "name": "Dice roll",
-          "value": "The dice command input to execute."
-        },
-        {
-          "name": "Result variable (optional)",
-          "value": "If specified, the result of the dice roll will be stored in this variable. Variable names may only contain letters, numbers, or underscore, and cannot begin with a number."
+          "name": "Dice rolls",
+          "value": "The dice command inputs to execute, separated into multiple lines or with semicolons. Additionally, dice results may be assigned to variables using the assignment operator (=)."
         }
       ]
     },
@@ -144,11 +140,11 @@
       "fields": [
         {
           "name": "Description",
-          "value": "The description of what this calculation is for."
+          "value": "The description of what this calculation is for. Leave blank to append this to the previous section's rolls or calculations"
         },
         {
-          "name": "Calculation",
-          "value": "The math command input to execute."
+          "name": "Calculations",
+          "value": "The math command input to execute, separated into multiple lines or with semicolons."
         }
       ]
     }
