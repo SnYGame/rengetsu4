@@ -171,7 +171,7 @@ public class DiceRoll {
                 return diceroll;
             }
         } catch (NumberFormatException e) {
-            diceroll.error = "Values must be between %d and %d".formatted(Integer.MIN_VALUE, Integer.MAX_VALUE);
+            diceroll.error = "Values must be between %d and %d".formatted(0, Integer.MAX_VALUE);
             return diceroll;
         }
 
