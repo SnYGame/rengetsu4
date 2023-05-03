@@ -9,9 +9,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DiceRoll {
-    private static final Pattern RANGE_DICE_RE = Pattern.compile("^(-?\\d+)\\s+(-?\\d+)(.*)$");
+    private static final Pattern RANGE_DICE_RE = Pattern.compile("^(-?\\d+)\\s*(?:~|:)?\\s*(-?\\d+)(.*)$");
     private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\]|(%))(.*)$");
-    private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+)|([+-])");
+    private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+|[^\\d\\w\\s]+)");
 
     public static final int MAX_DICE = 0x8000000;
     public static final int MAX_DICE_UNIQUE = 0x2000000;
@@ -55,6 +55,9 @@ public class DiceRoll {
             } catch (NumberFormatException e) {
                 diceroll.error = "Values must be between %d and %d".formatted(Integer.MIN_VALUE, Integer.MAX_VALUE);
                 return diceroll;
+            } catch (IndexOutOfBoundsException e) {
+                diceroll.error = e.getMessage();
+                return diceroll;
             }
 
             diceroll.diceCount = 1;
@@ -79,8 +82,9 @@ public class DiceRoll {
                                 continue;
                             }
 
-                            if (range.contains(":")) {
-                                String[] values = range.split(":");
+                            String splitChar;
+                            if (range.contains(splitChar = ":") || range.contains(splitChar = "~")) {
+                                String[] values = range.split(splitChar);
 
                                 if (values.length != 2) {
                                     diceroll.error = "Invalid die faces";
@@ -96,6 +100,9 @@ public class DiceRoll {
                         diceroll.faces = new Ranges(ranges);
                     } catch (NumberFormatException e) {
                         diceroll.error = "Invalid die faces";
+                        return diceroll;
+                    } catch (IndexOutOfBoundsException e) {
+                        diceroll.error = e.getMessage();
                         return diceroll;
                     }
                 } else if (match.group(2) != null) {
@@ -129,19 +136,12 @@ public class DiceRoll {
                         case "nosum" -> diceroll.noSum = true;
                         case "sumonly" -> diceroll.sumOnly = true;
                         case "hidedrop" -> diceroll.hideDrop = true;
-                        case "rep" -> {}
+                        case "rep", "+", "-" -> {}
                         default -> {
                             diceroll.error = "Unknown option: %s".formatted(prevOp);
                             return diceroll;
                         }
                     }
-                } else if (options.group(3) != null) {
-                    if (prevOp != null && Set.of("rep", "+", "-").contains(prevOp)) {
-                        diceroll.error = "Missing parameter after %s".formatted(prevOp);
-                        return diceroll;
-                    }
-
-                    prevOp = options.group(3);
                 } else {
                     int i = Integer.parseInt(options.group(1));
 
@@ -180,7 +180,7 @@ public class DiceRoll {
     }
 
     private void validate() {
-        if (faces.trueSize() == 0) {
+        if (faces.size() == 0) {
             error = "Die has no faces";
         } else if (diceCount == 0) {
             error = "No dice";
@@ -188,8 +188,8 @@ public class DiceRoll {
             error = "Cannot perform roll 0 times";
         } else if (diceCount < dropHighest + dropLowest) {
             error = "Cannot drop %d dice if there is only %d".formatted(dropLowest + dropHighest, diceCount);
-        } else if (unique && diceCount > faces.trueSize()) {
-            error = "Cannot have %d unique rolls if each die has %d faces".formatted(diceCount, faces.trueSize());
+        } else if (unique && diceCount > faces.size()) {
+            error = "Cannot have %d unique rolls if each die has %d faces".formatted(diceCount, faces.size());
         } else if (noSum && sumOnly) {
             error = "Options nosum and sumonly are incompatible";
         } else if (sorted && sumOnly) {
@@ -204,7 +204,7 @@ public class DiceRoll {
             error = "Cannot use nosum for more than %d displayed dice".formatted(MAX_DICE_DISPLAY);
         } else if (diceCount - (hideDrop ? dropLowest + dropHighest : 0) > MAX_DICE_DISPLAY && sorted) {
             error = "Cannot use sorted for more than %d displayed dice".formatted(MAX_DICE_DISPLAY);
-        } else if (faces.trueSize() > MAX_FACES) {
+        } else if (faces.size() > MAX_FACES) {
             error = "Max faces on dice is %d".formatted(MAX_FACES);
         } else if (repeat > MAX_ROLLS) {
             error = "Max rolls is %d".formatted(MAX_ROLLS);
@@ -314,7 +314,7 @@ public class DiceRoll {
             return input;
         }
 
-        return "%dd%s%s%s%s%s%s%s%s%s%s".formatted(diceCount, faces,
+        String options = "%s%s%s%s%s%s%s%s%s".formatted(
                 dropLowest == 0 ? "" : "dl%d".formatted(dropLowest),
                 dropHighest == 0 ? "" : "dh%d".formatted(dropHighest),
                 unique ? "u" : "",
@@ -324,6 +324,16 @@ public class DiceRoll {
                 sorted ? " sorted" : "",
                 hideDrop ? " hidedrop" : "",
                 repeat == 1 ? "" : " rep %d".formatted(repeat));
+
+        if (diceCount == 1 && faces instanceof Ranges ranges && ranges.count() == 1) {
+            if (options.isBlank()) {
+                return ranges.getRange(0).toString();
+            }
+
+            return "%s %s".formatted(ranges.getRange(0), options);
+        }
+
+        return "%dd%s%s".formatted(diceCount, faces, options);
     }
 
     public String shortRepr() {
@@ -396,7 +406,7 @@ public class DiceRoll {
     }
 
     private sealed interface Faces permits Fixed, Ranges {
-        long trueSize();
+        int size();
     }
 
     private record Fixed(int faces) implements Faces {
@@ -406,14 +416,14 @@ public class DiceRoll {
         }
 
         @Override
-        public long trueSize() {
+        public int size() {
             return faces;
         }
     }
     private static final class Ranges implements Faces {
         private final Map<Integer, Range> ranges;
         private final int[] scale;
-        private final long size;
+        private final int size;
 
         private Ranges(List<Range> ranges) {
             this.ranges = new HashMap<>();
@@ -424,24 +434,32 @@ public class DiceRoll {
                 this.ranges.put((int) size, ranges.get(i));
                 scale[i] = (int) size;
                 size += ranges.get(i).length();
+
+                if (size > MAX_FACES) {
+                    throw new IndexOutOfBoundsException("Max faces on dice is %d".formatted(MAX_FACES));
+                }
             }
-            this.size = size;
+            this.size = (int) size;
         }
         @Override
         public String toString() {
-            return IntStream.of(scale).boxed().map(ranges::get).map(String::valueOf).collect(Collectors.joining(", ", "[", "]"));
+            return IntStream.of(scale).mapToObj(ranges::get).map(String::valueOf).collect(Collectors.joining(", ", "[", "]"));
         }
 
-        public int size() {
-            return (int) size;
+        public int count() {
+            return ranges.size();
         }
 
         @Override
-        public long trueSize() {
+        public int size() {
             return size;
         }
 
-        private int get(int index) {
+        public Range getRange(int index) {
+            return ranges.get(scale[index]);
+        }
+
+        public int get(int index) {
             if (index < 0 || index >= size) {
                 throw new IndexOutOfBoundsException("Index %d out of bounds for length %d".formatted(index, size));
             }
@@ -451,7 +469,7 @@ public class DiceRoll {
         }
     }
 
-    private record Range (int min, int max) {
+    private record Range(int min, int max) {
         private Range(int min, int max) {
             this.min = Math.min(min, max);
             this.max = Math.max(min, max);
@@ -470,7 +488,7 @@ public class DiceRoll {
 
         @Override
         public String toString() {
-            return min == max ? String.valueOf(min) : "%d:%d".formatted(min, max);
+            return min == max ? String.valueOf(min) : "%d~%d".formatted(min, max);
         }
     }
 }
