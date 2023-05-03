@@ -27,8 +27,8 @@
           "value": "Equivalent to **1dX**."
         },
         {
-          "name": "X Y",
-          "value": "Generates a random number between **X** and **Y** (including **X** and **Y**). This is equivalent to **1d[X:Y]** (see next page)."
+          "name": "X~Y, X:Y, or X Y",
+          "value": "Generates a random number between **X** and **Y** (including **X** and **Y**)."
         }
       ]
     },
@@ -41,11 +41,11 @@
           "value": "Generates random numbers using dice that have the faces **A**, **B**, **C**. For example, **1d[1, 3, 3, 7]** can result in either a 1, 3, or a 7, and 3 is twice as likely as the other results."
         },
         {
-          "name": "Xd[A:B]",
-          "value": "Generates random numbers using dice that have the faces ranging from **A** to **B** (inclusive). For example, **1d[2:5]** will limit results to 2, 3, 4, and 5."
+          "name": "Xd[A~B] or Xd[A:B]",
+          "value": "Generates random numbers using dice that have the faces ranging from **A** to **B** (inclusive). For example, **1d[2~5]** will limit results to 2, 3, 4, and 5."
         },
         {
-          "name": "Xd[A:B, C, D:E]",
+          "name": "Xd[A~B, C, D~E]",
           "value": "The previous two methods can be combined. In this example, the dice rolled can result in values ranging from **A** to **B** (inclusive), **C**, and the values ranging from **D** to **E** (inclusive)."
         },
         {
