@@ -51,6 +51,7 @@ public class Manual {
                                 .withPlaceholder("Jump to section")
                 )
         ));
+        builder.ephemeral(true);
         return builder.build();
     }
 
