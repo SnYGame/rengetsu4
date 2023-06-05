@@ -8,11 +8,12 @@ import discord4j.core.object.entity.Member;
 import discord4j.core.object.presence.Presence;
 import discord4j.core.object.presence.Status;
 import org.snygame.rengetsu.Rengetsu;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.util.stream.Collectors;
 
-public class HereCommand extends SlashCommand {
+public class HereCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     public HereCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }

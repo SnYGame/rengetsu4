@@ -1,0 +1,50 @@
+{
+  "name": "Command List",
+  "pages": [
+    {
+      "title": "Command List",
+      "fields": [
+        {
+          "name": "/dice",
+          "value": "Performs dice rolls."
+        },
+        {
+          "name": "/help",
+          "value": "Opens the help menu."
+        },
+        {
+          "name": "/here",
+          "value": "Pings currently online users of a specified role."
+        },
+        {
+          "name": "/math",
+          "value": "Performs calculations."
+        },
+        {
+          "name": "/prepare",
+          "value": "Manages your prepared effects."
+        },
+        {
+          "name": "/requestrole",
+          "value": "Adds or removes a role from yourself."
+        },
+        {
+          "name": "/role",
+          "value": "Manages this server's roles."
+        },
+        {
+          "name": "/salt",
+          "value": "Manages your salt."
+        },
+        {
+          "name": "/settings",
+          "value": "Manages this server settings."
+        },
+        {
+          "name": "/timer",
+          "value": "Manages your timers."
+        }
+      ]
+    }
+  ]
+}

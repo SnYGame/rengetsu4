@@ -270,28 +270,26 @@ public class RoleData extends TableData {
         }
     }
 
-    public static InteractionApplicationCommandCallbackSpec buildMenu(Data roleData) {
+    public static InteractionApplicationCommandCallbackSpec buildMenu(Data data) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
-        builder.content("");
+        builder.content("").ephemeral(true);
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
         embed.title("Role settings for");
-        embed.description("<@&%d>".formatted(roleData.roleId));
+        embed.description("<@&%d>".formatted(data.roleId));
 
-        RoleData.Data.Requestable requestable = roleData.requestable;
+        RoleData.Data.Requestable requestable = data.requestable;
 
-        String key = "%d:%d".formatted(roleData.roleId, roleData.serverId);
-
-        embed.addField("Added on join", roleData.addJoin ? "Enabled" : "Disabled", true);
-        embed.addField("Added on inactivity", roleData.addInactive ? "Enabled" : "Disabled", true);
+        embed.addField("Added on join", data.addJoin ? "Enabled" : "Disabled", true);
+        embed.addField("Added on inactivity", data.addInactive ? "Enabled" : "Disabled", true);
         embed.addField("Requestable", requestable != null ? "Enabled" : "Disabled", true);
 
         builder.addComponent(ActionRow.of(
-                roleData.addJoin ? Button.danger("role:%s:add_join:false".formatted(key), "Disable adding to new members") :
-                        Button.success("role:%s:add_join:true".formatted(key), "Enable adding to new members"),
-                roleData.addInactive ? Button.danger("role:%s:add_inactive:false".formatted(key), "Disable adding to inactive members") :
-                        Button.success("role:%s:add_inactive:true".formatted(key), "Enable adding to inactive members"),
-                roleData.requestable != null ? Button.danger("role:%s:requestable:false".formatted(key), "Disable requesting") :
-                        Button.success("role:%s:requestable:true".formatted(key), "Enable requesting")
+                data.addJoin ? Button.secondary("role:add_join:%s:false".formatted(data.uid), "Toggle adding to new members") :
+                        Button.primary("role:add_join:%s:true".formatted(data.uid), "Toggle adding to new members"),
+                data.addInactive ? Button.secondary("role:add_inactive:%s:false".formatted(data.uid), "Toggle adding to inactive members") :
+                        Button.primary("role:add_inactive:%s:true".formatted(data.uid), "Toggle adding to inactive members"),
+                data.requestable != null ? Button.secondary("role:requestable:%s:false".formatted(data.uid), "Toggle requesting") :
+                        Button.primary("role:requestable:%s:true".formatted(data.uid), "Toggle requesting")
         ));
 
         if (requestable != null) {
@@ -299,62 +297,74 @@ public class RoleData extends TableData {
             embed.addField("Agreement", Objects.requireNonNullElse(requestable.agreement, "N/A"), true);
 
             builder.addComponent(ActionRow.of(
-                    requestable.temp ? Button.danger("role:%s:temp:false".formatted(key), "Disable time parameter") :
-                            Button.success("role:%s:temp:true".formatted(key), "Enable time parameter"),
-                    Button.primary("role:%s:agreement".formatted(key), "Set agreement")
+                    requestable.temp ? Button.secondary("role:temp:%s:false".formatted(data.uid), "Toggle time parameter") :
+                            Button.primary("role:temp:%s:true".formatted(data.uid), "Toggle time parameter"),
+                    Button.primary("role:agreement:%s".formatted(data.uid), "Set agreement")
             ));
         }
 
-        embed.addField("Roles to add if removed", roleData.addWhenRemoved.isEmpty() ? "None" :
-                roleData.addWhenRemoved.stream().map("<@&%d>"::formatted).collect(Collectors.joining(", ")), false);
-        embed.addField("Roles to remove if added", roleData.removeWhenAdded.isEmpty() ? "None" :
-                roleData.removeWhenAdded.stream().map("<@&%d>"::formatted).collect(Collectors.joining(", ")), false);
+        embed.addField("Roles to add if removed", data.addWhenRemoved.isEmpty() ? "None" :
+                data.addWhenRemoved.stream().map("<@&%d>"::formatted).collect(Collectors.joining(", ")), false);
+        embed.addField("Roles to remove if added", data.removeWhenAdded.isEmpty() ? "None" :
+                data.removeWhenAdded.stream().map("<@&%d>"::formatted).collect(Collectors.joining(", ")), false);
 
         builder.addComponent(ActionRow.of(
-                Button.primary("role:%s:on_remove".formatted(key), "Set roles to add if removed"),
-                Button.primary("role:%s:on_add".formatted(key), "Set roles to remove if added")
+                Button.primary("role:on_remove:%s".formatted(data.uid), "Set roles to add if removed"),
+                Button.primary("role:on_add:%s".formatted(data.uid), "Set roles to remove if added")
         ));
 
         builder.addComponent(ActionRow.of(
-                Button.success("role:%s:save".formatted(key), "Save"),
-                Button.danger("role:%s:no_save".formatted(key), "Cancel"),
-                Button.danger("role:%s:clear".formatted(key), "Clear data")
+                Button.success("role:save:%s".formatted(data.uid), "Save"),
+                Button.danger("role:clear:%s".formatted(data.uid), "Clear data")
         ));
 
         return builder.addEmbed(embed.build()).build();
     }
 
-    private final HashMap<Key, Data> tempData = new HashMap<>();
+    private final HashMap<Integer, Data> tempData = new HashMap<>();
+    private final HashMap<Key, Integer> tempKeys = new HashMap<>();
 
-    public Data getTempData(long roleId, long serverId) {
+    public Data getTempData(int uid) {
         synchronized (tempData) {
-            return tempData.get(new Key(roleId, serverId));
+            return tempData.get(uid);
         }
     }
 
     public void removeTempData(Data data) {
         synchronized (tempData) {
-            tempData.remove(new Key(data.roleId, data.serverId));
+            tempKeys.remove(new Key(data.roleId, data.serverId));
+            tempData.remove(data.uid);
             data.removalTask.cancel(false);
         }
     }
 
-    public boolean putTempData(Data data) {
+    public void putTempData(Data data) {
         synchronized (tempData) {
             Key key = new Key(data.roleId, data.serverId);
-            if (tempData.containsKey(key)) {
-                return false;
+            if (tempKeys.containsKey(key)) {
+                int uid = tempKeys.remove(key);
+                Data temp = tempData.remove(uid);
+                if (temp != null) {
+                    temp.removalTask.cancel(false);
+                }
             }
 
-            data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 15, TimeUnit.MINUTES);
-            tempData.put(key, data);
-            return true;
+            data.removalTask = TaskManager.service.schedule(() -> {
+                tempData.remove(data.uid);
+                tempKeys.remove(key);
+            }, 15, TimeUnit.MINUTES);
+
+            tempKeys.put(key, data.uid);
+            tempData.put(data.uid, data);
         }
     }
 
     private record Key(long roleId, long serverId) {}
 
     public static class Data {
+        private static int nextUid;
+
+        public final int uid;
         public long roleId;
         public long serverId;
         public boolean addJoin;
@@ -368,6 +378,7 @@ public class RoleData extends TableData {
         public Data(long roleId, long serverId) {
             this.roleId = roleId;
             this.serverId = serverId;
+            uid = nextUid++;
         }
 
         public static class Requestable {

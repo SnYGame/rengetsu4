@@ -6,7 +6,7 @@
 
     <groupId>org.snygame</groupId>
     <artifactId>Rengetsu</artifactId>
-    <version>4.1.1b</version>
+    <version>4.1.2</version>
     <build>
         <plugins>
             <plugin>
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>com.discord4j</groupId>
             <artifactId>discord4j-core</artifactId>
-            <version>3.2.3</version>
+            <version>3.2.4</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

@@ -1,0 +1,30 @@
+{
+  "name": "/timer",
+  "pages": [
+    {
+      "title": "Timer Command",
+      "fields": [
+        {
+          "name": "Usage: /timer set <duration>",
+          "value": "This command sets a timer for the specified **duration**. The maximum duration is 30 days. Once the timer is set, an id is given, which can be used for other timer commands. Buttons will also appear to allow for easy subscription to and/or cancellation of the timer."
+        },
+        {
+          "name": "Usage: /timer set <duration> [message]",
+          "value": "Timers can be given a **message**, to be displayed upon completion. If unspecified, the message defaults to \"Timer has completed\"."
+        },
+        {
+          "name": "Usage: /timer list",
+          "value": "This command will display your currently active timers."
+        },
+        {
+          "name": "Usage: /timer subscribe <id>",
+          "value": "If **id** corresponds to another user's timer, you will also be notified when that timer is completed."
+        },
+        {
+          "name": "Usage: /timer cancel <id>",
+          "value": "If **id** corresponds to one of your timers, that timer is cancelled. Otherwise, you will be unsubscribed from the timer."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "name": "/role",
+  "pages": [
+    {
+      "title": "Role Edit Command",
+      "subtitle": "Requires the **Manage Roles** permission",
+      "fields": [
+        {
+          "name": "Usage: /role <role>",
+          "value": "Opens the role edit menu to modify the attributes of this **role**."
+        }
+      ]
+    },
+    {
+      "title": "Role Edit Menu",
+      "fields": [
+        {
+          "name": "Toggle adding to new members",
+          "value": "Toggles whether the chosen role will be added to users when they join the server."
+        },
+        {
+          "name": "Toggle adding to inactive members",
+          "value": "Toggles whether the role will be added to users when they become inactive for the duration specified in the server settings."
+        },
+        {
+          "name": "Toggle requesting",
+          "value": "Toggles whether users can add or remove the role from themselves using the **/requestrole** command."
+        },
+        {
+          "name": "Toggle time parameter",
+          "value": "If the role can be requested, toggles whether users can have the role permanently or temporarily."
+        },
+        {
+          "name": "Set agreement",
+          "value": "Toggles whether users will have to consent to an agreement before receiving the role. Leave blank to disable."
+        },
+        {
+          "name": "Set roles to add if removed",
+          "value": "Allows you to select a list of roles that are added to the user if the role is removed by **/requestrole**, or from the role being removed by timeout."
+        },
+        {
+          "name": "Set roles to remove if added",
+          "value": "Allows you to select a list of roles that are added to the user if the role is added by **/requestrole**, or from the role being added due to inactivity."
+        },
+        {
+          "name": "Save",
+          "value": "This saves edits to the role. Be sure to use this when you're done!"
+        },
+        {
+          "name": "Clear data",
+          "value": "This removes all attributes from the role."
+        }
+      ]
+    }
+  ]
+}

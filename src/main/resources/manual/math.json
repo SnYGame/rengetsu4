@@ -1,0 +1,186 @@
+{
+  "name": "/math",
+  "pages": [
+    {
+      "title": "Math Command",
+      "fields": [
+        {
+          "name": "Usage: /math <inputs>",
+          "value": "This command will perform calculations (specified by **inputs**) for you and display the result(s)."
+        },
+        {
+          "name": "Usage: /math <inputs> [hide]",
+          "value": "Setting the **hide** option to true will cause the result(s) to be visible to only you."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 1",
+      "subtitle": "Basic numerical operations",
+      "fields": [
+        {
+          "name": "X + Y",
+          "value": "Adds **X** and **Y** together."
+        },
+        {
+          "name": "X - Y",
+          "value": "Subtracts **Y** from **X**."
+        },
+        {
+          "name": "X * Y",
+          "value": "Multiplies **X** by **Y**."
+        },
+        {
+          "name": "X / Y",
+          "value": "Divides **X** by **Y**."
+        },
+        {
+          "name": "X // Y",
+          "value": "Divides **X** by **Y**, then rounds the result down. For example, **5 // 2** returns **2** instead of **2.5**."
+        },
+        {
+          "name": "X % Y",
+          "value": "Returns the division remainder of two numbers. For example, **10 % 3** returns **1**."
+        },
+        {
+          "name": "X ^ Y",
+          "value": "Returns **X** raised to the Y power. For example, **3 ^ 4** returns 81."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 2",
+      "subtitle": "Comparison operations",
+      "fields": [
+        {
+          "name": "X == Y",
+          "value": "Returns **true** if **X** equals **Y**. Returns **false** otherwise."
+        },
+        {
+          "name": "X != Y",
+          "value": "Returns **true** if **X** does not equal **Y**. Returns **false** otherwise."
+        },
+        {
+          "name": "X < Y",
+          "value": "Returns **true** if **X** is less than **Y**. Returns **false** otherwise."
+        },
+        {
+          "name": "X > Y",
+          "value": "Returns **true** if **X** is greater than **Y**. Returns **false** otherwise."
+        },
+        {
+          "name": "X <= Y",
+          "value": "Returns **true** if **X** is less than or equal to **Y**. Returns **false** otherwise."
+        },
+        {
+          "name": "X >= Y",
+          "value": "Returns **true** if **X** is greater than or equal to **Y**. Returns **false** otherwise."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 3",
+      "subtitle": "Boolean operations",
+      "fields": [
+        {
+          "name": "X && Y",
+          "value": "Returns **true** if both X and Y are true. Returns **false** otherwise. **X** and **Y** must be booleans."
+        },
+        {
+          "name": "X || Y",
+          "value": "Returns **true** if either X or Y are true. Returns **false** otherwise. **X** and **Y** must be booleans."
+        },
+        {
+          "name": "!X",
+          "value": "Returns **true** if **X** is false. **X** must be a boolean."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 4",
+      "subtitle": "Other operations",
+      "fields": [
+        {
+          "name": "(X)",
+          "value": "Operations in parentheses are evaluated before other operations."
+        },
+        {
+          "name": "X ? Y : Z",
+          "value": "If **X** is true, returns **Y**. Otherwise, returns **Z**."
+        },
+        {
+          "name": "X = Y",
+          "value": "Stores the value of the right side to the variable on the left."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 5",
+      "subtitle": "Other values",
+      "fields": [
+        {
+          "name": "true",
+          "value": "Evaluates to true."
+        },
+        {
+          "name": "false",
+          "value": "Evaluates to false."
+        },
+        {
+          "name": "XdY",
+          "value": "Rolls **X** dice with **Y** faces."
+        },
+        {
+          "name": "XdY[dlN][dhM][u]",
+          "value": "The drop lowest, drop highest, or unique modifiers can be used on dice rolls. If used, the unique modifier must come last."
+        }
+      ]
+    },
+    {
+      "title": "Math Operations 6",
+      "subtitle": "Built-in functions",
+      "fields": [
+        {
+          "name": "sqrt(X)",
+          "value": "Returns the square root of **X**."
+        },
+        {
+          "name": "ln(X)",
+          "value": "Returns the natural log of **X**."
+        },
+        {
+          "name": "sin(X)",
+          "value": "Returns the sine of **X**."
+        },
+        {
+          "name": "cos(X)",
+          "value": "Returns the cosine of **X**."
+        },
+        {
+          "name": "tan(X)",
+          "value": "Returns the tangent of **X**."
+        },
+        {
+          "name": "floor(X)",
+          "value": "Returns **X** rounded down to the nearest integer."
+        },
+        {
+          "name": "ceil(X)",
+          "value": "Returns **X** rounded up to the nearest integer."
+        },
+        {
+          "name": "trunc(X)",
+          "value": "Returns **X** rounded towards zero."
+        },
+        {
+          "name": "abs(X)",
+          "value": "Returns the absolute value of **X**."
+        },
+        {
+          "name": "fact(X)",
+          "value": "Returns the factorial of **X**."
+        }
+      ]
+    }
+  ]
+}

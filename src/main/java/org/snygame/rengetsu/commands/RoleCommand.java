@@ -3,25 +3,15 @@ package org.snygame.rengetsu.commands;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.Member;
-import discord4j.core.object.presence.Presence;
-import discord4j.core.object.presence.Status;
-import discord4j.core.spec.EmbedCreateFields;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.RoleData;
+import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
-public class RoleCommand extends SlashCommand {
+public class RoleCommand extends InteractionListener.CommandDelegate<ChatInputInteractionEvent> {
     public RoleCommand(Rengetsu rengetsu) {
         super(rengetsu);
     }
@@ -51,9 +41,7 @@ public class RoleCommand extends SlashCommand {
                             return event.reply("**[Error]** Database error").withEphemeral(true);
                         }
 
-                        if (!roleData.putTempData(data)) {
-                            return event.reply("**[Error]** That role is already being edited").withEphemeral(true);
-                        }
+                        roleData.putTempData(data);
                         return event.reply(RoleData.buildMenu(data));
                     }
                 });

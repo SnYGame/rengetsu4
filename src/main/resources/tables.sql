@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS prep_roll (
     user_id INT NOT NULL,
     key TEXT NOT NULL,
     pos TEXT NOT NULL,
-    descr TEXT NOT NULL,
+    descr TEXT,
     query TEXT NOT NULL,
     bytecode BLOB,
     variable TEXT,

@@ -1,29 +1,22 @@
 package org.snygame.rengetsu.modals;
 
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.TextInput;
-import discord4j.discordjson.possible.Possible;
-import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
-import org.snygame.rengetsu.data.RoleData;
-import org.snygame.rengetsu.parser.RengCalcLexer;
-import org.snygame.rengetsu.parser.RengCalcParser;
-import org.snygame.rengetsu.util.Diceroll;
+import org.snygame.rengetsu.listeners.InteractionListener;
+import org.snygame.rengetsu.util.DiceRoll;
 import org.snygame.rengetsu.util.math.ASTGenerator;
 import org.snygame.rengetsu.util.math.ASTNode;
-import org.snygame.rengetsu.util.math.BytecodeGenerator;
+import org.snygame.rengetsu.util.math.Parser;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-public class PrepModal extends ModalInteraction {
+public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
     private static final Pattern VAR_RE = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     public PrepModal(Rengetsu rengetsu) {
@@ -39,9 +32,12 @@ public class PrepModal extends ModalInteraction {
     public Mono<Void> handle(ModalSubmitInteractionEvent event) {
         String[] args = event.getCustomId().split(":");
 
-        switch (args[3]) {
+        switch (args[1]) {
             case "init" -> {
-                return handleInit(event);
+                return handleInit(event, false);
+            }
+            case "init_instead" -> {
+                return handleInit(event, true);
             }
             case "edit" -> {
                 return handleEdit(event);
@@ -61,20 +57,18 @@ public class PrepModal extends ModalInteraction {
         }
     }
 
-    private Mono<Void> handleInit(ModalSubmitInteractionEvent event) {
+    private Mono<Void> handleInit(ModalSubmitInteractionEvent event, boolean edit) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = new PrepData.Data(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = new PrepData.Data(event.getInteraction().getUser().getId().asLong(), args[2]);
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
         data.editing = false;
 
-        if (!prepData.putTempData(data)) {
-            return event.reply("**[Error]** A prepared effect with that key is currently being edited").withEphemeral(true);
-        }
-        return event.reply(PrepData.buildMenu(data));
+        prepData.putTempData(data);
+        return edit ? event.edit(PrepData.buildMenu(data)) : event.reply(PrepData.buildMenu(data));
     }
 
     private Mono<Void> handleEdit(ModalSubmitInteractionEvent event) {
@@ -82,9 +76,10 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
@@ -98,31 +93,55 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
-        String query = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
-        String variable = event.getComponents().get(2).getData().components().get().get(0).value().toOptional().orElse(null);
+        String queries = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
 
-        if (variable != null && variable.isBlank()) {
-            variable = null;
+        if (description != null && description.isBlank()) {
+            description = null;
         }
 
-        Diceroll diceroll = Diceroll.parse(query);
-        if (diceroll.hasError()) {
-            return event.reply("**[Error]** %s".formatted(diceroll.getError())).withEphemeral(true);
+        List<PrepData.Data.DiceRollData> diceRollData = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (String query: queries.split(";|\n")) {
+            if (query.isBlank()) {
+                continue;
+            }
+
+            String variable = null;
+
+            if (query.contains("=")) {
+                String[] split = query.split("=", 2);
+                variable = split[0].strip();
+                query = split[1].strip();
+            }
+
+            DiceRoll diceroll = DiceRoll.parse(query);
+            if (diceroll.hasError()) {
+                errors.add("`%s` %s".formatted(diceroll.shortRepr(), diceroll.getError()));
+                continue;
+            }
+
+            if (variable != null && !VAR_RE.matcher(variable).matches()) {
+                errors.add("`%s` Variable name must start with a letter or underscore and only contain letters, numbers, or underscore".formatted(variable));
+                continue;
+            }
+
+            diceRollData.add(new PrepData.Data.DiceRollData(description, diceroll.toString(), variable));
+            description = null;
         }
 
-        if (variable != null && !VAR_RE.matcher(variable).matches()) {
-            return event.reply(
-                    "**[Error]** Variable name must start with a letter or underscore and only contain letters, numbers, or underscore")
-                    .withEphemeral(true);
+        if (!errors.isEmpty()) {
+            return event.reply("**[Error]** Syntax error(s)\n" + String.join("\n", errors)).withEphemeral(true);
         }
 
-        data.dicerolls.add(new PrepData.Data.DicerollData(description, diceroll.toString(), variable));
+        data.rolls.addAll(diceRollData);
         return event.edit(PrepData.buildMenu(data));
     }
 
@@ -131,38 +150,44 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         String description = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
-        String query = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
+        String queries = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
 
-        RengCalcLexer lexer = new RengCalcLexer(CharStreams.fromString(query));
-        List<String> errors = new ArrayList<>();
-        ANTLRErrorListener listener = new BaseErrorListener() {
-            @Override
-            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-                errors.add("%d: %s\n".formatted(charPositionInLine, msg));
-            }
-        };
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(listener);
-
-        RengCalcParser parser = new RengCalcParser(new CommonTokenStream(lexer));
-        parser.removeErrorListeners();
-        parser.addErrorListener(listener);
-
-        RengCalcParser.CalculationContext pt = parser.calculation();
-
-        if (!errors.isEmpty()) {
-            return event.reply("**Syntax error(s)**\n" + String.join("\n", errors)).withEphemeral(true);
+        if (description != null && description.isBlank()) {
+            description = null;
         }
 
-        ASTNode ast = new ASTGenerator().visit(pt);
-        data.dicerolls.add(new PrepData.Data.CalculationData(description,
-                pt.getText().substring(0, pt.getText().length() - 5), ast));
+        List<PrepData.Data.CalculationData> calculationData = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (String query: queries.split(";|\n")) {
+            if (query.isBlank()) {
+                continue;
+            }
+
+            Parser.ParseTree pt = Parser.parseCalculation(query);
+
+            if (!pt.errors().isEmpty()) {
+                errors.add("`%s`\n%s".formatted(Parser.shortenText(pt.parseTree().getText()), String.join("\n", pt.errors())));
+                continue;
+            }
+
+            ASTNode ast = new ASTGenerator().visit(pt.parseTree());
+            calculationData.add(new PrepData.Data.CalculationData(description, Parser.shortenText(pt.parseTree().getText()), ast));
+            description = null;
+        }
+
+        if (!errors.isEmpty()) {
+            return event.reply("**[Error]** Syntax error(s)\n" + String.join("\n", errors)).withEphemeral(true);
+        }
+
+        data.rolls.addAll(calculationData);
         return event.edit(PrepData.buildMenu(data));
     }
 
@@ -171,9 +196,10 @@ public class PrepModal extends ModalInteraction {
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = prepData.getTempData(Long.parseLong(args[1]), args[2]);
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
-            return event.reply("**[Error]** Cached role data is missing, run the command again").withEphemeral(true);
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
         }
 
         String paramsRaw = event.getComponents().get(0).getData().components().get().get(0).value().toOptional()

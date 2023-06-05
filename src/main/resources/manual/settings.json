@@ -1,0 +1,27 @@
+{
+  "name": "/settings",
+  "pages": [
+    {
+      "title": "Server Settings Command",
+      "subtitle": "Requires the **Manage Server** permission",
+      "fields": [
+        {
+          "name": "Usage: /settings show",
+          "value": "This command displays this server's settings."
+        },
+        {
+          "name": "Usage: /settings inactive <days>",
+          "value": "This command sets how many **days** a user must remain inactive before inactive roles are given to them. Set this to 0 to disable inactive roles."
+        },
+        {
+          "name": "Usage: /settings userlog",
+          "value": "This command opens a menu to select which channels are notified when a user joins or leaves the server."
+        },
+        {
+          "name": "Usage: /settings msglog",
+          "value": "This command opens a menu to select which channels are notified when messages (except for those in chosen channels) are deleted."
+        }
+      ]
+    }
+  ]
+}

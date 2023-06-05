@@ -99,7 +99,12 @@ parameterList
  ;
 
 DiceRoll
- : Digit+ 'd' Digit+ ('dl' Digit+)? ('dh' Digit*)? 'u'?
+ : Digit+ 'd' Digit+ DiceRollMods
+ ;
+
+fragment DiceRollMods
+ : ('dl' Digit*)? ('dh' Digit*)? 'u'?
+ | ('dh' Digit*)? ('dl' Digit*)? 'u'?
  ;
 
 IntegerConstant
@@ -112,8 +117,7 @@ FloatConstant
  | Digit+ '.'
  ;
 
-fragment
-Digit
+fragment Digit
  : [0-9]
  ;
 

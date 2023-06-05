@@ -1,0 +1,120 @@
+{
+  "name": "/dice",
+  "pages": [
+    {
+      "title": "Dice Command",
+      "fields": [
+        {
+          "name": "Usage: /dice <input>",
+          "value": "This command will generate random numbers as specified by the **input**."
+        },
+        {
+          "name": "Usage: /dice <input> [hide]",
+          "value": "Setting the **hide** option to true will cause the result of the command to be visible to only you."
+        }
+      ]
+    },
+    {
+      "title": "Dice Roll Syntax 1",
+      "subtitle": "Basic dice roll parameters",
+      "fields": [
+        {
+          "name": "XdY",
+          "value": "Rolls **X** dice with **Y** faces. Returns each of the individual die results along with the sum of all dice rolled. **X** and **Y** can’t be more than 134217728."
+        },
+        {
+          "name": "X or dX",
+          "value": "Equivalent to **1dX**."
+        },
+        {
+          "name": "X~Y, X:Y, or X Y",
+          "value": "Generates a random number between **X** and **Y** (including **X** and **Y**)."
+        }
+      ]
+    },
+    {
+      "title": "Dice Roll Syntax 2",
+      "subtitle": "Advanced dice parameters",
+      "fields": [
+        {
+          "name": "Xd[A, B, C]",
+          "value": "Generates random numbers using dice that have the faces **A**, **B**, **C**. For example, **1d[1, 3, 3, 7]** can result in either a 1, 3, or a 7, and 3 is twice as likely as the other results."
+        },
+        {
+          "name": "Xd[A~B] or Xd[A:B]",
+          "value": "Generates random numbers using dice that have the faces ranging from **A** to **B** (inclusive). For example, **1d[2~5]** will limit results to 2, 3, 4, and 5."
+        },
+        {
+          "name": "Xd[A~B, C, D~E]",
+          "value": "The previous two methods can be combined. In this example, the dice rolled can result in values ranging from **A** to **B** (inclusive), **C**, and the values ranging from **D** to **E** (inclusive)."
+        },
+        {
+          "name": "[...]",
+          "value": "Die ranges can be entered without a “**Xd**” prefix. **[...]** is equivalent to **1d[...]**."
+        },
+        {
+          "name": "dX;dY;dZ",
+          "value": "Multiple queries can be input at the same time. They must be separated by a semicolon."
+        }
+      ]
+    },
+    {
+      "title": "Dice Roll Syntax 3",
+      "subtitle": "Options introduction",
+      "fields": [
+        {
+          "name": "XdY [options]",
+          "value": "Options can be specified after the dice parameters (see next page). Options with numerical parameters can be specified with **option N** or **option(N)**."
+        }
+      ]
+    },
+    {
+      "title": "Dice Roll Syntax 4",
+      "subtitle": "Options that affect the result",
+      "fields": [
+        {
+          "name": "droplow or dl [N]",
+          "value": "When summing dice rolled, the lowest **N** values will be ignored. N defaults to 1. You cannot drop more dice than you rolled."
+        },
+        {
+          "name": "drophigh or dh [N]",
+          "value": "When summing dice rolled, the lowest **N** values will be ignored. N defaults to 1. You cannot drop more dice than you rolled."
+        },
+        {
+          "name": "unique or u",
+          "value": "Forces unique dice results to occur. For example, if you roll 6d6 unique, all numbers from 1 to 6 WILL be rolled. You cannot use this option if there are less faces than there are dice. If this option is used, the maximum number of dice that can be rolled is 33554432."
+        },
+        {
+          "name": "+ or - N",
+          "value": "Adds or subtracts **N** from the result."
+        },
+        {
+          "name": "rep N",
+          "value": "Repeats the query **N** times instead of only once. **N** cannot be greater than 20."
+        }
+      ]
+    },
+    {
+      "title": "Dice Roll Syntax 5",
+      "subtitle": "Options that affect how results are displayed",
+      "fields": [
+        {
+          "name": "sorted",
+          "value": "Each individual die result will be listed in ascending order."
+        },
+        {
+          "name": "nosum",
+          "value": "The sum will not be displayed. This is on by default if there is only 1 die."
+        },
+        {
+          "name": "sumonly",
+          "value": "Only the sum will be displayed. This is on by default if there are more than 32 dice."
+        },
+        {
+          "name": "hidedrop",
+          "value": "Dice that are not included in the sum calculation will not be shown."
+        }
+      ]
+    }
+  ]
+}

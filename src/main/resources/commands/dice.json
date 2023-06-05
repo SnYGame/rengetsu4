@@ -3,7 +3,7 @@
   "description": "Rolls dice",
   "options": [
     {
-      "name": "queries",
+      "name": "input",
       "description": "List your dice roll(s) here",
       "type": 3,
       "required": true

@@ -1,9 +1,9 @@
 {
   "name": "math",
-  "description": "Performs a calculation",
+  "description": "Performs calculations",
   "options": [
     {
-      "name": "queries",
+      "name": "input",
       "description": "List your expression(s) here",
       "type": 3,
       "required": true

@@ -4,20 +4,21 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import org.antlr.v4.runtime.*;
 import org.snygame.rengetsu.Rengetsu;
-import org.snygame.rengetsu.parser.RengCalcLexer;
-import org.snygame.rengetsu.parser.RengCalcParser;
 import org.snygame.rengetsu.tasks.TaskManager;
 import org.snygame.rengetsu.util.math.ASTGenerator;
 import org.snygame.rengetsu.util.math.ASTNode;
+import org.snygame.rengetsu.util.math.Parser;
 import org.snygame.rengetsu.util.math.Type;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -116,7 +117,7 @@ public class PrepData extends TableData {
                 setPrepDataStmt.setString(2, data.key);
                 setPrepDataStmt.setString(3, data.name);
                 setPrepDataStmt.setString(4, data.description);
-                setPrepDataStmt.setInt(5, data.dicerolls.size());
+                setPrepDataStmt.setInt(5, data.rolls.size());
                 setPrepDataStmt.setInt(6, data.varCount);
                 setPrepDataStmt.setInt(7, data.params.length);
                 setPrepDataStmt.executeUpdate();
@@ -135,14 +136,14 @@ public class PrepData extends TableData {
                 addPrepCalculationStmt.setLong(1, data.userId);
                 addPrepCalculationStmt.setString(2, data.key);
 
-                for (int i = 0; i < data.dicerolls.size(); i++) {
-                    switch (data.dicerolls.get(i)) {
-                        case Data.DicerollData dicerollData -> {
+                for (int i = 0; i < data.rolls.size(); i++) {
+                    switch (data.rolls.get(i)) {
+                        case Data.DiceRollData diceRollData -> {
                             addPrepDicerollsStmt.setInt(3, i);
-                            addPrepDicerollsStmt.setString(4, dicerollData.description);
-                            addPrepDicerollsStmt.setString(5, dicerollData.query);
-                            addPrepDicerollsStmt.setString(6, dicerollData.variable);
-                            addPrepDicerollsStmt.setByte(7, dicerollData.result);
+                            addPrepDicerollsStmt.setString(4, diceRollData.description);
+                            addPrepDicerollsStmt.setString(5, diceRollData.query);
+                            addPrepDicerollsStmt.setString(6, diceRollData.variable);
+                            addPrepDicerollsStmt.setByte(7, diceRollData.result);
                             addPrepDicerollsStmt.executeUpdate();
                         }
                         case Data.CalculationData calculationData -> {
@@ -226,11 +227,11 @@ public class PrepData extends TableData {
                 byte[] bytecode = rs.getBytes("bytecode");
 
                 if (bytecode == null) {
-                    prepData.dicerolls.add(new Data.DicerollData(rs.getString("descr"),
+                    prepData.rolls.add(new Data.DiceRollData(rs.getString("descr"),
                             rs.getString("query"), rs.getString("variable"),
                             rs.getByte("result")));
                 } else {
-                    prepData.dicerolls.add(new Data.CalculationData(rs.getString("descr"),
+                    prepData.rolls.add(new Data.CalculationData(rs.getString("descr"),
                             rs.getString("query"), bytecode));
                 }
             }
@@ -267,78 +268,98 @@ public class PrepData extends TableData {
         }
     }
 
-    public static InteractionApplicationCommandCallbackSpec buildMenu(Data prepData) {
+    public static InteractionApplicationCommandCallbackSpec buildMenu(Data data) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
-        builder.content("Key: %s".formatted(prepData.key));
+        builder.content("Key: %s".formatted(data.key)).ephemeral(true);
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
-        embed.title(prepData.name);
-        embed.description(prepData.description);
-        if (prepData.params.length > 0) {
-            embed.addField("Parameters", String.join(", ", prepData.params), false);
+        embed.title(data.name);
+        embed.description(data.description);
+        if (data.params.length > 0) {
+            embed.addField("Parameters", String.join(", ", data.params), false);
         }
-        for (Data.RollData rollData: prepData.dicerolls) {
-            if (rollData instanceof Data.DicerollData diceroll && diceroll.variable != null) {
-                embed.addField(rollData.description, "%s = %s".formatted(diceroll.variable, rollData.query), false);
+
+        String rollDesc = "";
+        StringJoiner joiner = new StringJoiner("\n");
+        for (Data.RollData rollData: data.rolls) {
+            if (rollData.description != null) {
+                if (joiner.length() > 0) {
+                    embed.addField(rollDesc, joiner.toString(), false);
+                    joiner = new StringJoiner("\n");
+                }
+                rollDesc = rollData.description;
+            }
+            if (rollData instanceof Data.DiceRollData diceroll && diceroll.variable != null) {
+                joiner.add("%s=%s".formatted(diceroll.variable, rollData.query.replace("*", "\\*")));
             } else {
-                embed.addField(rollData.description, rollData.query, false);
+                joiner.add(rollData.query.replace("*", "\\*"));
             }
         }
 
-        String key = "%d:%s".formatted(prepData.userId, prepData.key);
+        if (joiner.length() > 0) {
+            embed.addField(rollDesc, joiner.toString(), false);
+        }
 
         builder.addComponent(ActionRow.of(
-                Button.primary("prep:%s:edit".formatted(key), "Edit description"),
-                Button.primary("prep:%s:params".formatted(key), "Edit parameters")
+                Button.primary("prep:edit:%d".formatted(data.uid), "Edit description"),
+                Button.primary("prep:params:%d".formatted(data.uid), "Edit parameters")
         ));
 
         builder.addComponent(ActionRow.of(
-                Button.primary("prep:%s:add_roll".formatted(key), "Add diceroll"),
-                Button.primary("prep:%s:add_calc".formatted(key), "Add calculation"),
-                Button.primary("prep:%s:del_roll".formatted(key), "Remove dicerolls/calculations")
-                        .disabled(prepData.dicerolls.isEmpty())
+                Button.primary("prep:add_roll:%d".formatted(data.uid), "Add dice roll"),
+                Button.primary("prep:add_calc:%d".formatted(data.uid), "Add calculation"),
+                Button.primary("prep:del_roll:%d".formatted(data.uid), "Remove dice rolls/calculations")
+                        .disabled(data.rolls.isEmpty())
         ));
 
-        if (prepData.editing) {
+        if (data.editing) {
             builder.addComponent(ActionRow.of(
-                    Button.success("prep:%s:save".formatted(key), "Save"),
-                    Button.danger("prep:%s:no_save".formatted(key), "Cancel"),
-                    Button.danger("prep:%s:delete".formatted(key), "Delete")
+                    Button.success("prep:save:%d".formatted(data.uid), "Save"),
+                    Button.danger("prep:delete:%d".formatted(data.uid), "Delete")
             ));
         } else {
             builder.addComponent(ActionRow.of(
-                    Button.success("prep:%s:save".formatted(key), "Save"),
-                    Button.danger("prep:%s:no_save".formatted(key), "Cancel")
+                    Button.success("prep:save:%d".formatted(data.uid), "Save")
             ));
         }
 
         return builder.addEmbed(embed.build()).build();
     }
 
-    private final HashMap<Key, Data> tempData = new HashMap<>();
+    private final HashMap<Integer, Data> tempData = new HashMap<>();
+    private final HashMap<Key, Integer> tempKeys = new HashMap<>();
 
-    public Data getTempData(long userId, String key) {
+    public Data getTempData(int uid) {
         synchronized (tempData) {
-            return tempData.get(new Key(userId, key));
+            return tempData.get(uid);
         }
     }
 
     public void removeTempData(Data data) {
         synchronized (tempData) {
-            tempData.remove(new Key(data.userId, data.key));
+            tempKeys.remove(new Key(data.userId, data.key));
+            tempData.remove(data.uid);
             data.removalTask.cancel(false);
         }
     }
 
-    public boolean putTempData(Data data) {
+    public void putTempData(Data data) {
         synchronized (tempData) {
             Key key = new Key(data.userId, data.key);
-            if (tempData.containsKey(key)) {
-                return false;
+            if (tempKeys.containsKey(key)) {
+                int uid = tempKeys.remove(key);
+                Data temp = tempData.remove(uid);
+                if (temp != null) {
+                    temp.removalTask.cancel(false);
+                }
             }
 
-            data.removalTask = TaskManager.service.schedule(() -> tempData.remove(key), 15, TimeUnit.MINUTES);
-            tempData.put(key, data);
-            return true;
+            data.removalTask = TaskManager.service.schedule(() -> {
+                tempData.remove(data.uid);
+                tempKeys.remove(key);
+            }, 15, TimeUnit.MINUTES);
+
+            tempKeys.put(key, data.uid);
+            tempData.put(data.uid, data);
         }
     }
 
@@ -347,13 +368,16 @@ public class PrepData extends TableData {
     private record Key(long userId, String key) {}
 
     public static class Data {
+        private static int nextUid;
+
+        public final int uid;
         public long userId;
         public String key;
         public String name;
         public String description;
         public String[] params = new String[0];
         public boolean editing = true;
-        public final ArrayList<RollData> dicerolls = new ArrayList<>();
+        public final ArrayList<RollData> rolls = new ArrayList<>();
         public final ArrayList<ParameterData> parameterData = new ArrayList<>();
         public int varCount;
 
@@ -362,9 +386,11 @@ public class PrepData extends TableData {
         public Data(long userId, String key) {
             this.userId = userId;
             this.key = key;
+
+            uid = nextUid++;
         }
 
-        public static sealed abstract class RollData permits DicerollData, CalculationData {
+        public static sealed abstract class RollData permits DiceRollData, CalculationData {
             public String description;
             public String query;
 
@@ -374,16 +400,16 @@ public class PrepData extends TableData {
             }
         }
 
-        public static final class DicerollData extends RollData {
+        public static final class DiceRollData extends RollData {
             public String variable;
             public byte result;
 
-            public DicerollData(String description, String query, String variable) {
+            public DiceRollData(String description, String query, String variable) {
                 super(description, query);
                 this.variable = variable;
             }
 
-            public DicerollData(String description, String query, String variable, byte result) {
+            public DiceRollData(String description, String query, String variable, byte result) {
                 super(description, query);
                 this.variable = variable;
                 this.result = result;
@@ -406,28 +432,13 @@ public class PrepData extends TableData {
 
             public ASTNode getAst() {
                 if (ast == null) {
-                    RengCalcLexer lexer = new RengCalcLexer(CharStreams.fromString(query));
-                    List<String> errors = new ArrayList<>();
-                    ANTLRErrorListener listener = new BaseErrorListener() {
-                        @Override
-                        public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-                            errors.add("%d: %s\n".formatted(charPositionInLine, msg));
-                        }
-                    };
-                    lexer.removeErrorListeners();
-                    lexer.addErrorListener(listener);
+                    Parser.ParseTree pt = Parser.parseCalculation(query);
 
-                    RengCalcParser parser = new RengCalcParser(new CommonTokenStream(lexer));
-                    parser.removeErrorListeners();
-                    parser.addErrorListener(listener);
-
-                    RengCalcParser.CalculationContext pt = parser.calculation();
-
-                    if (!errors.isEmpty()) {
-                        throw new IllegalStateException("Syntax error(s) found in stored query\n" + String.join("\n", errors));
+                    if (!pt.errors().isEmpty()) {
+                        throw new IllegalStateException("Syntax error(s) found in stored query\n" + String.join("\n", pt.errors()));
                     }
 
-                    ast = new ASTGenerator().visit(pt);
+                    ast = new ASTGenerator().visit(pt.parseTree());
                 }
                 return ast;
             }

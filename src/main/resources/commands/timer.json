@@ -46,7 +46,7 @@
     },
     {
       "name": "subscribe",
-      "description": "Subscribe to a timer",
+      "description": "Subscribes to a timer",
       "type": 1,
       "required": false,
       "options": [

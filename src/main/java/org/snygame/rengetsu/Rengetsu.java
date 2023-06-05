@@ -29,6 +29,7 @@ public class Rengetsu {
     private final GatewayDiscordClient client;
     private final DatabaseManager databaseManager;
     private final TaskManager taskManager;
+    private final Manual manual;
 
     private Rengetsu(String token, String dbPath) throws SQLException, IOException {
         try {
@@ -44,6 +45,7 @@ public class Rengetsu {
                 .login().block();
 
         taskManager = new TaskManager(this);
+        manual = new Manual("index");
 
         /* Call our code to handle creating/deleting/editing our global slash commands.
         We have to hard code our list of command files since iterating over a list of files in a resource directory
@@ -51,7 +53,7 @@ public class Rengetsu {
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
          */
         List<String> commands = List.of("dice.json", "here.json", "math.json", "salt.json", "timer.json", "role.json",
-                "requestrole.json", "settings.json", "prep.json");
+                "requestrole.json", "settings.json", "prep.json", "help.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient()).registerCommands(commands);
         } catch (Exception e) {
@@ -101,5 +103,9 @@ public class Rengetsu {
 
     public TaskManager getTaskManager() {
         return taskManager;
+    }
+
+    public Manual getManual() {
+        return manual;
     }
 }
