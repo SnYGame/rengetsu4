@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DiceRoll {
-    private static final Pattern RANGE_DICE_RE = Pattern.compile("^(-?\\d+)\\s*(?:~|:)?\\s*(-?\\d+)(.*)$");
+    private static final Pattern RANGE_DICE_RE = Pattern.compile("(-?\\d+)\\s*(?:~|:|\\s)\\s*(-?\\d+)(.*)$");
     private static final Pattern DICE_RE = Pattern.compile("^(?:(\\d+)?d)?(?:(\\d+)|\\[(.*)\\]|(%))(.*)$");
     private static final Pattern OPTION_RE = Pattern.compile("(\\d+)|([a-zA-Z]+|[^\\d\\w\\s]+)");
 
