@@ -6,7 +6,7 @@
 
     <groupId>org.snygame</groupId>
     <artifactId>Rengetsu</artifactId>
-    <version>4.1.2</version>
+    <version>4.1.2b</version>
     <build>
         <plugins>
             <plugin>
