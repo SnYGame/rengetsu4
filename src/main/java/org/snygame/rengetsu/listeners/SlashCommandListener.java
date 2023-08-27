@@ -25,7 +25,8 @@ public class SlashCommandListener extends Listener {
                 new RequestRoleCommand(rengetsu),
                 new SettingsCommand(rengetsu),
                 new PrepareCommand(rengetsu),
-                new HelpCommand(rengetsu)
+                new HelpCommand(rengetsu),
+                new ReportCommand(rengetsu)
         );
     }
 

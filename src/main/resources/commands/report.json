@@ -1,0 +1,5 @@
+{
+  "name": "report",
+  "description": "Make an anonymous complaint to the admins",
+  "dm_permission": false
+}
