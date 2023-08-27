@@ -55,7 +55,11 @@ public class Rengetsu {
         List<String> commands = List.of("dice.json", "here.json", "math.json", "salt.json", "timer.json", "role.json",
                 "requestrole.json", "settings.json", "prep.json", "help.json", "report.json");
         try {
-            new GlobalCommandRegistrar(client.getRestClient()).registerCommands(commands);
+            GlobalCommandRegistrar registrar = new GlobalCommandRegistrar(client.getRestClient());
+            registrar.loadSlashCommands(commands);
+            registrar.loadMessageCommand("Report to Admins");
+            registrar.loadUserCommand("Report to Admins");
+            registrar.registerCommands();
         } catch (Exception e) {
             LOGGER.error("Error trying to register global slash commands", e);
         }
@@ -76,6 +80,8 @@ public class Rengetsu {
         client.on(MessageDeleteEvent.class, messageListener::handleDelete).subscribe();
         client.on(ChatInputInteractionEvent.class, new SlashCommandListener(this)::handle).subscribe();
         client.on(ChatInputAutoCompleteEvent.class, new AutoCompleteListener(this)::handle).subscribe();
+        client.on(MessageInteractionEvent.class, new MessageCommandListener(this)::handle).subscribe();
+        client.on(UserInteractionEvent.class, new UserCommandListener(this)::handle).subscribe();
     }
 
     public static void main(String[] args) throws SQLException, IOException {

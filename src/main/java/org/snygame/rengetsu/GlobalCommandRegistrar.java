@@ -18,6 +18,7 @@ public class GlobalCommandRegistrar {
     private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
     private final RestClient restClient;
+    private final List<ApplicationCommandRequest> commands = new ArrayList<>();
 
     // The name of the folder the commands json is in, inside our resources folder
     private static final String commandsFolderName = "commands/";
@@ -27,22 +28,35 @@ public class GlobalCommandRegistrar {
     }
 
     //Since this will only run once on startup, blocking is okay.
-    protected void registerCommands(List<String> fileNames) throws IOException {
+    protected void loadSlashCommands(List<String> fileNames) throws IOException {
         //Create an ObjectMapper that supports Discord4J classes
         final JacksonResources d4jMapper = JacksonResources.create();
 
-        // Convenience variables for the sake of easier to read code below
-        final ApplicationService applicationService = restClient.getApplicationService();
-        final long applicationId = restClient.getApplicationId().block();
-
         //Get our commands json from resources as command data
-        List<ApplicationCommandRequest> commands = new ArrayList<>();
         for (String json : getCommandsJson(fileNames)) {
             ApplicationCommandRequest request = d4jMapper.getObjectMapper()
                     .readValue(json, ApplicationCommandRequest.class);
 
             commands.add(request); //Add to our array list
         }
+    }
+
+    protected void loadUserCommand(String name) {
+        loadCommand(name, 2);
+    }
+
+    protected void loadMessageCommand(String name) {
+        loadCommand(name, 3);
+    }
+
+    private void loadCommand(String name, int type) {
+        commands.add(ApplicationCommandRequest.builder().name(name).type(type).build());
+    }
+
+    protected void registerCommands() {
+        // Convenience variables for the sake of easier to read code below
+        final ApplicationService applicationService = restClient.getApplicationService();
+        final long applicationId = restClient.getApplicationId().block();
 
         /* Bulk overwrite commands. This is now idempotent, so it is safe to use this even when only 1 command
         is changed/added/removed
