@@ -21,6 +21,10 @@ public class ServerData extends TableData {
     private final PreparedStatement addUserLogsStmt;
     private final PreparedStatement addMessageLogsStmt;
 
+    private final PreparedStatement getReportLogsStmt;
+    private final PreparedStatement clearReportLogsStmt;
+    private final PreparedStatement addReportLogsStmt;
+
 
     ServerData(Rengetsu rengetsu, Connection connection) throws SQLException {
         super(rengetsu, connection);
@@ -74,6 +78,22 @@ public class ServerData extends TableData {
         qb.insertIgnoreInto("server_msg_log(server_id, channel_id)");
         qb.values("(?, ?)");
         addMessageLogsStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("server_report_log.channel_id");
+        qb.from("server_report_log");
+        qb.where("server_report_log.server_id = ?");
+        getReportLogsStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.deleteFrom("server_report_log");
+        qb.where("server_id = ?");
+        clearReportLogsStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.insertIgnoreInto("server_report_log(server_id, channel_id)");
+        qb.values("(?, ?)");
+        addReportLogsStmt = qb.build(connection);
     }
 
     public void initializeServer(long id) throws SQLException {
@@ -160,6 +180,38 @@ public class ServerData extends TableData {
                 for (Long channelId : channelIds) {
                     addMessageLogsStmt.setLong(2, channelId);
                     addMessageLogsStmt.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public List<Long> getReportLogs(long id) throws SQLException {
+        synchronized (connection) {
+            getReportLogsStmt.setLong(1, id);
+            ResultSet rs = getReportLogsStmt.executeQuery();
+            ArrayList<Long> channelIds = new ArrayList<>();
+            while (rs.next()) {
+                channelIds.add(rs.getLong("channel_id"));
+            }
+            return channelIds;
+        }
+    }
+
+    public void setReportLogs(long id, List<Long> channelIds) throws SQLException {
+        synchronized (connection) {
+            try {
+                initializeServer(id);
+                clearReportLogsStmt.setLong(1, id);
+                clearReportLogsStmt.executeUpdate();
+
+                addReportLogsStmt.setLong(1, id);
+                for (Long channelId : channelIds) {
+                    addReportLogsStmt.setLong(2, channelId);
+                    addReportLogsStmt.executeUpdate();
                 }
                 connection.commit();
             } catch (SQLException e) {

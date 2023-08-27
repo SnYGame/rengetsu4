@@ -1,16 +1,29 @@
 package org.snygame.rengetsu.modals;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.TextInput;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalMono;
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.discordjson.json.AttachmentData;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
+import org.snygame.rengetsu.data.DatabaseManager;
+import org.snygame.rengetsu.data.ServerData;
 import org.snygame.rengetsu.listeners.InteractionListener;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.net.URL;
+import java.sql.SQLException;
+import java.util.List;
 
 public class ReportModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
     public static final String[] QUESTIONS = {
@@ -31,6 +44,9 @@ public class ReportModal extends InteractionListener.CommandDelegate<ModalSubmit
 
     @Override
     public Mono<Void> handle(ModalSubmitInteractionEvent event) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        ServerData serverData = databaseManager.getServerData();
+
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
         embed.title("Anonymous Complaint Form Response");
 
@@ -39,8 +55,18 @@ public class ReportModal extends InteractionListener.CommandDelegate<ModalSubmit
                 embed.addField(QUESTIONS[i], input.getValue().orElse(""), false);
             }
         }
-        return event.getInteraction().getChannel().flatMap(c -> c.createMessage(embed.build()).withAllowedMentions(AllowedMentions.suppressAll()))
-                .then(event.reply("Your report has been submitted.").withEphemeral(true))
+
+        return event.getInteraction().getGuild().flatMap(server -> {
+            try {
+                List<Long> channelIds = serverData.getMessageLogs(server.getId().asLong());
+                return Flux.fromIterable(channelIds).map(Snowflake::of).flatMap(event.getClient()::getChannelById)
+                        .filter(channel -> channel instanceof MessageChannel).map(channel -> (MessageChannel)channel)
+                        .flatMap(channel -> channel.createMessage(embed.build()).withAllowedMentions(AllowedMentions.suppressAll()))
+                        .then();
+            } catch (SQLException e) {
+                return Mono.error(e);
+            }
+        }).then(event.reply("Your report has been submitted.").withEphemeral(true))
                 .onErrorResume(ClientException.class, e -> {
                     System.out.println(e.getClass());
                     return event.reply("Your report failed to be submitted. Please try again.").withEphemeral(true);

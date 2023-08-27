@@ -36,6 +36,7 @@ public class SettingsCommand extends InteractionListener.CommandDelegate<ChatInp
                 .or(() -> event.getOption("inactive").map(option -> subInactive(event, option)))
                 .or(() -> event.getOption("userlog").map(option -> subUserlog(event, option)))
                 .or(() -> event.getOption("msglog").map(option -> subMsglog(event, option)))
+                .or(() -> event.getOption("reportlog").map(option -> subReportlog(event, option)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
@@ -49,6 +50,7 @@ public class SettingsCommand extends InteractionListener.CommandDelegate<ChatInp
             int inactive = serverData.getInactiveDays(serverId);
             List<Long> usrLogs = serverData.getUserLogs(serverId);
             List<Long> msgLogs = serverData.getMessageLogs(serverId);
+            List<Long> reportLogs = serverData.getReportLogs(serverId);
             return event.reply(InteractionApplicationCommandCallbackSpec.builder()
                     .addEmbed(EmbedCreateSpec.builder()
                             .addField("Inactivity Period", inactive == 0 ? "N/A" : String.valueOf(inactive), false)
@@ -56,6 +58,8 @@ public class SettingsCommand extends InteractionListener.CommandDelegate<ChatInp
                                     usrLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
                             .addField("Message Logging Channels", msgLogs.isEmpty() ? "N/A" :
                                     msgLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
+                            .addField("Report Logging Channels", reportLogs.isEmpty() ? "N/A" :
+                                    reportLogs.stream().map("<#%d>"::formatted).collect(Collectors.joining(", ")), false)
                             .build()).build());
         } catch (SQLException e) {
             Rengetsu.getLOGGER().error("SQL Error", e);
@@ -102,6 +106,17 @@ public class SettingsCommand extends InteractionListener.CommandDelegate<ChatInp
                 ),
                 ActionRow.of(
                         Button.danger("settings:msglog:clear", "Clear")
+                )
+        )).withEphemeral(true);
+    }
+
+    private Mono<Void> subReportlog(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        return event.reply().withComponents(List.of(
+                ActionRow.of(
+                        SelectMenu.ofChannel("settings:reportlog", Channel.Type.GUILD_TEXT).withMaxValues(25)
+                ),
+                ActionRow.of(
+                        Button.danger("settings:reportlog:clear", "Clear")
                 )
         )).withEphemeral(true);
     }
