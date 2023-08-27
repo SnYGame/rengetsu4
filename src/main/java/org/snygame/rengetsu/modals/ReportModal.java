@@ -5,12 +5,9 @@ import discord4j.core.event.domain.interaction.DeferrableInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.TextInput;
-import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalMono;
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.discordjson.json.AttachmentData;
 import discord4j.rest.http.client.ClientException;
 import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
@@ -20,13 +17,11 @@ import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.net.URL;
 import java.sql.SQLException;
 import java.util.List;
 
 public class ReportModal extends InteractionListener.CommandDelegate<ModalSubmitInteractionEvent> {
-    public static final String[] QUESTIONS = {
+    private static final String[] QUESTIONS = {
             "Who or what do you have an issue with?",
             "Tell us about your issue.",
             "Include relevant message(s)",
