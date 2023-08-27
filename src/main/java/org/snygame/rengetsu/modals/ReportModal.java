@@ -53,7 +53,7 @@ public class ReportModal extends InteractionListener.CommandDelegate<ModalSubmit
 
         return event.getInteraction().getGuild().flatMap(server -> {
             try {
-                List<Long> channelIds = serverData.getMessageLogs(server.getId().asLong());
+                List<Long> channelIds = serverData.getReportLogs(server.getId().asLong());
                 return Flux.fromIterable(channelIds).map(Snowflake::of).flatMap(event.getClient()::getChannelById)
                         .filter(channel -> channel instanceof MessageChannel).map(channel -> (MessageChannel)channel)
                         .flatMap(channel -> channel.createMessage(embed.build()).withAllowedMentions(AllowedMentions.suppressAll()))
