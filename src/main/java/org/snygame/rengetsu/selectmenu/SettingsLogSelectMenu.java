@@ -9,6 +9,8 @@ import org.snygame.rengetsu.listeners.InteractionListener;
 import reactor.core.publisher.Mono;
 
 import java.sql.SQLException;
+import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class SettingsLogSelectMenu extends InteractionListener.CommandDelegate<SelectMenuInteractionEvent> {
@@ -31,9 +33,16 @@ public class SettingsLogSelectMenu extends InteractionListener.CommandDelegate<S
                 switch (args[1]) {
                     case "usrlog" -> serverData.setUserLogs(serverId, event.getValues().stream().map(Long::parseLong).toList());
                     case "msglog" -> serverData.setMessageLogs(serverId, event.getValues().stream().map(Long::parseLong).toList());
+                    case "reportlog" -> serverData.setReportLogs(serverId, event.getValues().stream().map(Long::parseLong).toList());
                 }
-                return event.edit((args[1].equals("usrlog") ? "Set user logging channels to %s." : "Set message logging channels to %s.")
-                                .formatted(event.getValues().stream().map("<#%s>"::formatted).collect(Collectors.joining(" "))))
+
+                String response = switch (args[1]) {
+                    case "usrlog" -> "Set user logging channels to %s.";
+                    case "msglog" -> "Set message logging channels to %s.";
+                    case "reportlog" -> "Set report logging channels to %s.";
+                    default -> "Unused";
+                };
+                return event.edit(response.formatted(event.getValues().stream().map("<#%s>"::formatted).collect(Collectors.joining(" "))))
                         .withComponents();
             } catch (SQLException e) {
                 Rengetsu.getLOGGER().error("SQL Error", e);

@@ -1,36 +1,23 @@
 package org.snygame.rengetsu.listeners;
 
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.interaction.UserInteractionEvent;
 import org.snygame.rengetsu.Rengetsu;
-import org.snygame.rengetsu.commands.*;
+import org.snygame.rengetsu.usercommands.ReportCommand;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-public class SlashCommandListener extends Listener {
-    //An array list of classes that implement the SlashCommand interface
-    private final List<InteractionListener.CommandDelegate<ChatInputInteractionEvent>> commands;
+public class UserCommandListener extends Listener {
+    private final List<InteractionListener.CommandDelegate<UserInteractionEvent>> commands;
 
-    public SlashCommandListener(Rengetsu rengetsu) {
+    public UserCommandListener(Rengetsu rengetsu) {
         super(rengetsu);
 
-        commands = List.of(
-                new DiceCommand(rengetsu),
-                new HereCommand(rengetsu),
-                new MathCommand(rengetsu),
-                new SaltCommand(rengetsu),
-                new TimerCommand(rengetsu),
-                new RoleCommand(rengetsu),
-                new RequestRoleCommand(rengetsu),
-                new SettingsCommand(rengetsu),
-                new PrepareCommand(rengetsu),
-                new HelpCommand(rengetsu),
-                new ReportCommand(rengetsu)
-        );
+        commands = List.of(new ReportCommand(rengetsu));
     }
 
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Void> handle(UserInteractionEvent event) {
         // Convert our array list to a flux that we can iterate through
         return Flux.fromIterable(commands)
                 //Filter out all commands that don't match the name of the command this event is for

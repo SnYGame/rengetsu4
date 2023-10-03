@@ -61,7 +61,7 @@ public class TimerCommand extends InteractionListener.CommandDelegate<ChatInputI
                     message, Instant.ofEpochMilli(time), Instant.ofEpochMilli(time + duration * 1000L));
 
             if (timerId == -1) {
-                return event.reply("**[Error]** You cannot set more than 5 timers").withEphemeral(true);
+                return event.reply("**[Error]** You cannot set more than 25 timers").withEphemeral(true);
             }
             String response = "Your timer (ID: %d) has been set for %s.".formatted(timerId, TimeStrings.secondsToEnglish(duration));
             taskManager.getTimerTask().startTask(event.getClient(), timerId, duration * 1000L);

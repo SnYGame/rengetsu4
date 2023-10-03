@@ -35,6 +35,12 @@
       "description": "Sets message logging channels",
       "type": 1,
       "required": false
+    },
+    {
+      "name": "reportlog",
+      "description": "Sets report logging channels",
+      "type": 1,
+      "required": false
     }
   ],
   "default_member_permissions": 32,

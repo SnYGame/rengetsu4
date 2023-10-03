@@ -65,6 +65,13 @@ CREATE TABLE IF NOT EXISTS server_usr_log (
     FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS server_report_log (
+    server_id INT NOT NULL,
+    channel_id INT NOT NULL,
+    PRIMARY KEY (server_id, channel_id),
+    FOREIGN KEY (server_id) REFERENCES server(server_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS timer (
     timer_id INTEGER PRIMARY KEY AUTOINCREMENT,
     channel_id INT NOT NULL,

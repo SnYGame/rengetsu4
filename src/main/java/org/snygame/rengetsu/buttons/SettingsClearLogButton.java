@@ -31,9 +31,16 @@ public class SettingsClearLogButton extends InteractionListener.CommandDelegate<
                 switch (args[1]) {
                     case "usrlog" -> serverData.setUserLogs(serverId, Collections.emptyList());
                     case "msglog" -> serverData.setMessageLogs(serverId, Collections.emptyList());
+                    case "reportlog" -> serverData.setReportLogs(serverId, Collections.emptyList());
                 }
-                return event.edit(args[1].equals("usrlog") ? "User logging channels cleared." : "Message logging channels cleared.")
-                        .withComponents();
+
+                String response = switch (args[1]) {
+                    case "usrlog" -> "User logging channels cleared.";
+                    case "msglog" -> "Message logging channels cleared.";
+                    case "reportlog" -> "Report logging channels cleared.";
+                    default -> "Unused";
+                };
+                return event.edit(response).withComponents();
             } catch (SQLException e) {
                 Rengetsu.getLOGGER().error("SQL Error", e);
                 return event.reply("**[Error]** Database error").withEphemeral(true);
