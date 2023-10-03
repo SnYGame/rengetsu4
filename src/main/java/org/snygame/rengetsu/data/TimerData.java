@@ -90,7 +90,7 @@ public class TimerData extends TableData {
             countTimerStmt.setLong(1, userId);
             ResultSet rs = countTimerStmt.executeQuery();
 
-            if (rs.next() && rs.getInt("cnt") >= 5) {
+            if (rs.next() && rs.getInt("cnt") >= 25) {
                 return -1;
             }
 
