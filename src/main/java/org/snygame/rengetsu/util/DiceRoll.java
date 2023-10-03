@@ -247,7 +247,7 @@ public class DiceRoll {
             case Fixed fixed -> {
                 if (unique) {
                     UniqueRandom uniqueRand = new UniqueRandom(rng, fixed.faces());
-                    Arrays.setAll(rolls, i -> uniqueRand.nextInt());
+                    Arrays.setAll(rolls, i -> uniqueRand.nextInt() + 1);
                 } else {
                     Arrays.setAll(rolls, i -> rng.nextInt(fixed.faces()) + 1);
                 }
