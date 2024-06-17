@@ -96,6 +96,22 @@ CREATE TABLE IF NOT EXISTS role_timer (
     end_on TIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS prep_namespace (
+    user_id INT NOT NULL,
+    key TEXT NOT NULL,
+    loaded INT DEFAULT TRUE,
+    PRIMARY KEY (user_id, key)
+);
+
+CREATE TABLE IF NOT EXISTS prep_namespace_import (
+    user_id INT NOT NULL,
+    key TEXT NOT NULL,
+    borrow_id INT NOT NULL,
+    borrow_key TEXT NOT NULL,
+    PRIMARY KEY (user_id, key),
+    FOREIGN KEY (borrow_id, borrow_key) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS prep (
     user_id INT NOT NULL,
     key TEXT NOT NULL,
@@ -104,7 +120,9 @@ CREATE TABLE IF NOT EXISTS prep (
     roll_count INT NOT NULL,
     var_count INT NOT NULL,
     param_count INT NOT NULL,
-    PRIMARY KEY (user_id, key)
+    namespace TEXT DEFAULT NULL,
+    PRIMARY KEY (user_id, key),
+    FOREIGN KEY (user_id, namespace) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS prep_roll (

@@ -156,6 +156,123 @@
           ]
         }
       ]
+    },
+    {
+      "name": "namespace",
+      "description": "Manage namespaces for prepared effects",
+      "type": 2,
+      "required": false,
+      "options": [
+        {
+          "name": "create",
+          "description": "Create a namespace",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "name",
+              "description": "Namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "Lists your namespaces",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "user",
+              "description": "Whose namespaces to list out",
+              "type": 6,
+              "required": false
+            }
+          ]
+        },
+        {
+          "name": "rename",
+          "description": "Rename a namespace",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "name",
+              "description": "Namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            },
+            {
+              "name": "new",
+              "description": "New namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        },
+        {
+          "name": "load",
+          "description": "Load a namespace",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "name",
+              "description": "Namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        },
+        {
+          "name": "unload",
+          "description": "Unload a namespace",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "name",
+              "description": "Namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        },
+        {
+          "name": "import",
+          "description": "Import someone else's namespace",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "user",
+              "description": "Whose namespace to import",
+              "type": 6,
+              "required": true
+            },
+            {
+              "name": "name",
+              "description": "Namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            },
+            {
+              "name": "reference",
+              "description": "Reference name (for unlinking)",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        }
+      ]
     }
   ]
 }
