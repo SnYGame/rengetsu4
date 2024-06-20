@@ -193,6 +193,21 @@
           ]
         },
         {
+          "name": "delete",
+          "description": "Delete a namespace",
+          "type": 1,
+          "required": false,
+          "options": [
+            {
+              "name": "name",
+              "description": "Namespace name",
+              "type": 3,
+              "required": true,
+              "max_length": 50
+            }
+          ]
+        },
+        {
           "name": "rename",
           "description": "Rename a namespace",
           "type": 1,

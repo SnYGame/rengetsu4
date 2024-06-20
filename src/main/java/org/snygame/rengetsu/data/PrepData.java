@@ -37,13 +37,19 @@ public class PrepData extends TableData {
     private final PreparedStatement getPrepParamStmt;
     private final PreparedStatement listPrepNamesStmt;
 
+    private final PreparedStatement createNamespaceStmt;
+    private final PreparedStatement listNamespacesStmt;
+    private final PreparedStatement deleteNamespaceStmt;
+    private final PreparedStatement getNamespaceExistStmt;
+    private final PreparedStatement renameNamespaceStmt;
+
     PrepData(Rengetsu rengetsu, Connection connection) throws SQLException {
         super(rengetsu, connection);
 
         QueryBuilder qb;
         qb = new QueryBuilder();
-        qb.replaceInto("prep(user_id, key, name, descr, roll_count, var_count, param_count)");
-        qb.values("(?, ?, ?, ?, ?, ?, ?)");
+        qb.replaceInto("prep(user_id, key, name, descr, namespace, roll_count, var_count, param_count)");
+        qb.values("(?, ?, ?, ?, ?, ?, ?, ?)");
         setPrepDataStmt = qb.build(connection);
 
         qb = new QueryBuilder();
@@ -83,7 +89,7 @@ public class PrepData extends TableData {
         hasPrepDataStmt = qb.build(connection);
 
         qb = new QueryBuilder();
-        qb.select("prep.name, prep.descr, prep.roll_count, prep.var_count, prep.param_count");
+        qb.select("prep.name, prep.descr, prep.namespace, prep.roll_count, prep.var_count, prep.param_count");
         qb.from("prep");
         qb.where("prep.user_id = ? AND prep.key = ?");
         getPrepDataStmt = qb.build(connection);
@@ -105,6 +111,34 @@ public class PrepData extends TableData {
         qb.from("prep");
         qb.where("prep.user_id = ?");
         listPrepNamesStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.insertIgnoreInto("prep_namespace(user_id, key)");
+        qb.values("(?, ?)");
+        createNamespaceStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("prep_namespace.key, prep_namespace.loaded");
+        qb.from("prep_namespace");
+        qb.where("prep_namespace.user_id = ?");
+        listNamespacesStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.deleteFrom("prep_namespace");
+        qb.where("prep_namespace.user_id = ? AND prep_namespace.key = ?");
+        deleteNamespaceStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("*");
+        qb.from("prep_namespace");
+        qb.where("prep_namespace.user_id = ? AND prep_namespace.key = ?");
+        getNamespaceExistStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.update("prep_namespace");
+        qb.set("key = ?");
+        qb.where("prep_namespace.user_id = ? AND prep_namespace.key = ?");
+        renameNamespaceStmt = qb.build(connection);
     }
 
     public void savePrepData(Data data) throws SQLException {
@@ -117,9 +151,10 @@ public class PrepData extends TableData {
                 setPrepDataStmt.setString(2, data.key);
                 setPrepDataStmt.setString(3, data.name);
                 setPrepDataStmt.setString(4, data.description);
-                setPrepDataStmt.setInt(5, data.rolls.size());
-                setPrepDataStmt.setInt(6, data.varCount);
-                setPrepDataStmt.setInt(7, data.params.length);
+                setPrepDataStmt.setString(5, data.namespace);
+                setPrepDataStmt.setInt(6, data.rolls.size());
+                setPrepDataStmt.setInt(7, data.varCount);
+                setPrepDataStmt.setInt(8, data.params.length);
                 setPrepDataStmt.executeUpdate();
 
                 clearPrepRollsStmt.setLong(1, data.userId);
@@ -210,6 +245,7 @@ public class PrepData extends TableData {
             Data prepData = new Data(userId, key);
             prepData.name = rs.getString("name");
             prepData.description = rs.getString("descr");
+            prepData.namespace = rs.getString("namespace");
             int rollCount = rs.getInt("roll_count");
             prepData.varCount = rs.getInt("var_count");
             int paramCount = rs.getInt("param_count");
@@ -268,12 +304,67 @@ public class PrepData extends TableData {
         }
     }
 
+    public boolean createNamespace(long userId, String key) throws SQLException {
+        synchronized (connection) {
+            createNamespaceStmt.setLong(1, userId);
+            createNamespaceStmt.setString(2, key);
+            int rows = createNamespaceStmt.executeUpdate();
+            connection.commit();
+            return rows > 0;
+        }
+    }
+
+    public ArrayList<NamespaceData> listNamespaces(long userId) throws SQLException {
+        synchronized (connection) {
+            listNamespacesStmt.setLong(1, userId);
+            ResultSet rs = listNamespacesStmt.executeQuery();
+
+            ArrayList<NamespaceData> names = new ArrayList<>();
+            while (rs.next()) {
+                names.add(new NamespaceData(rs.getString("key"), rs.getBoolean("loaded")));
+            }
+            return names;
+        }
+    }
+
+    public boolean deleteNamespace(long userId, String key) throws SQLException {
+        synchronized (connection) {
+            deleteNamespaceStmt.setLong(1, userId);
+            deleteNamespaceStmt.setString(2, key);
+            int rows = deleteNamespaceStmt.executeUpdate();
+            connection.commit();
+            clearCacheIf(userId);
+            return rows > 0;
+        }
+    }
+
+    public boolean getNamespaceExists(long userId, String key) throws SQLException {
+        synchronized (connection) {
+            getNamespaceExistStmt.setLong(1, userId);
+            getNamespaceExistStmt.setString(2, key);
+            ResultSet rs = getNamespaceExistStmt.executeQuery();
+            return rs.next();
+        }
+    }
+
+    public boolean renameNamespace(long userId, String key, String newName) throws SQLException {
+        synchronized (connection) {
+            renameNamespaceStmt.setString(1, newName);
+            renameNamespaceStmt.setLong(2, userId);
+            renameNamespaceStmt.setString(3, key);
+            int rows = renameNamespaceStmt.executeUpdate();
+            connection.commit();
+            return rows > 0;
+        }
+    }
+
     public static InteractionApplicationCommandCallbackSpec buildMenu(Data data) {
         InteractionApplicationCommandCallbackSpec.Builder builder = InteractionApplicationCommandCallbackSpec.builder();
         builder.content("Key: %s".formatted(data.key)).ephemeral(true);
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder();
         embed.title(data.name);
         embed.description(data.description);
+        embed.addField("Namespace", data.namespace == null ? "(default)" : data.namespace, false);
         if (data.params.length > 0) {
             embed.addField("Parameters", String.join(", ", data.params), false);
         }
@@ -301,6 +392,7 @@ public class PrepData extends TableData {
 
         builder.addComponent(ActionRow.of(
                 Button.primary("prep:edit:%d".formatted(data.uid), "Edit description"),
+                Button.primary("prep:namespace:%d".formatted(data.uid), "Change namespace"),
                 Button.primary("prep:params:%d".formatted(data.uid), "Edit parameters")
         ));
 
@@ -365,6 +457,8 @@ public class PrepData extends TableData {
 
     public record NameData(String key, String name) {}
 
+    public record NamespaceData(String key, boolean loaded) {}
+
     private record Key(long userId, String key) {}
 
     public static class Data {
@@ -375,6 +469,7 @@ public class PrepData extends TableData {
         public String key;
         public String name;
         public String description;
+        public String namespace;
         public String[] params = new String[0];
         public boolean editing = true;
         public final ArrayList<RollData> rolls = new ArrayList<>();

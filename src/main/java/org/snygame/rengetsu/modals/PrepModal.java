@@ -11,6 +11,7 @@ import org.snygame.rengetsu.util.math.ASTNode;
 import org.snygame.rengetsu.util.math.Parser;
 import reactor.core.publisher.Mono;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +43,9 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
             case "edit" -> {
                 return handleEdit(event);
             }
+            case "namespace" -> {
+                return handleNamespace(event);
+            }
             case "add_roll" -> {
                 return handleAddRoll(event);
             }
@@ -62,9 +66,26 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
         PrepData prepData = databaseManager.getPrepData();
         String[] args = event.getCustomId().split(":");
 
-        PrepData.Data data = new PrepData.Data(event.getInteraction().getUser().getId().asLong(), args[2]);
+        long userId = event.getInteraction().getUser().getId().asLong();
+
+        PrepData.Data data = new PrepData.Data(userId, args[2]);
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
+        String namespace = event.getComponents().get(2).getData().components().get().get(0).value().toOptional().orElse("").strip();
+        if (namespace.isBlank()) {
+            data.namespace = null;
+        } else {
+            try {
+                if (!prepData.getNamespaceExists(userId, namespace)) {
+                    return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(namespace)).withEphemeral(true);
+                }
+
+                data.namespace = namespace;
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+        }
         data.editing = false;
 
         prepData.putTempData(data);
@@ -84,6 +105,38 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
 
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
+
+        return event.edit(PrepData.buildMenu(data));
+    }
+
+    private Mono<Void> handleNamespace(ModalSubmitInteractionEvent event) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+        String[] args = event.getCustomId().split(":");
+
+        long userId = event.getInteraction().getUser().getId().asLong();
+
+        PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
+        if (data == null) {
+            return event.edit("**[Error]** Cached data is missing, run the command again")
+                    .withComponents().withEmbeds().withEphemeral(true);
+        }
+
+        String namespace = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse("").strip();
+        if (namespace.isBlank()) {
+            data.namespace = null;
+        } else {
+            try {
+                if (!prepData.getNamespaceExists(userId, namespace)) {
+                    return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(namespace)).withEphemeral(true);
+                }
+
+                data.namespace = namespace;
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+        }
 
         return event.edit(PrepData.buildMenu(data));
     }

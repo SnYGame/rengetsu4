@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS prep_namespace_import (
     borrow_id INT NOT NULL,
     borrow_key TEXT NOT NULL,
     PRIMARY KEY (user_id, key),
-    FOREIGN KEY (borrow_id, borrow_key) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE
+    FOREIGN KEY (borrow_id, borrow_key) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS prep (
@@ -117,12 +117,12 @@ CREATE TABLE IF NOT EXISTS prep (
     key TEXT NOT NULL,
     name TEXT NOT NULL,
     descr TEXT,
+    namespace TEXT DEFAULT NULL,
     roll_count INT NOT NULL,
     var_count INT NOT NULL,
     param_count INT NOT NULL,
-    namespace TEXT DEFAULT NULL,
     PRIMARY KEY (user_id, key),
-    FOREIGN KEY (user_id, namespace) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE
+    FOREIGN KEY (user_id, namespace) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS prep_roll (

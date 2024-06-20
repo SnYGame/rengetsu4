@@ -7,7 +7,6 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.TextInput;
-import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.rest.util.AllowedMentions;
@@ -47,6 +46,7 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                 .or(() -> event.getOption("list").map(option -> subList(event, option)))
                 .or(() -> event.getOption("show").map(option -> subShow(event, option)))
                 .or(() -> event.getOption("borrow").map(option -> subBorrow(event, option)))
+                .or(() -> event.getOption("namespace").map(option -> subNamespace(event, option)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
@@ -81,6 +81,10 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                 ActionRow.of(
                         TextInput.paragraph("description", "Effect description",
                                 0, 2000).required(false)
+                ),
+                ActionRow.of(
+                        TextInput.paragraph("namespace", "Namespace",
+                                0, 50).required(false).placeholder("Leave blank for default")
                 )
         ));
     }
@@ -500,5 +504,138 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
             }
         }
         throw new RuntimeException();
+    }
+
+    private Mono<Void> subNamespace(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        return option.getOption("create").map(option2 -> subNamespaceCreate(event, option2))
+                .or(() -> option.getOption("list").map(option2 -> subNamespaceList(event, option2)))
+                .or(() -> option.getOption("delete").map(option2 -> subNamespaceDelete(event, option2)))
+                .or(() -> option.getOption("rename").map(option2 -> subNamespaceRename(event, option2)))
+                .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
+    }
+
+    private Mono<Void> subNamespaceCreate(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        String key = option.getOption("name")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        if (!key.chars().allMatch(i -> Character.isAlphabetic(i) || Character.isDigit(i) || i == '_')) {
+            return event.reply("**[Error]** Namespace may only has alphanumeric or underscore characters").withEphemeral(true);
+        }
+
+        long userId = event.getInteraction().getUser().getId().asLong();
+
+        try {
+            if (prepData.createNamespace(userId, key)) {
+                return event.reply("Created namespace \"%s\"".formatted(key)).withEphemeral(true);
+            } else {
+                return event.reply("**[Error]** Namespace \"%s\" already exists".formatted(key)).withEphemeral(true);
+            }
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+    }
+
+    private Mono<Void> subNamespaceList(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        Long userId = option.getOption("user")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asSnowflake).map(Snowflake::asLong).orElse(null);
+
+        if (userId == null) {
+            List<PrepData.NamespaceData> datas;
+            try {
+                datas = prepData.listNamespaces(event.getInteraction().getUser().getId().asLong());
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (datas.isEmpty()) {
+                return event.reply("You do not have any namespaces.").withEphemeral(true);
+            }
+
+            return event.reply("Your namespaces:\n" +
+                    datas.stream().map(data -> "`%s`".formatted(data.key()) + (data.loaded() ? " (loaded)" : "")).collect(Collectors.joining("\n")));
+        } else {
+            List<PrepData.NamespaceData> datas;
+            try {
+                datas = prepData.listNamespaces(userId);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return event.reply("**[Error]** Database error").withEphemeral(true);
+            }
+
+            if (datas.isEmpty()) {
+                return event.reply("<@%d> does not have any namespaces.".formatted(userId))
+                        .withAllowedMentions(AllowedMentions.suppressAll()).withEphemeral(true);
+            }
+
+            return event.reply("<@%d>'s prepared effects:\n".formatted(userId) +
+                            datas.stream().map(data -> "`%s`".formatted(data.key())).collect(Collectors.joining("\n")))
+                    .withAllowedMentions(AllowedMentions.suppressAll()).withEphemeral(true);
+        }
+    }
+
+    private Mono<Void> subNamespaceDelete(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        String key = option.getOption("name")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        long userId = event.getInteraction().getUser().getId().asLong();
+
+        try {
+            if (prepData.deleteNamespace(userId, key)) {
+                return event.reply("Deleted namespace \"%s\"".formatted(key)).withEphemeral(true);
+            } else {
+                return event.reply("**[Error]** Namespace \"%s\" does not exist".formatted(key)).withEphemeral(true);
+            }
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
+    }
+
+    private Mono<Void> subNamespaceRename(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        String key = option.getOption("name")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        String newName = option.getOption("new")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        if (!newName.chars().allMatch(i -> Character.isAlphabetic(i) || Character.isDigit(i) || i == '_')) {
+            return event.reply("**[Error]** Namespace may only has alphanumeric or underscore characters").withEphemeral(true);
+        }
+
+        long userId = event.getInteraction().getUser().getId().asLong();
+
+        try {
+            if (prepData.getNamespaceExists(userId, newName)) {
+                return event.reply("**[Error]** Namespace \"%s\" already exists".formatted(newName)).withEphemeral(true);
+            }
+
+            if (prepData.renameNamespace(userId, key, newName)) {
+                return event.reply("Renamed namespace \"%s\" to \"%s\"".formatted(key, newName)).withEphemeral(true);
+            } else {
+                return event.reply("**[Error]** Namespace \"%s\" does not exist".formatted(key)).withEphemeral(true);
+            }
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return event.reply("**[Error]** Database error").withEphemeral(true);
+        }
     }
 }

@@ -112,6 +112,16 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
                         )
                 ));
             }
+            case "namespace" -> {
+                return event.presentModal("Change namespace", "prep:namespace:%d".formatted(data.uid), List.of(
+                        ActionRow.of(
+                                TextInput.paragraph("namespace", "Namespace",
+                                        0, 50).required(false)
+                                        .placeholder("Leave blank for default")
+                                        .prefilled(data.namespace == null ? "" : data.namespace)
+                        )
+                ));
+            }
             case "params" -> {
                 return event.presentModal("Edit parameters", "prep:params:%d".formatted(data.uid), List.of(
                         ActionRow.of(
