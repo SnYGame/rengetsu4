@@ -30,19 +30,36 @@ public class AutoCompleteListener extends Listener {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        List<PrepData.NameData> datas;
-        try {
-            datas = prepData.getAutoCompleteData(event.getInteraction().getUser().getId().asLong());
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.respondWithSuggestions(Collections.emptyList());
-        }
+        long userId = event.getInteraction().getUser().getId().asLong();
 
         String typing = event.getFocusedOption().getValue().map(ApplicationCommandInteractionOptionValue::asString)
                 .orElse("");
 
-        return event.respondWithSuggestions(datas.stream().filter(data -> data.key().startsWith(typing))
-                .map(data -> ApplicationCommandOptionChoiceData.builder().name(data.name())
-                        .value(data.key()).build()).map(d -> (ApplicationCommandOptionChoiceData)d).toList());
+        //TODO NEEDS MORE SOPHISTICATED METHOD
+        switch (event.getFocusedOption().getName()) {
+            case "namespace" -> {
+                try {
+                    return event.respondWithSuggestions(prepData.listNamespaces(userId).stream()
+                            .filter(data -> data.key().startsWith(typing))
+                            .map(data -> ApplicationCommandOptionChoiceData.builder().name(data.key())
+                                    .value(data.key()).build()).map(d -> (ApplicationCommandOptionChoiceData)d).toList());
+                } catch (SQLException e) {
+                    Rengetsu.getLOGGER().error("SQL Error", e);
+                    return event.respondWithSuggestions(Collections.emptyList());
+                }
+            }
+            case "key" -> {
+                try {
+                    List<PrepData.NameData> datas = prepData.listLoadedPrepNames(userId);
+                    return event.respondWithSuggestions(datas.stream().filter(data -> data.key().startsWith(typing))
+                            .map(data -> ApplicationCommandOptionChoiceData.builder().name(data.name())
+                                    .value(data.key()).build()).map(d -> (ApplicationCommandOptionChoiceData)d).toList());
+                } catch (SQLException e) {
+                    Rengetsu.getLOGGER().error("SQL Error", e);
+                    return event.respondWithSuggestions(Collections.emptyList());
+                }
+            }
+        }
+        return event.respondWithSuggestions(Collections.emptyList());
     }
 }

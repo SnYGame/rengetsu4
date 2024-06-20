@@ -42,56 +42,6 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
 
         String[] args = event.getCustomId().split(":");
 
-        switch (args[1]) {
-            case "create_instead" -> {
-                boolean hasData;
-                String key = args[2];
-                try {
-                    hasData = prepData.hasPrepData(userId, key);
-                } catch (SQLException e) {
-                    Rengetsu.getLOGGER().error("SQL Error", e);
-                    return event.reply("**[Error]** Database error").withEphemeral(true);
-                }
-                if (hasData) {
-                    return event.edit("Prepared effect with key `%s` already exists.".formatted(key))
-                            .withComponents(ActionRow.of(
-                                    Button.primary("prep:edit_instead:%s".formatted(key), "Edit instead")
-                            )).withEphemeral(true);
-                }
-
-                return event.presentModal("Preparing", "prep:init_instead:%s".formatted(args[2]), List.of(
-                        ActionRow.of(
-                                TextInput.small("name", "Name", 0, 100)
-                                        .required(true)
-                        ),
-                        ActionRow.of(
-                                TextInput.paragraph("description", "Effect description",
-                                        0, 2000).required(false)
-                        )
-                ));
-            }
-            case "edit_instead" -> {
-                PrepData.Data data;
-                String key = args[2];
-                try {
-                    data = prepData.getPrepData(userId, key);
-                } catch (SQLException e) {
-                    Rengetsu.getLOGGER().error("SQL Error", e);
-                    return event.reply("**[Error]** Database error").withEphemeral(true);
-                }
-
-                if (data == null) {
-                    return event.edit("Prepared effect with key `%s` does not exists.".formatted(key))
-                            .withComponents(ActionRow.of(
-                                    Button.primary("prep:create_instead:%s".formatted(key), "Create instead")
-                            )).withEphemeral(true);
-                }
-
-                prepData.putTempData(data);
-                return event.edit(PrepData.buildMenu(data));
-            }
-        }
-
         PrepData.Data data = prepData.getTempData(Integer.parseInt(args[2]));
         if (data == null) {
             return event.edit("**[Error]** Cached data is missing, run the command again")
@@ -269,7 +219,7 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
             }
             case "delete" -> {
                 try {
-                    prepData.deletePrepData(data.userId, data.key);
+                    prepData.deletePrepData(data.userId, data.namespace, data.key);
                     prepData.removeTempData(data);
                     return event.edit(InteractionApplicationCommandCallbackSpec.builder()
                             .addEmbed(EmbedCreateSpec.builder()

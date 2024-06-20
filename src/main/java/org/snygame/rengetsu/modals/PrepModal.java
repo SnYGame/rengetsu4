@@ -68,24 +68,9 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        PrepData.Data data = new PrepData.Data(userId, args[2]);
+        PrepData.Data data = new PrepData.Data(userId, args[2], args[3]);
         data.name = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse(null);
         data.description = event.getComponents().get(1).getData().components().get().get(0).value().toOptional().orElse(null);
-        String namespace = event.getComponents().get(2).getData().components().get().get(0).value().toOptional().orElse("").strip();
-        if (namespace.isBlank()) {
-            data.namespace = null;
-        } else {
-            try {
-                if (!prepData.getNamespaceExists(userId, namespace)) {
-                    return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(namespace)).withEphemeral(true);
-                }
-
-                data.namespace = namespace;
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
-        }
         data.editing = false;
 
         prepData.putTempData(data);
@@ -127,7 +112,7 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
             data.namespace = null;
         } else {
             try {
-                if (!prepData.getNamespaceExists(userId, namespace)) {
+                if (!prepData.doesNamespaceExists(userId, namespace)) {
                     return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(namespace)).withEphemeral(true);
                 }
 

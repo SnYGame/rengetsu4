@@ -114,19 +114,20 @@ CREATE TABLE IF NOT EXISTS prep_namespace_import (
 
 CREATE TABLE IF NOT EXISTS prep (
     user_id INT NOT NULL,
+    namespace TEXT,
     key TEXT NOT NULL,
     name TEXT NOT NULL,
-    descr TEXT,
-    namespace TEXT DEFAULT NULL,
+    descr TEXT NOT NULL,
     roll_count INT NOT NULL,
     var_count INT NOT NULL,
     param_count INT NOT NULL,
-    PRIMARY KEY (user_id, key),
+    PRIMARY KEY (user_id, namespace, key),
     FOREIGN KEY (user_id, namespace) REFERENCES prep_namespace(user_id, key) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS prep_roll (
     user_id INT NOT NULL,
+    namespace TEXT,
     key TEXT NOT NULL,
     pos TEXT NOT NULL,
     descr TEXT,
@@ -135,11 +136,12 @@ CREATE TABLE IF NOT EXISTS prep_roll (
     variable TEXT,
     result INT,
     PRIMARY KEY (user_id, key, pos),
-    FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key) ON DELETE CASCADE
+    FOREIGN KEY (user_id, namespace, key) REFERENCES prep(user_id, namespace, key) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS prep_param (
     user_id INT NOT NULL,
+    namespace TEXT,
     key TEXT NOT NULL,
     pos TEXT NOT NULL,
     name TEXT NOT NULL,
@@ -147,5 +149,5 @@ CREATE TABLE IF NOT EXISTS prep_param (
     var_type INT NOT NULL,
     result INT NOT NULL,
     PRIMARY KEY (user_id, key, pos),
-    FOREIGN KEY (user_id, key) REFERENCES prep(user_id, key) ON DELETE CASCADE
+    FOREIGN KEY (user_id, namespace, key) REFERENCES prep(user_id, namespace, key) ON DELETE CASCADE ON UPDATE CASCADE
 );

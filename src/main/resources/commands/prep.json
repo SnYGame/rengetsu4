@@ -14,6 +14,14 @@
           "type": 3,
           "required": true,
           "max_length": 50
+        },
+        {
+          "name": "namespace",
+          "description": "Namespace",
+          "type": 3,
+          "required": false,
+          "max_length": 50,
+          "autocomplete": true
         }
       ]
     },
@@ -72,18 +80,10 @@
       ]
     },
     {
-      "name": "list",
-      "description": "Lists your prepared effects",
+      "name": "loaded",
+      "description": "Lists your loaded prepared effects",
       "type": 1,
-      "required": false,
-      "options": [
-        {
-          "name": "user",
-          "description": "Whose prepared effects to list out",
-          "type": 6,
-          "required": false
-        }
-      ]
+      "required": false
     },
     {
       "name": "show",
@@ -102,58 +102,16 @@
       ]
     },
     {
-      "name": "borrow",
-      "description": "Use someone else's prepared effects",
-      "type": 2,
+      "name": "list",
+      "description": "Lists all prepared effect data",
+      "type": 1,
       "required": false,
       "options": [
         {
-          "name": "cast",
-          "description": "Cast someone else's prepared effect",
-          "type": 1,
-          "required": false,
-          "options": [
-            {
-              "name": "user",
-              "description": "Whose prepared effects to cast",
-              "type": 6,
-              "required": true
-            },
-            {
-              "name": "key",
-              "description": "Effect key",
-              "type": 3,
-              "required": true,
-              "max_length": 50
-            },
-            {
-              "name": "arguments",
-              "description": "Argument list (comma separated)",
-              "type": 3,
-              "required": false
-            }
-          ]
-        },
-        {
-          "name": "show",
-          "description": "Displays someone else's prepared effect data",
-          "type": 1,
-          "required": false,
-          "options": [
-            {
-              "name": "user",
-              "description": "Whose prepared effects to show",
-              "type": 6,
-              "required": true
-            },
-            {
-              "name": "key",
-              "description": "Effect key",
-              "type": 3,
-              "required": true,
-              "max_length": 50
-            }
-          ]
+          "name": "user",
+          "description": "Whose prepared effects to list out",
+          "type": 6,
+          "required": false
         }
       ]
     },
@@ -179,31 +137,18 @@
           ]
         },
         {
-          "name": "list",
-          "description": "Lists your namespaces",
-          "type": 1,
-          "required": false,
-          "options": [
-            {
-              "name": "user",
-              "description": "Whose namespaces to list out",
-              "type": 6,
-              "required": false
-            }
-          ]
-        },
-        {
           "name": "delete",
           "description": "Delete a namespace",
           "type": 1,
           "required": false,
           "options": [
             {
-              "name": "name",
-              "description": "Namespace name",
+              "name": "namespace",
+              "description": "Namespace",
               "type": 3,
               "required": true,
-              "max_length": 50
+              "max_length": 50,
+              "autocomplete": true
             }
           ]
         },
@@ -214,11 +159,12 @@
           "required": false,
           "options": [
             {
-              "name": "name",
-              "description": "Namespace name",
+              "name": "namespace",
+              "description": "Namespace",
               "type": 3,
               "required": true,
-              "max_length": 50
+              "max_length": 50,
+              "autocomplete": true
             },
             {
               "name": "new",
@@ -236,11 +182,12 @@
           "required": false,
           "options": [
             {
-              "name": "name",
-              "description": "Namespace name",
+              "name": "namespace",
+              "description": "Namespace",
               "type": 3,
               "required": true,
-              "max_length": 50
+              "max_length": 50,
+              "autocomplete": true
             }
           ]
         },
@@ -251,11 +198,12 @@
           "required": false,
           "options": [
             {
-              "name": "name",
-              "description": "Namespace name",
+              "name": "namespace",
+              "description": "Namespace",
               "type": 3,
               "required": true,
-              "max_length": 50
+              "max_length": 50,
+              "autocomplete": true
             }
           ]
         },
@@ -272,15 +220,16 @@
               "required": true
             },
             {
-              "name": "name",
-              "description": "Namespace name",
+              "name": "namespace",
+              "description": "Namespace",
               "type": 3,
               "required": true,
-              "max_length": 50
+              "max_length": 50,
+              "autocomplete": true
             },
             {
               "name": "reference",
-              "description": "Reference name (for unlinking)",
+              "description": "Reference name (for unloading)",
               "type": 3,
               "required": true,
               "max_length": 50
