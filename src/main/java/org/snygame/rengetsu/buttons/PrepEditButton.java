@@ -144,91 +144,86 @@ public class PrepEditButton extends InteractionListener.CommandDelegate<ButtonIn
                                         "Cancel")))
                         .build());
             }
-            case "cancel_menu" -> {}
             case "save" -> {
-                try {
-                    TypeChecker typeChecker = new TypeChecker();
-                    Type.VarType[] paramTypes = typeChecker.addVariables(data.params);
+                TypeChecker typeChecker = new TypeChecker();
+                Type.VarType[] paramTypes = typeChecker.addVariables(data.params);
 
-                    for (PrepData.Data.RollData rollData: data.rolls) {
-                        switch (rollData) {
-                            case PrepData.Data.DiceRollData diceRoll -> {
-                                if (diceRoll.variable != null) {
-                                    typeChecker.addVariable(diceRoll.variable, Type.FixedType.NUM);
-                                }
+                for (PrepData.Data.RollData rollData: data.rolls) {
+                    switch (rollData) {
+                        case PrepData.Data.DiceRollData diceRoll -> {
+                            if (diceRoll.variable != null) {
+                                typeChecker.addVariable(diceRoll.variable, Type.FixedType.NUM);
                             }
-                            case PrepData.Data.CalculationData calculation -> {
-                                try {
-                                    calculation.getAst().accept(typeChecker);
-                                } catch (IllegalArgumentException e) {
-                                    return event.reply("`%s` Type Error: %s\n".formatted(calculation.query,
-                                            e.getMessage())).withEphemeral(true);
-                                }
+                        }
+                        case PrepData.Data.CalculationData calculation -> {
+                            try {
+                                calculation.getAst().accept(typeChecker);
+                            } catch (IllegalArgumentException e) {
+                                return event.reply("`%s` Type Error: %s\n".formatted(calculation.query,
+                                        e.getMessage())).withEphemeral(true);
                             }
                         }
                     }
-
-                    BytecodeGenerator bytecodeGenerator = new BytecodeGenerator(data.params);
-                    for (PrepData.Data.RollData rollData: data.rolls) {
-                        switch (rollData) {
-                            case PrepData.Data.DiceRollData diceRoll -> {
-                                if (diceRoll.variable != null) {
-                                    diceRoll.result = bytecodeGenerator.getVarIndex(diceRoll.variable);
-                                }
-                            }
-                            case PrepData.Data.CalculationData calculation -> {
-                                calculation.bytecode = bytecodeGenerator.generate(calculation.getAst());
-                            }
-                        }
-                    }
-
-                    data.parameterData.clear();
-                    for (int i = 0; i < data.params.length; i++) {
-                        String param = data.params[i];
-                        Type type = paramTypes[i].getInferredType();
-                        switch (type) {
-                            case Type.FixedType fixedType -> {
-                                data.parameterData.add(new PrepData.Data.ParameterData(param, fixedType, (byte) 0,
-                                        bytecodeGenerator.getVarIndex(param)));
-                            }
-                            case Type.VarType varType -> {
-                                byte b;
-                                for (b = 0; b < data.params.length; b++) {
-                                    if (data.params[b].equals(varType.getName())) {
-                                        break;
-                                    }
-                                }
-                                data.parameterData.add(new PrepData.Data.ParameterData(param, Type.FixedType.VAR, b,
-                                        bytecodeGenerator.getVarIndex(param)));
-                            }
-                        }
-                    }
-
-                    data.varCount = bytecodeGenerator.getVarCount();
-
-                    prepData.savePrepData(data);
-                    prepData.removeTempData(data);
-                    return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                            .addEmbed(EmbedCreateSpec.builder()
-                                    .title("Data saved for %s".formatted(data.name)).build()
-                            ).components(Collections.emptyList()).build());
-                } catch (SQLException e) {
-                    Rengetsu.getLOGGER().error("SQL Error", e);
-                    return event.reply("**[Error]** Database error").withEphemeral(true);
                 }
+
+                BytecodeGenerator bytecodeGenerator = new BytecodeGenerator(data.params);
+                for (PrepData.Data.RollData rollData: data.rolls) {
+                    switch (rollData) {
+                        case PrepData.Data.DiceRollData diceRoll -> {
+                            if (diceRoll.variable != null) {
+                                diceRoll.result = bytecodeGenerator.getVarIndex(diceRoll.variable);
+                            }
+                        }
+                        case PrepData.Data.CalculationData calculation -> {
+                            calculation.bytecode = bytecodeGenerator.generate(calculation.getAst());
+                        }
+                    }
+                }
+
+                data.parameterData.clear();
+                for (int i = 0; i < data.params.length; i++) {
+                    String param = data.params[i];
+                    Type type = paramTypes[i].getInferredType();
+                    switch (type) {
+                        case Type.FixedType fixedType -> {
+                            data.parameterData.add(new PrepData.Data.ParameterData(param, fixedType, (byte) 0,
+                                    bytecodeGenerator.getVarIndex(param)));
+                        }
+                        case Type.VarType varType -> {
+                            byte b;
+                            for (b = 0; b < data.params.length; b++) {
+                                if (data.params[b].equals(varType.getName())) {
+                                    break;
+                                }
+                            }
+                            data.parameterData.add(new PrepData.Data.ParameterData(param, Type.FixedType.VAR, b,
+                                    bytecodeGenerator.getVarIndex(param)));
+                        }
+                    }
+                }
+
+                data.varCount = bytecodeGenerator.getVarCount();
+
+                PrepData.ReturnValue retVal = prepData.savePrepData(data);
+                if (retVal != PrepData.ReturnValue.SUCCESS) {
+                    return event.reply("**[Error]** " + retVal.format(data.namespace, data.key)).withEphemeral(true);
+                }
+                prepData.removeTempData(data);
+                return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                        .addEmbed(EmbedCreateSpec.builder()
+                                .title("Data saved for %s".formatted(data.name)).build()
+                        ).components(Collections.emptyList()).build());
             }
             case "delete" -> {
-                try {
-                    prepData.deletePrepData(data.userId, data.namespace, data.key);
-                    prepData.removeTempData(data);
-                    return event.edit(InteractionApplicationCommandCallbackSpec.builder()
-                            .addEmbed(EmbedCreateSpec.builder()
-                                    .title("Deleted %s".formatted(data.name)).build()
-                            ).components(Collections.emptyList()).build());
-                } catch (SQLException e) {
-                    Rengetsu.getLOGGER().error("SQL Error", e);
-                    return event.reply("**[Error]** Database error").withEphemeral(true);
+                PrepData.ReturnValue retVal = prepData.deletePrepData(data.userId, data.namespace, data.key);
+                if (retVal != PrepData.ReturnValue.SUCCESS) {
+                    return event.reply("**[Error]** " + retVal.format(data.namespace, data.key)).withEphemeral(true);
                 }
+                prepData.removeTempData(data);
+                return event.edit(InteractionApplicationCommandCallbackSpec.builder()
+                        .addEmbed(EmbedCreateSpec.builder()
+                                .title("Deleted %s".formatted(data.name)).build()
+                        ).components(Collections.emptyList()).build());
             }
         }
 

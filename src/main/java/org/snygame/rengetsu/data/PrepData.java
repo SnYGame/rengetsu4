@@ -50,6 +50,10 @@ public class PrepData extends TableData {
     private final PreparedStatement getNamespaceLoadedStmt;
     private final PreparedStatement setNamespaceLoadedStmt;
     private final PreparedStatement getPrepDataStmt;
+    private final PreparedStatement changePrepNamespaceStmt;
+    private final PreparedStatement checkLoadConflictStmt;
+    private final PreparedStatement importNamespaceStmt;
+    private final PreparedStatement getImportedPrepDataStmt;
 
     PrepData(Rengetsu rengetsu, Connection connection) throws SQLException {
         super(rengetsu, connection);
@@ -171,113 +175,218 @@ public class PrepData extends TableData {
         qb.from("prep");
         qb.where("prep.user_id = ? AND prep.namespace = ? AND prep.key = ?");
         getPrepDataStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.update("prep");
+        qb.set("namespace = ?");
+        qb.where("prep.user_id = ? AND prep.namespace = ? AND prep.key = ?");
+        changePrepNamespaceStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("COUNT(*) > 1 AS conflict");
+        qb.from("prep LEFT JOIN prep_namespace ON prep.user_id = prep_namespace.user_id AND prep.namespace = prep_namespace.key");
+        qb.where("prep.user_id = ? AND prep.key = ? AND (prep_namespace.loaded = TRUE OR prep.namespace = '')");
+        checkLoadConflictStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.insertIgnoreInto("prep_namespace_import(user_id, key, borrow_id, borrow_key)");
+        qb.values(("(?, ?, ?, ?)"));
+        importNamespaceStmt = qb.build(connection);
+
+        qb = new QueryBuilder();
+        qb.select("prep.name, prep_namespace_import.key AS namespace, prep.descr, prep.roll_count, prep.var_count, prep.param_count");
+        qb.from("prep_namespace_import INNER JOIN prep ON prep_namespace_import.borrow_id = prep.user_id AND " +
+                "prep_namespace_import.borrow_key = prep.namespace");
+        qb.where("prep_namespace_import.user_id = ? AND prep.key = ?");
+        getImportedPrepDataStmt = qb.build(connection);
     }
 
-    public void savePrepData(Data data) throws SQLException {
+    public ReturnValue savePrepData(Data data) {
         synchronized (connection) {
             try {
-                DatabaseManager databaseManager = rengetsu.getDatabaseManager();
-                databaseManager.getUserData().initializeUser(data.userId);
+                try {
+                    if (!data.namespace.equals(data.oldNamespace)) {
+                        getNamespaceExistStmt.setLong(1, data.userId);
+                        getNamespaceExistStmt.setString(2, data.namespace);
+                        ResultSet rs = getNamespaceExistStmt.executeQuery();
 
-                setPrepDataStmt.setLong(1, data.userId);
-                setPrepDataStmt.setString(2, data.namespace);
-                setPrepDataStmt.setString(3, data.key);
-                setPrepDataStmt.setString(4, data.name);
-                setPrepDataStmt.setString(5, data.description);
-                setPrepDataStmt.setInt(6, data.rolls.size());
-                setPrepDataStmt.setInt(7, data.varCount);
-                setPrepDataStmt.setInt(8, data.params.length);
-                setPrepDataStmt.executeUpdate();
-
-                clearPrepRollsStmt.setLong(1, data.userId);
-                clearPrepRollsStmt.setString(2, data.namespace);
-                clearPrepRollsStmt.setString(3, data.key);
-                clearPrepRollsStmt.executeUpdate();
-
-                clearPrepParamsStmt.setLong(1, data.userId);
-                clearPrepParamsStmt.setString(2, data.namespace);
-                clearPrepParamsStmt.setString(3, data.key);
-                clearPrepParamsStmt.executeUpdate();
-
-
-                addPrepDicerollsStmt.setLong(1, data.userId);
-                addPrepDicerollsStmt.setString(2, data.namespace);
-                addPrepDicerollsStmt.setString(3, data.key);
-                addPrepCalculationStmt.setLong(1, data.userId);
-                addPrepCalculationStmt.setString(2, data.namespace);
-                addPrepCalculationStmt.setString(3, data.key);
-
-                for (int i = 0; i < data.rolls.size(); i++) {
-                    switch (data.rolls.get(i)) {
-                        case Data.DiceRollData diceRollData -> {
-                            addPrepDicerollsStmt.setInt(4, i);
-                            addPrepDicerollsStmt.setString(5, diceRollData.description);
-                            addPrepDicerollsStmt.setString(6, diceRollData.query);
-                            addPrepDicerollsStmt.setString(7, diceRollData.variable);
-                            addPrepDicerollsStmt.setByte(8, diceRollData.result);
-                            addPrepDicerollsStmt.executeUpdate();
+                        if (!rs.next()) {
+                            throw new RuntimeException();
                         }
-                        case Data.CalculationData calculationData -> {
-                            addPrepCalculationStmt.setInt(4, i);
-                            addPrepCalculationStmt.setString(5, calculationData.description);
-                            addPrepCalculationStmt.setString(6, calculationData.query);
-                            addPrepCalculationStmt.setBytes(7, calculationData.bytecode);
-                            addPrepCalculationStmt.executeUpdate();
+
+                        if (rs.getInt("cnt") == 0) {
+                            return ReturnValue.NAMESPACE_NO_EXIST;
+                        }
+
+                        getPrepDataStmt.setLong(1, data.userId);
+                        getPrepDataStmt.setString(2, data.namespace);
+                        getPrepDataStmt.setString(3, data.key);
+                        rs = getPrepDataStmt.executeQuery();
+
+                        if (rs.next()) {
+                            return ReturnValue.KEY_EXIST;
+                        }
+
+                        changePrepNamespaceStmt.setString(1, data.namespace);
+                        changePrepNamespaceStmt.setLong(2, data.userId);
+                        changePrepNamespaceStmt.setString(3, data.oldNamespace);
+                        changePrepNamespaceStmt.setString(4, data.key);
+                        int rows = changePrepNamespaceStmt.executeUpdate();
+                        if (rows > 0) {
+                            checkLoadConflictStmt.setLong(1, data.userId);
+                            checkLoadConflictStmt.setString(2, data.key);
+                            rs = checkLoadConflictStmt.executeQuery();
+                            if (!rs.next()) {
+                                throw new RuntimeException();
+                            }
+
+                            if (rs.getBoolean("conflict")) {
+                                return ReturnValue.KEY_CONFLICT;
+                            }
                         }
                     }
-                }
 
-                addPrepParamStmt.setLong(1, data.userId);
-                addPrepParamStmt.setString(2, data.namespace);
-                addPrepParamStmt.setString(3, data.key);
-                for (int i = 0; i < data.parameterData.size(); i++) {
-                    Data.ParameterData parameterData = data.parameterData.get(i);
-                    addPrepParamStmt.setInt(4, i);
-                    addPrepParamStmt.setString(5, parameterData.name);
-                    addPrepParamStmt.setInt(6, parameterData.type.ordinal());
-                    addPrepParamStmt.setByte(7, parameterData.ofVarType);
-                    addPrepParamStmt.setByte(8, parameterData.result);
-                    addPrepParamStmt.executeUpdate();
+                    DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+                    databaseManager.getUserData().initializeUser(data.userId);
+
+                    setPrepDataStmt.setLong(1, data.userId);
+                    setPrepDataStmt.setString(2, data.namespace);
+                    setPrepDataStmt.setString(3, data.key);
+                    setPrepDataStmt.setString(4, data.name);
+                    setPrepDataStmt.setString(5, data.description);
+                    setPrepDataStmt.setInt(6, data.rolls.size());
+                    setPrepDataStmt.setInt(7, data.varCount);
+                    setPrepDataStmt.setInt(8, data.params.length);
+                    setPrepDataStmt.executeUpdate();
+
+                    clearPrepRollsStmt.setLong(1, data.userId);
+                    clearPrepRollsStmt.setString(2, data.namespace);
+                    clearPrepRollsStmt.setString(3, data.key);
+                    clearPrepRollsStmt.executeUpdate();
+
+                    clearPrepParamsStmt.setLong(1, data.userId);
+                    clearPrepParamsStmt.setString(2, data.namespace);
+                    clearPrepParamsStmt.setString(3, data.key);
+                    clearPrepParamsStmt.executeUpdate();
+
+
+                    addPrepDicerollsStmt.setLong(1, data.userId);
+                    addPrepDicerollsStmt.setString(2, data.namespace);
+                    addPrepDicerollsStmt.setString(3, data.key);
+                    addPrepCalculationStmt.setLong(1, data.userId);
+                    addPrepCalculationStmt.setString(2, data.namespace);
+                    addPrepCalculationStmt.setString(3, data.key);
+
+                    for (int i = 0; i < data.rolls.size(); i++) {
+                        switch (data.rolls.get(i)) {
+                            case Data.DiceRollData diceRollData -> {
+                                addPrepDicerollsStmt.setInt(4, i);
+                                addPrepDicerollsStmt.setString(5, diceRollData.description);
+                                addPrepDicerollsStmt.setString(6, diceRollData.query);
+                                addPrepDicerollsStmt.setString(7, diceRollData.variable);
+                                addPrepDicerollsStmt.setByte(8, diceRollData.result);
+                                addPrepDicerollsStmt.executeUpdate();
+                            }
+                            case Data.CalculationData calculationData -> {
+                                addPrepCalculationStmt.setInt(4, i);
+                                addPrepCalculationStmt.setString(5, calculationData.description);
+                                addPrepCalculationStmt.setString(6, calculationData.query);
+                                addPrepCalculationStmt.setBytes(7, calculationData.bytecode);
+                                addPrepCalculationStmt.executeUpdate();
+                            }
+                        }
+                    }
+
+                    addPrepParamStmt.setLong(1, data.userId);
+                    addPrepParamStmt.setString(2, data.namespace);
+                    addPrepParamStmt.setString(3, data.key);
+                    for (int i = 0; i < data.parameterData.size(); i++) {
+                        Data.ParameterData parameterData = data.parameterData.get(i);
+                        addPrepParamStmt.setInt(4, i);
+                        addPrepParamStmt.setString(5, parameterData.name);
+                        addPrepParamStmt.setInt(6, parameterData.type.ordinal());
+                        addPrepParamStmt.setByte(7, parameterData.ofVarType);
+                        addPrepParamStmt.setByte(8, parameterData.result);
+                        addPrepParamStmt.executeUpdate();
+                    }
+                    connection.commit();
+                    return ReturnValue.SUCCESS;
+                } finally {
+                    connection.rollback();
                 }
-                connection.commit();
             } catch (SQLException e) {
-                connection.rollback();
-                throw e;
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return ReturnValue.DATABASE_ERROR;
             }
         }
     }
 
-    public boolean deletePrepData(long userId, String namespace, String key) throws SQLException {
+    public ReturnValue deletePrepData(long userId, String namespace, String key) {
         synchronized (connection) {
-            deletePrepDataStmt.setLong(1, userId);
-            deletePrepDataStmt.setString(2, namespace);
-            deletePrepDataStmt.setString(3, key);
-            int rows = deletePrepDataStmt.executeUpdate();
-            connection.commit();
-            return rows > 0;
-        }
-    }
-
-    public boolean hasPrepData(long userId, String namespace, String key) throws SQLException {
-        synchronized (connection) {
-            hasPrepDataStmt.setLong(1, userId);
-            hasPrepDataStmt.setString(2, namespace);
-            hasPrepDataStmt.setString(3, key);
-            ResultSet rs = hasPrepDataStmt.executeQuery();
-            if (rs.next()) {
-                return rs.getLong("cnt") > 0;
+            try {
+                deletePrepDataStmt.setLong(1, userId);
+                deletePrepDataStmt.setString(2, namespace);
+                deletePrepDataStmt.setString(3, key);
+                deletePrepDataStmt.executeUpdate();
+                connection.commit();
+                return ReturnValue.SUCCESS;
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return ReturnValue.DATABASE_ERROR;
             }
-            throw new RuntimeException();
         }
     }
 
-    public boolean createNamespace(long userId, String key) throws SQLException {
+    public ReturnValue validateCreate(long userId, String namespace, String key) {
         synchronized (connection) {
-            createNamespaceStmt.setLong(1, userId);
-            createNamespaceStmt.setString(2, key);
-            int rows = createNamespaceStmt.executeUpdate();
-            connection.commit();
-            return rows > 0;
+            try {
+                getNamespaceLoadedStmt.setLong(1, userId);
+                getNamespaceLoadedStmt.setString(2, namespace);
+                ResultSet rs = getNamespaceLoadedStmt.executeQuery();
+
+                if (!rs.next()) {
+                    return ReturnValue.NAMESPACE_NO_EXIST;
+                }
+
+                if (!rs.getBoolean("loaded")) {
+                    return ReturnValue.NAMESPACE_NO_LOADED;
+                }
+
+                getLoadedPrepDataStmt.setLong(1, userId);
+                getLoadedPrepDataStmt.setString(2, key);
+                rs = getLoadedPrepDataStmt.executeQuery();
+                if (rs.next()) {
+                    return ReturnValue.KEY_LOADED;
+                }
+
+                hasPrepDataStmt.setLong(1, userId);
+                hasPrepDataStmt.setString(2, namespace);
+                hasPrepDataStmt.setString(3, key);
+                rs = hasPrepDataStmt.executeQuery();
+
+                if (rs.next()) {
+                    return rs.getLong("cnt") > 0 ? ReturnValue.KEY_LOADED : ReturnValue.SUCCESS;
+                }
+                throw new RuntimeException();
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return ReturnValue.DATABASE_ERROR;
+            }
+        }
+    }
+
+    public ReturnValue createNamespace(long userId, String name) {
+        synchronized (connection) {
+            try {
+                createNamespaceStmt.setLong(1, userId);
+                createNamespaceStmt.setString(2, name);
+                int rows = createNamespaceStmt.executeUpdate();
+                connection.commit();
+                return rows > 0 ? ReturnValue.SUCCESS : ReturnValue.NAMESPACE_EXIST;
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return ReturnValue.DATABASE_ERROR;
+            }
         }
     }
 
@@ -297,149 +406,327 @@ public class PrepData extends TableData {
         }
     }
 
-    public boolean deleteNamespace(long userId, String key) throws SQLException {
+    public ReturnValue deleteNamespace(long userId, String name) {
         synchronized (connection) {
-            deleteNamespaceStmt.setLong(1, userId);
-            deleteNamespaceStmt.setString(2, key);
-            int rows = deleteNamespaceStmt.executeUpdate();
-            connection.commit();
-            return rows > 0;
+            try {
+                deleteNamespaceStmt.setLong(1, userId);
+                deleteNamespaceStmt.setString(2, name);
+                int rows = deleteNamespaceStmt.executeUpdate();
+                connection.commit();
+                return rows > 0 ? ReturnValue.SUCCESS : ReturnValue.NAMESPACE_NO_EXIST;
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return ReturnValue.DATABASE_ERROR;
+            }
         }
     }
 
-    public boolean doesNamespaceExists(long userId, String key) throws SQLException {
-        synchronized (connection) {
+    public ReturnValue validateNamepaceMove(long userId, String namespace, String key) {
+        try {
             getNamespaceExistStmt.setLong(1, userId);
-            getNamespaceExistStmt.setString(2, key);
+            getNamespaceExistStmt.setString(2, namespace);
             ResultSet rs = getNamespaceExistStmt.executeQuery();
+
+            if (!rs.next()) {
+                throw new RuntimeException();
+            }
+
+            if (rs.getInt("cnt") == 0) {
+                return ReturnValue.NAMESPACE_NO_EXIST;
+            }
+
+            getPrepDataStmt.setLong(1, userId);
+            getPrepDataStmt.setString(2, namespace);
+            getPrepDataStmt.setString(3, key);
+            rs = getPrepDataStmt.executeQuery();
+
             if (rs.next()) {
-                return rs.getLong("cnt") > 0;
+                return ReturnValue.KEY_EXIST;
             }
-            throw new RuntimeException();
+
+            return ReturnValue.SUCCESS;
+        } catch (SQLException e) {
+            Rengetsu.getLOGGER().error("SQL Error", e);
+            return ReturnValue.DATABASE_ERROR;
         }
     }
 
-    public boolean renameNamespace(long userId, String key, String newName) throws SQLException {
+    public QueryResult<Void> renameNamespace(long userId, String name, String newName) {
         synchronized (connection) {
-            renameNamespaceStmt.setString(1, newName);
-            renameNamespaceStmt.setLong(2, userId);
-            renameNamespaceStmt.setString(3, key);
-            int rows = renameNamespaceStmt.executeUpdate();
-            connection.commit();
-            return rows > 0;
-        }
-    }
-
-    public List<NameData> listLoadedPrepNames(long userId) throws SQLException {
-        synchronized (connection) {
-            listLoadedPrepNamesStmt.setLong(1, userId);
-            ResultSet rs = listLoadedPrepNamesStmt.executeQuery();
-
-            ArrayList<NameData> names = new ArrayList<>();
-            while (rs.next()) {
-                String namespace = rs.getString("namespace");
-                names.add(new NameData(rs.getString("key"), namespace.isEmpty() ? "(default)" : namespace,
-                        rs.getString("name")));
-            }
-            return names;
-        }
-    }
-
-    public boolean deleteLoadedPrepData(long userId, String key) throws SQLException {
-        synchronized (connection) {
-            getLoadedPrepDataStmt.setLong(1, userId);
-            getLoadedPrepDataStmt.setString(2, key);
-            ResultSet rs = getLoadedPrepDataStmt.executeQuery();
-            if (!rs.next()) {
-                return false;
-            }
-            deletePrepDataStmt.setLong(1, userId);
-            deletePrepDataStmt.setString(2, rs.getString("namespace"));
-            deletePrepDataStmt.setString(3, key);
-            int rows = deletePrepDataStmt.executeUpdate();
-            connection.commit();
-            return rows > 0;
-        }
-    }
-
-    public boolean isNamespaceLoaded(long userId, String key) throws SQLException {
-        synchronized (connection) {
-            getNamespaceLoadedStmt.setLong(1, userId);
-            getNamespaceLoadedStmt.setString(2, key);
-            ResultSet rs = getNamespaceLoadedStmt.executeQuery();
-            if (!rs.next()) {
-                return false;
-            }
-            return rs.getBoolean("loaded");
-        }
-    }
-
-    public Data getLoadedPrepData(long userId, String key) throws SQLException {
-        synchronized (connection) {
-            getLoadedPrepDataStmt.setLong(1, userId);
-            getLoadedPrepDataStmt.setString(2, key);
-            ResultSet rs = getLoadedPrepDataStmt.executeQuery();
-            if (!rs.next()) {
-                return null;
-            }
-            Data prepData = new Data(userId, rs.getString("namespace"), key);
-            prepData.name = rs.getString("name");
-            prepData.description = rs.getString("descr");
-            int rollCount = rs.getInt("roll_count");
-            prepData.varCount = rs.getInt("var_count");
-            int paramCount = rs.getInt("param_count");
-
-            getPrepRollStmt.setLong(1, userId);
-            getPrepRollStmt.setString(2, prepData.namespace);
-            getPrepRollStmt.setString(3, key);
-            for (int i = 0; i < rollCount; i++) {
-                getPrepRollStmt.setInt(4, i);
-                rs = getPrepRollStmt.executeQuery();
-
+            try {
+                getNamespaceExistStmt.setLong(1, userId);
+                getNamespaceExistStmt.setString(2, newName);
+                ResultSet rs = getNamespaceExistStmt.executeQuery();
                 if (!rs.next()) {
                     throw new RuntimeException();
                 }
-
-                byte[] bytecode = rs.getBytes("bytecode");
-
-                if (bytecode == null) {
-                    prepData.rolls.add(new Data.DiceRollData(rs.getString("descr"),
-                            rs.getString("query"), rs.getString("variable"),
-                            rs.getByte("result")));
-                } else {
-                    prepData.rolls.add(new Data.CalculationData(rs.getString("descr"),
-                            rs.getString("query"), bytecode));
-                }
-            }
-            getPrepParamStmt.setLong(1, userId);
-            getPrepParamStmt.setString(2, prepData.namespace);
-            getPrepParamStmt.setString(3, key);
-            for (int i = 0; i < paramCount; i++) {
-                getPrepParamStmt.setInt(4, i);
-                rs = getPrepParamStmt.executeQuery();
-
-                if (!rs.next()) {
-                    throw new RuntimeException();
+                if (rs.getLong("cnt") > 0) {
+                    return new QueryResult<>(ReturnValue.NAMESPACE_EXIST, newName);
                 }
 
-                prepData.parameterData.add(new Data.ParameterData(rs.getString("name"),
-                        Type.FixedType.values()[rs.getInt("fixed_type")],
-                        rs.getByte("var_type"), rs.getByte("result")));
+                renameNamespaceStmt.setString(1, newName);
+                renameNamespaceStmt.setLong(2, userId);
+                renameNamespaceStmt.setString(3, name);
+                int rows = renameNamespaceStmt.executeUpdate();
+                connection.commit();
+                return rows > 0 ? new QueryResult<>((Void) null) : new QueryResult<>(ReturnValue.NAMESPACE_NO_EXIST, name);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return new QueryResult<>(ReturnValue.DATABASE_ERROR);
             }
-            prepData.params = prepData.parameterData.stream().map(Data.ParameterData::name).toList().toArray(new String[paramCount]);
-
-            return prepData;
         }
     }
 
-    public boolean setNamespaceLoaded(long userId, String key, boolean loaded) throws SQLException {
+    public QueryResult<List<NameData>> listLoadedPrepNames(long userId) {
         synchronized (connection) {
-            setNamespaceLoadedStmt.setBoolean(1, loaded);
-            setNamespaceLoadedStmt.setLong(2, userId);
-            setNamespaceLoadedStmt.setString(3, key);
-            int rows = setNamespaceLoadedStmt.executeUpdate();
-            connection.commit();
-            return rows > 0;
+            try {
+                listLoadedPrepNamesStmt.setLong(1, userId);
+                ResultSet rs = listLoadedPrepNamesStmt.executeQuery();
+
+                ArrayList<NameData> names = new ArrayList<>();
+                while (rs.next()) {
+                    String namespace = rs.getString("namespace");
+                    names.add(new NameData(rs.getString("key"), namespace.isEmpty() ? "(default)" : namespace,
+                            rs.getString("name")));
+                }
+                return new QueryResult<>(names);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return new QueryResult<>(ReturnValue.DATABASE_ERROR);
+            }
+        }
+    }
+
+    public ReturnValue deleteLoadedPrepData(long userId, String key) {
+        synchronized (connection) {
+            try {
+                getLoadedPrepDataStmt.setLong(1, userId);
+                getLoadedPrepDataStmt.setString(2, key);
+                ResultSet rs = getLoadedPrepDataStmt.executeQuery();
+                if (!rs.next()) {
+                    return ReturnValue.KEY_NO_EXIST_OR_LOADED;
+                }
+                deletePrepDataStmt.setLong(1, userId);
+                deletePrepDataStmt.setString(2, rs.getString("namespace"));
+                deletePrepDataStmt.setString(3, key);
+                int rows = deletePrepDataStmt.executeUpdate();
+                connection.commit();
+                return rows > 0 ? ReturnValue.SUCCESS : ReturnValue.KEY_NO_EXIST_OR_LOADED;
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return ReturnValue.DATABASE_ERROR;
+            }
+        }
+    }
+
+    public QueryResult<Data> getLoadedPrepData(long userId, String key) {
+        synchronized (connection) {
+            try {
+                getLoadedPrepDataStmt.setLong(1, userId);
+                getLoadedPrepDataStmt.setString(2, key);
+                ResultSet rs = getLoadedPrepDataStmt.executeQuery();
+                if (!rs.next()) {
+                    return new QueryResult<>(ReturnValue.KEY_NO_EXIST_OR_LOADED);
+                }
+                Data prepData = new Data(userId, rs.getString("namespace"), key);
+                prepData.name = rs.getString("name");
+                prepData.description = rs.getString("descr");
+                int rollCount = rs.getInt("roll_count");
+                prepData.varCount = rs.getInt("var_count");
+                int paramCount = rs.getInt("param_count");
+
+                getPrepRollStmt.setLong(1, userId);
+                getPrepRollStmt.setString(2, prepData.namespace);
+                getPrepRollStmt.setString(3, key);
+                for (int i = 0; i < rollCount; i++) {
+                    getPrepRollStmt.setInt(4, i);
+                    rs = getPrepRollStmt.executeQuery();
+
+                    if (!rs.next()) {
+                        throw new RuntimeException();
+                    }
+
+                    byte[] bytecode = rs.getBytes("bytecode");
+
+                    if (bytecode == null) {
+                        prepData.rolls.add(new Data.DiceRollData(rs.getString("descr"),
+                                rs.getString("query"), rs.getString("variable"),
+                                rs.getByte("result")));
+                    } else {
+                        prepData.rolls.add(new Data.CalculationData(rs.getString("descr"),
+                                rs.getString("query"), bytecode));
+                    }
+                }
+                getPrepParamStmt.setLong(1, userId);
+                getPrepParamStmt.setString(2, prepData.namespace);
+                getPrepParamStmt.setString(3, key);
+                for (int i = 0; i < paramCount; i++) {
+                    getPrepParamStmt.setInt(4, i);
+                    rs = getPrepParamStmt.executeQuery();
+
+                    if (!rs.next()) {
+                        throw new RuntimeException();
+                    }
+
+                    prepData.parameterData.add(new Data.ParameterData(rs.getString("name"),
+                            Type.FixedType.values()[rs.getInt("fixed_type")],
+                            rs.getByte("var_type"), rs.getByte("result")));
+                }
+                prepData.params = prepData.parameterData.stream().map(Data.ParameterData::name).toList().toArray(new String[paramCount]);
+
+                return new QueryResult<>(prepData);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return new QueryResult<>(ReturnValue.DATABASE_ERROR);
+            }
+        }
+    }
+
+    public QueryResult<Data> getLoadedOrImportedPrepData(long userId, String key) {
+        synchronized (connection) {
+            try {
+                getLoadedPrepDataStmt.setLong(1, userId);
+                getLoadedPrepDataStmt.setString(2, key);
+                ResultSet rs = getLoadedPrepDataStmt.executeQuery();
+                if (!rs.next()) {
+                    getImportedPrepDataStmt.setLong(1, userId);
+                    getImportedPrepDataStmt.setString(2, key);
+                    rs = getImportedPrepDataStmt.executeQuery();
+
+                    if (!rs.next()) {
+                        return new QueryResult<>(ReturnValue.KEY_NO_EXIST_OR_LOADED);
+                    }
+                }
+                Data prepData = new Data(userId, rs.getString("namespace"), key);
+                prepData.name = rs.getString("name");
+                prepData.description = rs.getString("descr");
+                int rollCount = rs.getInt("roll_count");
+                prepData.varCount = rs.getInt("var_count");
+                int paramCount = rs.getInt("param_count");
+
+                getPrepRollStmt.setLong(1, userId);
+                getPrepRollStmt.setString(2, prepData.namespace);
+                getPrepRollStmt.setString(3, key);
+                for (int i = 0; i < rollCount; i++) {
+                    getPrepRollStmt.setInt(4, i);
+                    rs = getPrepRollStmt.executeQuery();
+
+                    if (!rs.next()) {
+                        throw new RuntimeException();
+                    }
+
+                    byte[] bytecode = rs.getBytes("bytecode");
+
+                    if (bytecode == null) {
+                        prepData.rolls.add(new Data.DiceRollData(rs.getString("descr"),
+                                rs.getString("query"), rs.getString("variable"),
+                                rs.getByte("result")));
+                    } else {
+                        prepData.rolls.add(new Data.CalculationData(rs.getString("descr"),
+                                rs.getString("query"), bytecode));
+                    }
+                }
+                getPrepParamStmt.setLong(1, userId);
+                getPrepParamStmt.setString(2, prepData.namespace);
+                getPrepParamStmt.setString(3, key);
+                for (int i = 0; i < paramCount; i++) {
+                    getPrepParamStmt.setInt(4, i);
+                    rs = getPrepParamStmt.executeQuery();
+
+                    if (!rs.next()) {
+                        throw new RuntimeException();
+                    }
+
+                    prepData.parameterData.add(new Data.ParameterData(rs.getString("name"),
+                            Type.FixedType.values()[rs.getInt("fixed_type")],
+                            rs.getByte("var_type"), rs.getByte("result")));
+                }
+                prepData.params = prepData.parameterData.stream().map(Data.ParameterData::name).toList().toArray(new String[paramCount]);
+
+                return new QueryResult<>(prepData);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return new QueryResult<>(ReturnValue.DATABASE_ERROR);
+            }
+        }
+    }
+
+    public QueryResult<Void> setNamespaceLoaded(long userId, String name, boolean loaded) {
+        synchronized (connection) {
+            try {
+                getNamespaceLoadedStmt.setLong(1, userId);
+                getNamespaceLoadedStmt.setString(2, name);
+                ResultSet rs = getNamespaceLoadedStmt.executeQuery();
+                if (!rs.next()) {
+                    return new QueryResult<>(ReturnValue.NAMESPACE_NO_EXIST);
+                }
+                if (rs.getBoolean("loaded") == loaded) {
+                    return loaded ? new QueryResult<>(ReturnValue.NAMESPACE_LOADED) :
+                            new QueryResult<>(ReturnValue.NAMESPACE_NO_LOADED);
+                }
+
+                if (loaded) {
+                    listPrepNamesStmt.setLong(1, userId);
+                    listPrepNamesStmt.setString(2, name);
+                    rs = listPrepNamesStmt.executeQuery();
+                    while (rs.next()) {
+                        String key = rs.getString("key");
+
+                        getLoadedPrepDataStmt.setLong(1, userId);
+                        getLoadedPrepDataStmt.setString(2, key);
+                        if (getLoadedPrepDataStmt.executeQuery().next()) {
+                            return new QueryResult<>(ReturnValue.KEY_CONFLICT, key);
+                        }
+                    }
+                }
+
+                setNamespaceLoadedStmt.setBoolean(1, loaded);
+                setNamespaceLoadedStmt.setLong(2, userId);
+                setNamespaceLoadedStmt.setString(3, name);
+                int rows = setNamespaceLoadedStmt.executeUpdate();
+                connection.commit();
+                return rows > 0 ? new QueryResult<>((Void) null) : new QueryResult<>(ReturnValue.NAMESPACE_NO_EXIST);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return new QueryResult<>(ReturnValue.DATABASE_ERROR);
+            }
+        }
+    }
+
+    public QueryResult<Void> importNamespace(long userId, String reference, long borrowId, String borrowNamespace) {
+        synchronized (connection) {
+            try {
+                getNamespaceExistStmt.setLong(1, borrowId);
+                getNamespaceExistStmt.setString(2, borrowNamespace);
+                ResultSet rs = getNamespaceExistStmt.executeQuery();
+                if (!rs.next()) {
+                    throw new RuntimeException();
+                }
+                if (rs.getInt("cnt") == 0) {
+                    return new QueryResult<>(ReturnValue.NAMESPACE_NO_EXIST, borrowNamespace);
+                }
+
+                getNamespaceExistStmt.setLong(1, userId);
+                getNamespaceExistStmt.setString(2, reference);
+                rs = getNamespaceExistStmt.executeQuery();
+                if (!rs.next()) {
+                    throw new RuntimeException();
+                }
+                if (rs.getInt("cnt") > 0) {
+                    return new QueryResult<>(ReturnValue.NAMESPACE_EXIST, reference);
+                }
+
+                importNamespaceStmt.setLong(1, userId);
+                importNamespaceStmt.setString(2, reference);
+                importNamespaceStmt.setLong(3, borrowId);
+                importNamespaceStmt.setString(4, borrowNamespace);
+                importNamespaceStmt.executeUpdate();
+                connection.commit();
+                return new QueryResult<>((Void) null);
+            } catch (SQLException e) {
+                Rengetsu.getLOGGER().error("SQL Error", e);
+                return new QueryResult<>(ReturnValue.DATABASE_ERROR);
+            }
         }
     }
 
@@ -562,10 +849,12 @@ public class PrepData extends TableData {
         public int varCount;
 
         private ScheduledFuture<?> removalTask;
+        private final String oldNamespace;
 
         public Data(long userId, String namespace, String key) {
             this.userId = userId;
             this.namespace = namespace;
+            this.oldNamespace = namespace;
             this.key = key;
 
             uid = nextUid++;
@@ -685,7 +974,8 @@ public class PrepData extends TableData {
                 builder.components(rows);
             } catch (SQLException e) {
                 Rengetsu.getLOGGER().error("SQL Error", e);
-                return builder.content("**[Error]** Database error").ephemeral(true).build();
+                return builder.content("**[Error]** " + ReturnValue.DATABASE_ERROR.format(null, null))
+                        .ephemeral(true).build();
             }
             builder.ephemeral(true);
             return builder.build();
@@ -784,6 +1074,49 @@ public class PrepData extends TableData {
                 return InteractionApplicationCommandCallbackSpec.builder()
                         .content("**[Error]** Database error").ephemeral(true).build();
             }
+        }
+    }
+
+    public enum ReturnValue {
+        SUCCESS(null), DATABASE_ERROR("Database error"),
+        NAMESPACE_NO_EXIST("Namespace \"${namespace}\" does not exist."),
+        NAMESPACE_EXIST("Namespace \"${namespace}\" already exists."),
+        NAMESPACE_NO_LOADED("Namespace \"${namespace}\" is not loaded."),
+        NAMESPACE_LOADED("Namespace \"${namespace}\" is already loaded."),
+        KEY_LOADED("Prepared effect with key `${key}` already exists in loaded namespaces."),
+        KEY_EXIST("Prepared effect with key `${key}` already exists in namespace \"${namespace}\"."),
+        KEY_NO_EXIST_OR_LOADED("Prepared effect with key `${key}` does not exists or is not loaded."),
+        KEY_CONFLICT("This action will result in loading conflict with key `${key}`.");
+
+        private final String error;
+
+        ReturnValue(String error) {
+            this.error = error;
+        }
+
+        public String format(String namespace, String key) {
+            String message = error;
+            if (namespace != null) {
+                message = message.replace("${namespace}", namespace);
+            }
+            if (key != null) {
+                message = message.replace("${key}", key);
+            }
+            return message;
+        }
+    }
+
+    public record QueryResult<T>(ReturnValue retVal, T item, String arg) {
+        public QueryResult(ReturnValue retVal) {
+            this(retVal, null, null);
+        }
+
+        public QueryResult(ReturnValue retVal, String arg) {
+            this(retVal, null, arg);
+        }
+
+        public QueryResult(T item) {
+            this(ReturnValue.SUCCESS, item, null);
         }
     }
 }

@@ -37,9 +37,6 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
             case "init" -> {
                 return handleInit(event, false);
             }
-            case "init_instead" -> {
-                return handleInit(event, true);
-            }
             case "edit" -> {
                 return handleEdit(event);
             }
@@ -108,21 +105,10 @@ public class PrepModal extends InteractionListener.CommandDelegate<ModalSubmitIn
         }
 
         String namespace = event.getComponents().get(0).getData().components().get().get(0).value().toOptional().orElse("").strip();
-        if (namespace.isBlank()) {
-            data.namespace = null;
-        } else {
-            try {
-                if (!prepData.doesNamespaceExists(userId, namespace)) {
-                    return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(namespace)).withEphemeral(true);
-                }
-
-                data.namespace = namespace;
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
-            }
+        PrepData.ReturnValue retVal = prepData.validateNamepaceMove(userId, namespace, data.key);
+        if (retVal != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(namespace, data.key)).withEphemeral(true);
         }
-
         return event.edit(PrepData.buildMenu(data));
     }
 

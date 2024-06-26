@@ -5,11 +5,9 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
 import discord4j.core.object.component.TextInput;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.PrepData;
@@ -63,28 +61,10 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
         long userId = event.getInteraction().getUser().getId().asLong();
-        boolean hasData;
-        try {
-            if (!prepData.doesNamespaceExists(userId, namespace)) {
-                if (!namespace.isEmpty()) {
-                    return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(namespace)).withEphemeral(true);
-                }
-                prepData.createNamespace(userId, "");
-            }
 
-            if (!prepData.isNamespaceLoaded(userId, namespace)) {
-                return event.reply("**[Error]** Namespace \"%s\" is not loaded.".formatted(namespace)).withEphemeral(true);
-            }
-
-            hasData = prepData.hasPrepData(userId, namespace, key);
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
-        }
-        if (hasData) {
-            return event.reply("Prepared effect with key `%s` in %s already exists.".formatted(key,
-                            namespace.isEmpty() ? "default namespace" : "namespace \"%s\"".formatted(namespace)))
-                    .withEphemeral(true);
+        PrepData.ReturnValue retVal = prepData.validateCreate(userId, namespace, key);
+        if (retVal != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(namespace, key)).withEphemeral(true);
         }
 
         return event.presentModal("Preparing", "prep:init:%s:%s".formatted(namespace, key), List.of(
@@ -109,17 +89,12 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        PrepData.Data data;
-        try {
-            data = prepData.getLoadedPrepData(userId, key);
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<PrepData.Data> result = prepData.getLoadedPrepData(userId, key);
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(null, key)).withEphemeral(true);
         }
-
-        if (data == null) {
-            return event.reply("Prepared effect with key `%s` does not exists or is not loaded.".formatted(key)).withEphemeral(true);
-        }
+        PrepData.Data data = result.item();
 
         prepData.putTempData(data);
         return event.reply(PrepData.buildMenu(data));
@@ -135,17 +110,12 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        PrepData.Data data;
-        try {
-            data = prepData.getLoadedPrepData(userId, key);
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<PrepData.Data> result = prepData.getLoadedOrImportedPrepData(userId, key);
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(null, key)).withEphemeral(true);
         }
-
-        if (data == null) {
-            return event.reply("Prepared effect with key `%s` does not exists or is not loaded.".formatted(key)).withEphemeral(true);
-        }
+        PrepData.Data data = result.item();
 
         String arguments = event.getOptions().get(0).getOption("arguments")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
@@ -170,16 +140,10 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
         long userId = event.getInteraction().getUser().getId().asLong();
-        boolean deleted;
-        try {
-            deleted = prepData.deleteLoadedPrepData(userId, key);
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
-        }
 
-        if (!deleted) {
-            return event.reply("Prepared effect with key `%s` does not exists or is not loaded.".formatted(key)).withEphemeral(true);
+        PrepData.ReturnValue retVal = prepData.deleteLoadedPrepData(userId, key);
+        if (retVal != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(null, key)).withEphemeral(true);
         }
 
         return event.reply("Deleted prepared effect with key `%s`.".formatted(key)).withEphemeral(true);
@@ -189,13 +153,12 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        List<PrepData.NameData> datas;
-        try {
-            datas = prepData.listLoadedPrepNames(event.getInteraction().getUser().getId().asLong());
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<List<PrepData.NameData>> result = prepData.listLoadedPrepNames(event.getInteraction().getUser().getId().asLong());
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(null, null)).withEphemeral(true);
         }
+        List<PrepData.NameData> datas = result.item();
 
         if (datas.isEmpty()) {
             return event.reply("You do not have any loaded prepared effects.");
@@ -214,17 +177,12 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                 .map(ApplicationCommandInteractionOptionValue::asString)).flatMap(key -> {
             long userId = event.getInteraction().getUser().getId().asLong();
 
-            PrepData.Data data;
-            try {
-                data = prepData.getLoadedPrepData(userId, key);
-            } catch (SQLException e) {
-                Rengetsu.getLOGGER().error("SQL Error", e);
-                return event.reply("**[Error]** Database error").withEphemeral(true);
+            PrepData.ReturnValue retVal;
+            PrepData.QueryResult<PrepData.Data> result = prepData.getLoadedPrepData(userId, key);
+            if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+                return event.reply("**[Error]** " + retVal.format(null, key)).withEphemeral(true);
             }
-
-            if (data == null) {
-                return event.reply("Prepared effect with key `%s` does not exists or is not loaded.".formatted(key)).withEphemeral(true);
-            }
+            PrepData.Data data = result.item();
 
             return event.reply(PrepData.buildMenu(data).withComponents().withEphemeral(false));
         });
@@ -428,6 +386,7 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
                 .or(() -> option.getOption("rename").map(option2 -> subNamespaceRename(event, option2)))
                 .or(() -> option.getOption("load").map(option2 -> subNamespaceLoad(event, option2)))
                 .or(() -> option.getOption("unload").map(option2 -> subNamespaceUnload(event, option2)))
+                .or(() -> option.getOption("import").map(option2 -> subNamespaceImport(event, option2)))
                 .orElse(event.reply("**[Error]** Unimplemented subcommand").withEphemeral(true));
     }
 
@@ -435,55 +394,47 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        String key = option.getOption("name")
+        String name = option.getOption("name")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
-        if (!key.chars().allMatch(i -> Character.isAlphabetic(i) || Character.isDigit(i) || i == '_')) {
+        if (!name.chars().allMatch(i -> Character.isAlphabetic(i) || Character.isDigit(i) || i == '_')) {
             return event.reply("**[Error]** Namespace may only has alphanumeric or underscore characters.").withEphemeral(true);
         }
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        try {
-            if (prepData.createNamespace(userId, key)) {
-                return event.reply("Created namespace \"%s\".".formatted(key)).withEphemeral(true);
-            } else {
-                return event.reply("**[Error]** Namespace \"%s\" already exists.".formatted(key)).withEphemeral(true);
-            }
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal = prepData.createNamespace(userId, name);
+        if (retVal != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(name, null)).withEphemeral(true);
         }
+
+        return event.reply("Created namespace \"%s\".".formatted(name)).withEphemeral(true);
     }
 
     private Mono<Void> subNamespaceDelete(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        String key = option.getOption("namespace")
+        String name = option.getOption("namespace")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        try {
-            if (prepData.deleteNamespace(userId, key)) {
-                return event.reply("Deleted namespace \"%s\".".formatted(key)).withEphemeral(true);
-            } else {
-                return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(key)).withEphemeral(true);
-            }
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal = prepData.deleteNamespace(userId, name);
+        if (retVal != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(name, null)).withEphemeral(true);
         }
+
+        return event.reply("Deleted namespace \"%s\".".formatted(name)).withEphemeral(true);
     }
 
     private Mono<Void> subNamespaceRename(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        String key = option.getOption("namespace")
+        String name = option.getOption("namespace")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
@@ -497,71 +448,77 @@ public class PrepareCommand extends InteractionListener.CommandDelegate<ChatInpu
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        try {
-            if (prepData.doesNamespaceExists(userId, newName)) {
-                return event.reply("**[Error]** Namespace \"%s\" already exists.".formatted(newName)).withEphemeral(true);
-            }
-
-            if (prepData.renameNamespace(userId, key, newName)) {
-                return event.reply("Renamed namespace \"%s\" to \"%s\".".formatted(key, newName)).withEphemeral(true);
-            } else {
-                return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(key)).withEphemeral(true);
-            }
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<Void> result = prepData.renameNamespace(userId, name, newName);
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(result.arg(), null)).withEphemeral(true);
         }
+
+        return event.reply("Renamed namespace \"%s\" to \"%s\".".formatted(name, newName)).withEphemeral(true);
     }
 
     private Mono<Void> subNamespaceLoad(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        String key = option.getOption("namespace")
+        String name = option.getOption("namespace")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        //TODO NAME CONFLICT
-
-        try {
-            if (!prepData.doesNamespaceExists(userId, key)) {
-                return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(key)).withEphemeral(true);
-            }
-            if (!prepData.setNamespaceLoaded(userId, key, true)) {
-                return event.reply("**[Error]** Namespace \"%s\" is already loaded.".formatted(key)).withEphemeral(true);
-            }
-
-            return event.reply("Namespace \"%s\" has been loaded.".formatted(key)).withEphemeral(true);
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<Void> result = prepData.setNamespaceLoaded(userId, name, true);
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(name, result.arg())).withEphemeral(true);
         }
+
+        return event.reply("Namespace \"%s\" has been loaded.".formatted(name)).withEphemeral(true);
     }
 
     private Mono<Void> subNamespaceUnload(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
 
-        String key = option.getOption("namespace")
+        String name = option.getOption("namespace")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
 
         long userId = event.getInteraction().getUser().getId().asLong();
 
-        try {
-            if (!prepData.doesNamespaceExists(userId, key)) {
-                return event.reply("**[Error]** Namespace \"%s\" does not exist.".formatted(key)).withEphemeral(true);
-            }
-            if (!prepData.setNamespaceLoaded(userId, key, false)) {
-                return event.reply("**[Error]** Namespace \"%s\" is already unloaded.".formatted(key)).withEphemeral(true);
-            }
-
-            return event.reply("Namespace \"%s\" has been unloaded.".formatted(key)).withEphemeral(true);
-        } catch (SQLException e) {
-            Rengetsu.getLOGGER().error("SQL Error", e);
-            return event.reply("**[Error]** Database error").withEphemeral(true);
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<Void> result = prepData.setNamespaceLoaded(userId, name, false);
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(name, result.arg())).withEphemeral(true);
         }
+
+        return event.reply("Namespace \"%s\" has been unloaded.".formatted(name)).withEphemeral(true);
+    }
+
+    private Mono<Void> subNamespaceImport(ChatInputInteractionEvent event, ApplicationCommandInteractionOption option) {
+        DatabaseManager databaseManager = rengetsu.getDatabaseManager();
+        PrepData prepData = databaseManager.getPrepData();
+
+        String name = option.getOption("namespace")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        String reference = option.getOption("reference")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString).orElse("");
+
+        Long borrowId = option.getOption("user")
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asSnowflake).map(Snowflake::asLong).orElse(0L);
+
+        long userId = event.getInteraction().getUser().getId().asLong();
+
+        PrepData.ReturnValue retVal;
+        PrepData.QueryResult<Void> result = prepData.importNamespace(userId, reference, borrowId, name);
+        if ((retVal = result.retVal()) != PrepData.ReturnValue.SUCCESS) {
+            return event.reply("**[Error]** " + retVal.format(result.arg(), null)).withEphemeral(true);
+        }
+
+        return event.reply("Namespace \"%s\" has been imported as \"%s\".".formatted(name, reference)).withEphemeral(true);
     }
 }

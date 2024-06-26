@@ -26,6 +26,18 @@ public class AutoCompleteListener extends Listener {
         return Mono.empty();
     }
 
+//    private Mono<Void> handlePrep(ChatInputAutoCompleteEvent event) {
+//        return event.getOption("create").map(option -> subCreate(event, option))
+//                .or(() -> event.getOption("edit").map(option -> subEdit(event, option)))
+//                .or(() -> event.getOption("cast").map(option -> subCast(event, option)))
+//                .or(() -> event.getOption("delete").map(option -> subDelete(event, option)))
+//                .or(() -> event.getOption("loaded").map(option -> subLoaded(event, option)))
+//                .or(() -> event.getOption("show").map(option -> subShow(event, option)))
+//                .or(() -> event.getOption("list").map(option -> subList(event, option)))
+//                .or(() -> event.getOption("namespace").map(option -> subNamespace(event, option)))
+//                .orElse(event.respondWithSuggestions(Collections.emptyList()));
+//    }
+
     private Mono<Void> handlePrep(ChatInputAutoCompleteEvent event) {
         DatabaseManager databaseManager = rengetsu.getDatabaseManager();
         PrepData prepData = databaseManager.getPrepData();
@@ -49,15 +61,14 @@ public class AutoCompleteListener extends Listener {
                 }
             }
             case "key" -> {
-                try {
-                    List<PrepData.NameData> datas = prepData.listLoadedPrepNames(userId);
-                    return event.respondWithSuggestions(datas.stream().filter(data -> data.key().startsWith(typing))
-                            .map(data -> ApplicationCommandOptionChoiceData.builder().name(data.name())
-                                    .value(data.key()).build()).map(d -> (ApplicationCommandOptionChoiceData)d).toList());
-                } catch (SQLException e) {
-                    Rengetsu.getLOGGER().error("SQL Error", e);
+                PrepData.QueryResult<List<PrepData.NameData>> result = prepData.listLoadedPrepNames(event.getInteraction().getUser().getId().asLong());
+                if (result.retVal() != PrepData.ReturnValue.SUCCESS) {
                     return event.respondWithSuggestions(Collections.emptyList());
                 }
+                List<PrepData.NameData> datas = result.item();
+                return event.respondWithSuggestions(datas.stream().filter(data -> data.key().startsWith(typing))
+                        .map(data -> ApplicationCommandOptionChoiceData.builder().name(data.name())
+                                .value(data.key()).build()).map(d -> (ApplicationCommandOptionChoiceData)d).toList());
             }
         }
         return event.respondWithSuggestions(Collections.emptyList());
