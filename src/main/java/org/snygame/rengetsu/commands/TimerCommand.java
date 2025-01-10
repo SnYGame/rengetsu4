@@ -86,7 +86,7 @@ public class TimerCommand extends InteractionListener.CommandDelegate<ChatInputI
             List<TimerData.Data> timers = timerData.listTimers(userId);
             List<TimerData.Data> subscriptions = timerData.listSubscriptions(userId);
 
-            if (timers.isEmpty()) {
+            if (timers.isEmpty() && subscriptions.isEmpty()) {
                 return event.reply("You have no active timers.");
             }
 
