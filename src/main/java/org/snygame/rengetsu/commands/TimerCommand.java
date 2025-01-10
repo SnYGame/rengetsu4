@@ -8,6 +8,7 @@ import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import discord4j.rest.util.AllowedMentions;
 import org.snygame.rengetsu.Rengetsu;
 import org.snygame.rengetsu.data.DatabaseManager;
 import org.snygame.rengetsu.data.TimerData;
@@ -86,7 +87,7 @@ public class TimerCommand extends InteractionListener.CommandDelegate<ChatInputI
             List<TimerData.Data> timers = timerData.listTimers(userId);
             List<TimerData.Data> subscriptions = timerData.listSubscriptions(userId);
 
-            if (timers.isEmpty()) {
+            if (timers.isEmpty() && subscriptions.isEmpty()) {
                 return event.reply("You have no active timers.");
             }
 
@@ -153,7 +154,8 @@ public class TimerCommand extends InteractionListener.CommandDelegate<ChatInputI
 
                 if (timerData.subscribeTimer(userId, timerId)) {
                     return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                            .content("You have subscribed to timer %d.".formatted(timerId))
+                            .content("<@%d> has subscribed to timer %d.".formatted(userId, timerId))
+                            .allowedMentions(AllowedMentions.suppressAll())
                             .addComponent(ActionRow.of(
                                     Button.danger("timer:%d:0:unsubscribe".formatted(timerId), "Unsubscribe"))
                             ).build());
